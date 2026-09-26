@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Tarifs — KLYPSO{% endblock %}
+{% block crumb %}Tarifs{% endblock %}
+{% block content %}
+<section class="dash-page pricing-v11-page">
+  <div class="page-title-row"><div><span class="eyebrow-v11">KLYPSO PLANS</span><h1>Choisis les capacités dont tu as besoin.</h1><p>Free pour découvrir, Pro pour produire régulièrement, Ultra pour débloquer l'espace Studio complet. Les prix affichés suivent la configuration de ton serveur.</p></div></div>
+  <div class="quick-create-grid">
+    <article class="quick-card"><div class="quick-icon">○</div><div><span class="card-kicker">FREE</span><h2>Découvrir KLYPSO</h2><p>0 € · 5 clips / mois</p></div></article>
+    <article class="quick-card featured"><div class="quick-icon">✦</div><div><span class="card-kicker">PRO</span><h2>Produire régulièrement</h2><p>{{ config.PRO_MONTHLY_PRICE_EUR }} € / mois · sélection avancée, batch et Brand Kit.</p></div></article>
+    <article class="quick-card"><div class="quick-icon studio-icon">◫</div><div><span class="card-kicker">ULTRA</span><h2>Clips + Studio</h2><p>{{ config.ULTRA_MONTHLY_PRICE_EUR }} € / mois · workspace complet.</p></div></article>
+  </div>
+  <section class="panel-v11" style="padding:20px;margin-top:12px">
+    <div class="panel-head-v11"><div><span class="eyebrow-v11">COMPARAISON</span><h2>Les fonctions visibles en un regard.</h2></div><div class="tab-group"><button class="tab-btn active" data-billing="monthly">Mensuel</button><button class="tab-btn" data-billing="annual">Annuel</button></div></div>
+    <div class="project-list" style="margin-top:18px">
+      {% for label, free, pro, ultra in [('Clips / mois','5','100','500'),('Projets','2','20','100'),('Upload maximum','512 MB','2 GB','4 GB'),('Sélection IA avancée','—','✓','✓'),('Sous-titres dynamiques','—','✓','✓'),('Auto-reframing','—','✓','✓'),('Brand Kit','—','✓','✓'),('Studio','Base','Avancé','Complet'),('Montage assisté','—','Assisté','Avancé'),('Timeline multi-pistes','—','—','✓')] %}
+      <div class="project-row" style="grid-template-columns:1.6fr 1fr 1fr 1fr"><div class="project-main"><strong>{{ label }}</strong></div><div style="font-size:9px;color:#7b8495">Free · {{ free }}</div><div style="font-size:9px;color:#b5bdca">Pro · {{ pro }}</div><div style="font-size:9px;color:#e6e8ed">Ultra · {{ ultra }}</div></div>
+      {% endfor %}
+    </div>
+  </section>
+  <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><a class="button" href="{{ url_for('auth.register') if not current_user else url_for('billing.subscription') }}">{% if current_user %}Gérer mon abonnement{% else %}Créer mon compte{% endif %} →</a><span style="font-size:8px;color:#687284;align-self:center">Les Price IDs Stripe doivent être configurés côté serveur avant une vente réelle.</span></div>
+</section>
+{% endblock %}

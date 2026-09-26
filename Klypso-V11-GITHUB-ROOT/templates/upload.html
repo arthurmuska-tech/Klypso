@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Nouveau projet — KLYPSO{% endblock %}
+{% block crumb %}Nouveau projet{% endblock %}
+{% block content %}
+<section class="project-create-page">
+  <div class="page-title-row"><div><span class="eyebrow-v11">NOUVEAU PROJET</span><h1>Commence avec ta vidéo.</h1><p>Dépose une VOD, choisis ton objectif et laisse KLYPSO préparer le workflow.</p></div><a class="button ghost" href="{{ url_for('clips.clips') }}">Retour aux projets</a></div>
+  <div class="create-layout">
+    <form class="upload-studio-card" method="post" enctype="multipart/form-data" id="upload-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="dropzone-v11" for="video"><div class="drop-orb">↑</div><div><strong id="file-name">Dépose ta vidéo ici</strong><span>ou clique pour parcourir tes fichiers</span></div><small>MP4 · MOV · MKV · WebM · selon la limite de ton plan</small><input id="video" type="file" name="video" accept="video/*" required></label>
+      <div class="create-options">
+        <div class="option-group"><span class="section-label-v11">OBJECTIF</span><div class="option-cards"><label class="choice-card selected"><input type="radio" name="goal" value="clips" checked><b>✦ Clips courts</b><small>Moments forts, format social</small></label><label class="choice-card"><input type="radio" name="goal" value="studio"><b>◫ Montage complet</b><small>Préparer un projet Studio</small></label></div></div>
+        <div class="option-group"><span class="section-label-v11">FORMAT DE SORTIE</span><div class="seg-row" data-seg-group="format"><button type="button" class="seg-btn active">9:16</button><button type="button" class="seg-btn">1:1</button><button type="button" class="seg-btn">4:5</button><button type="button" class="seg-btn">16:9</button></div></div>
+        <div class="option-group"><span class="section-label-v11">PRÉFÉRENCES</span><div class="check-grid"><label><input type="checkbox" checked> Garder les moments parlés</label><label><input type="checkbox" checked> Préparer les sous-titres</label><label><input type="checkbox"> Ajouter une couche Brand Kit</label><label><input type="checkbox"> Nettoyer l'audio</label></div></div>
+      </div>
+      <button class="button button-xl full" type="submit">Créer le projet <span>→</span></button>
+    </form>
+    <aside class="workflow-side">
+      <div class="workflow-head"><span class="eyebrow-v11">APERÇU DU WORKFLOW</span><span class="live-dot">LIVE</span></div>
+      <div class="workflow-steps"><div class="wf active"><i>01</i><span><b>Importer</b><small>Ta source originale reste intacte.</small></span></div><div class="wf"><i>02</i><span><b>Analyser</b><small>Média, durée, pistes et signaux.</small></span></div><div class="wf"><i>03</i><span><b>Sélectionner</b><small>Moments et formats à travailler.</small></span></div><div class="wf"><i>04</i><span><b>Personnaliser</b><small>Sous-titres, identité, cadrage.</small></span></div><div class="wf"><i>05</i><span><b>Exporter</b><small>Fichier final prêt à publier.</small></span></div></div>
+      <div class="tip-card"><span>✦</span><div><b>Conseil</b><p>Commence avec une VOD de quelques minutes pour tester rapidement ton workflow.</p></div></div>
+    </aside>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script>const i=document.getElementById('video'),n=document.getElementById('file-name');i?.addEventListener('change',()=>{n.textContent=i.files?.[0]?.name||'Dépose ta vidéo ici';});</script>{% endblock %}

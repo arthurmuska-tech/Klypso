@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Rétractation — Klypso{% endblock %}
+{% block content %}
+<article class="legal">
+  <span class="eyebrow">CONSOMMATEURS</span>
+  <h1>Formulaire type de rétractation</h1>
+  <p>Ce formulaire est proposé comme support de travail pour les contrats à distance conclus avec des consommateurs. Le contenu et les cas d’application doivent être validés juridiquement pour l’offre Klypso réellement vendue.</p>
+  <div class="panel">
+    <p>À l’attention de : <strong>{{ legal.entity_name }}</strong>, {{ legal.legal_address }}, {{ legal.contact_email }}.</p>
+    <p>Je vous notifie par la présente ma rétractation du contrat portant sur la prestation de service ci-dessous :</p>
+    <p><strong>Service / plan :</strong> ________________________________</p>
+    <p><strong>Contrat conclu le :</strong> ________________________________</p>
+    <p><strong>Nom du consommateur :</strong> _____________________________</p>
+    <p><strong>Adresse du consommateur :</strong> _________________________</p>
+    <p><strong>Date :</strong> __________________</p>
+    <p><strong>Signature (si notification sur papier) :</strong> __________________</p>
+  </div>
+</article>
+{% endblock %}

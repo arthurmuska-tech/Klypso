@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Studio — KLYPSO{% endblock %}
+{% block crumb %}Studio{% endblock %}
+{% block content %}
+<section class="studio-v11-page">
+  <div class="studio-header"><div class="studio-title"><span class="eyebrow-v11">KLYPSO STUDIO</span><h1>Le montage au centre.</h1><p>Une interface pensée comme un vrai éditeur : outils à gauche, canvas au centre, propriétés à droite et timeline en bas.</p></div><div class="studio-top-actions"><button class="icon-button dark" type="button" data-studio-action="undo" title="Annuler">↶</button><button class="icon-button dark" type="button" data-studio-action="redo" title="Rétablir">↷</button><button class="button ghost" type="button" data-save-project>Enregistrer</button><button class="button" type="button" data-studio-action="export">Exporter <span>↗</span></button></div></div>
+  <div class="editor-app">
+    <aside class="editor-tools">
+      <div class="editor-tools-top"><span class="mini-label">OUTILS</span><button type="button" class="editor-search" data-tool-search>⌕</button></div>
+      <button class="editor-tool active" data-tool="select"><span>⌁</span><b>Pointer</b><small>V</small></button>
+      <div class="tool-divider"></div>
+      <span class="tool-category">CRÉER</span>
+      <button class="editor-tool" data-tool="media"><span>▣</span><b>Média</b><small>M</small></button>
+      <button class="editor-tool" data-tool="text"><span>T</span><b>Texte</b><small>T</small></button>
+      <button class="editor-tool" data-tool="audio"><span>♫</span><b>Audio</b><small>A</small></button>
+      <button class="editor-tool" data-tool="broll"><span>▤</span><b>B-roll</b><small>B</small></button>
+      <span class="tool-category">STYLISER</span>
+      <button class="editor-tool" data-tool="captions"><span>Aa</span><b>Captions</b><small>C</small></button>
+      <button class="editor-tool" data-tool="effects"><span>✦</span><b>Effets</b><small>E</small></button>
+      <button class="editor-tool" data-tool="transitions"><span>◒</span><b>Transitions</b><small>R</small></button>
+      <button class="editor-tool" data-tool="brand"><span>◈</span><b>Brand</b><small>G</small></button>
+      <div class="tools-spacer"></div>
+      <button class="editor-tool" data-tool="settings"><span>⚙</span><b>Projet</b><small>P</small></button>
+    </aside>
+
+    <section class="editor-center">
+      <div class="editor-project-bar"><div><span>PROJET SANS TITRE</span><small>Autosave activé</small></div><div class="editor-center-controls"><button type="button" class="small-icon" data-studio-action="undo">↶</button><button type="button" class="small-icon" data-studio-action="redo">↷</button><span class="divider-line"></span><button type="button" class="zoom-chip" data-zoom-out>−</button><span id="zoom-label">100%</span><button type="button" class="zoom-chip" data-zoom-in>＋</button></div></div>
+      <div class="canvas-toolbar"><div class="canvas-tabs"><button class="canvas-tab active">Composition</button><button class="canvas-tab">Storyboard</button><button class="canvas-tab">Preview</button></div><div class="canvas-toolbar-right"><div class="format-select"><span>Format</span><button type="button" data-format-button>9:16 ▾</button></div><button class="small-icon" type="button">⛶</button></div></div>
+      <div class="canvas-stage"><div class="stage-glow"></div><div class="video-frame" id="video-frame"><div class="frame-grid"></div><div class="frame-placeholder"><div class="placeholder-orb">✦</div><b>Ton canvas</b><span>Ajoute un média ou importe une vidéo pour commencer.</span></div><div class="caption-safe">ZONE CAPTIONS</div></div></div>
+      <div class="transport"><button type="button">|◀</button><button type="button">◀◀</button><button type="button" class="main-play play-btn">▶</button><button type="button">▶▶</button><button type="button">▶|</button><span class="timecode">00:00.00 / 00:00.00</span><div class="transport-right"><span>● 24 FPS</span><span>◈ 1080p</span></div></div>
+
+      <div class="timeline-wrap">
+        <div class="timeline-header"><div class="timeline-project">TIMELINE <span>4 pistes</span></div><div class="timeline-actions"><button type="button">＋ Piste</button><button type="button">⌘ Options</button></div></div>
+        <div class="timeline-ruler"><span>00:00</span><span>00:05</span><span>00:10</span><span>00:15</span><span>00:20</span><span>00:25</span><span>00:30</span><span>00:35</span></div>
+        <div class="timeline-track-row"><div class="track-name"><span class="track-badge video">V1</span><b>Vidéo principale</b><i>●</i></div><div class="track-lane"><div class="timeline-clip clip-purple" data-clip>Select / Intro</div><div class="timeline-clip clip-blue" data-clip>Moment fort</div><div class="timeline-clip clip-cyan" data-clip>Outro</div></div></div>
+        <div class="timeline-track-row"><div class="track-name"><span class="track-badge media">V2</span><b>B-roll</b><i>●</i></div><div class="track-lane"><div class="timeline-clip clip-green" data-clip>Gameplay</div><div class="timeline-clip clip-green thin" data-clip>Reaction</div></div></div>
+        <div class="timeline-track-row"><div class="track-name"><span class="track-badge audio">A1</span><b>Audio</b><i>●</i></div><div class="track-lane"><div class="timeline-audio"><div class="wave-bars"></div></div></div></div>
+        <div class="timeline-track-row"><div class="track-name"><span class="track-badge text">T1</span><b>Captions</b><i>●</i></div><div class="track-lane"><div class="timeline-clip clip-pink" data-clip>Hook / Captions</div></div></div>
+        <div class="playhead" id="playhead"></div>
+      </div>
+    </section>
+
+    <aside class="editor-inspector-v11">
+      <div class="inspector-tabs"><button class="inspector-tab active" data-inspector-tab="properties">Propriétés</button><button class="inspector-tab" data-inspector-tab="captions">Captions</button><button class="inspector-tab" data-inspector-tab="brand">Brand</button></div>
+      <div class="inspector-content" id="inspector-properties">
+        <div class="inspect-block"><div class="inspect-title"><span>FORMAT</span><button type="button">↗</button></div><div class="ratio-grid"><button class="active" data-ratio="9:16">9:16</button><button data-ratio="16:9">16:9</button><button data-ratio="1:1">1:1</button><button data-ratio="4:5">4:5</button></div></div>
+        <div class="inspect-block"><div class="inspect-title"><span>TRANSFORM</span><button>⌄</button></div><div class="field-grid"><label>X<input type="number" value="0"></label><label>Y<input type="number" value="0"></label><label>Zoom<input type="number" value="100"></label><label>Rotation<input type="number" value="0"></label></div><label class="range-field">Opacité <input type="range" min="0" max="100" value="100"><span>100%</span></label></div>
+        <div class="inspect-block"><div class="inspect-title"><span>STYLING</span><button>⌄</button></div><div class="mini-control-row"><button class="chip active">Auto</button><button class="chip">Clean</button><button class="chip">Dynamic</button></div><label class="select-field">Police<select><option>Inter</option><option>Manrope</option><option>Space Grotesk</option></select></label><div class="color-line"><span>Couleur</span><button class="color-dot"></button><input value="#FFFFFF"></div></div>
+        <div class="inspect-block"><div class="inspect-title"><span>AUDIO</span><button>⌄</button></div><label class="range-field">Volume <input type="range" min="0" max="200" value="100"><span>100%</span></label><div class="mini-control-row"><button class="chip active">Normaliser</button><button class="chip">Réduire bruit</button></div></div>
+      </div>
+      <div class="inspector-content hidden" id="inspector-captions"><div class="inspect-block"><div class="inspect-title"><span>SOUS-TITRES</span></div><label class="toggle-line"><span><b>Captions automatiques</b><small>Préparer une piste texte dans le workflow.</small></span><input type="checkbox" checked></label><div class="caption-style-list"><button class="caption-style active"><b>Dynamic</b><span>Mot clé accentué</span></button><button class="caption-style"><b>Classic</b><span>Propre et lisible</span></button><button class="caption-style"><b>Minimal</b><span>Discret</span></button></div></div></div>
+      <div class="inspector-content hidden" id="inspector-brand"><div class="inspect-block"><div class="inspect-title"><span>BRAND KIT</span></div><div class="brand-preview-mini"><div class="brand-logo-mini">K</div><b>Mon style</b><span>Accent + captions + watermark</span></div><a class="button ghost full" href="{{ url_for('brand_kit') }}">Ouvrir Brand Kit →</a></div></div>
+    </aside>
+  </div>
+
+  <section class="studio-ai-panel">
+    <div class="ai-panel-head"><div><span class="eyebrow-v11">AI FIRST PASS</span><h2>Créer une première version depuis une vidéo.</h2><p>Ce bouton utilise le moteur local réellement disponible sur le serveur (FFmpeg) pour produire une nouvelle sortie.</p></div><div class="ai-badge">NO API KEY</div></div>
+    <div class="ai-panel-grid"><label class="ai-source" for="ai-video-input"><span>↑</span><div><b id="ai-file-label">Choisir une vidéo source</b><small>MP4 · MOV · MKV · WebM</small></div><input type="file" accept="video/*" id="ai-video-input"></label><div class="ai-switches"><label><input type="checkbox" id="ai-silence" checked><span><b>Réduire les silences</b><small>Nettoyage des pauses selon le média</small></span></label><label><input type="checkbox" id="ai-audio" checked><span><b>Normaliser l'audio</b><small>Sortie plus homogène</small></span></label><label><input type="checkbox" id="ai-captions"><span><b>Préparer les sous-titres</b><small>Étape de préparation, pas de transcription garantie</small></span></label></div><button class="button button-lg" type="button" id="run-ai-edit">Créer la première version →</button></div>
+    <div class="ai-progress-v11" id="ai-progress" hidden><div class="ai-progress-top"><b id="ai-status">Préparation…</b><span id="ai-percent">0%</span></div><div class="progress-v11"><i id="ai-progress-bar"></i></div><div class="ai-progress-steps"><span data-ai-step="analyze">Analyse</span><span data-ai-step="cleanup">Nettoyage</span><span data-ai-step="audio">Audio</span><span data-ai-step="render">Rendu</span></div></div>
+    <div id="ai-result" class="ai-result-v11" hidden></div>
+  </section>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/studio.js') }}" defer></script>{% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Accueil — KLYPSO{% endblock %}
+{% block crumb %}Accueil{% endblock %}
+{% block content %}
+<section class="dash-page">
+  <div class="dash-hero">
+    <div><span class="eyebrow-v11">TON WORKSPACE</span><h1>Bonjour, {{ current_user.split('@')[0] }} <span class="wave">✦</span></h1><p>Choisis un workflow et passe de la VOD au contenu final sans quitter ton espace.</p></div>
+    <div class="hero-actions"><a class="button button-lg" href="{{ url_for('clips.create_clips') }}"><span>＋</span> Nouveau projet</a><a class="button ghost button-lg" href="{{ url_for('studio.studio') }}">Ouvrir Studio</a></div>
+  </div>
+
+  <div class="quick-create-grid">
+    <a class="quick-card featured" href="{{ url_for('clips.create_clips') }}"><div class="quick-icon">✦</div><div><span class="card-kicker">KLYPSO CLIPS</span><h2>Transformer une VOD</h2><p>Analyse les moments forts et prépare des clips verticaux.</p></div><span class="card-arrow">→</span></a>
+    <a class="quick-card" href="{{ url_for('studio.studio') }}"><div class="quick-icon studio-icon">◫</div><div><span class="card-kicker">KLYPSO STUDIO</span><h2>Monter de A à Z</h2><p>Canvas, timeline, audio, texte, cadrage et export.</p></div><span class="card-arrow">→</span></a>
+    <a class="quick-card" href="{{ url_for('brand_kit') }}"><div class="quick-icon brand-icon">◈</div><div><span class="card-kicker">IDENTITÉ</span><h2>Préparer ton style</h2><p>Couleurs, sous-titres, watermark et paramètres visuels.</p></div><span class="card-arrow">→</span></a>
+  </div>
+
+  <div class="dashboard-grid">
+    <section class="panel-v11 usage-panel">
+      <div class="panel-head-v11"><div><span class="eyebrow-v11">TON PLAN</span><h2>{{ plan.name }}</h2></div><a class="text-link-v11" href="{{ url_for('billing.pricing') }}">Voir les plans →</a></div>
+      <div class="usage-top"><div class="usage-ring" style="--pct:{{ 20 if plan.clips_per_month == 0 else [20,35,12][loop.index0] if false else 24 }}%"><strong>{{ plan.clips_per_month }}</strong><span>clips / mois</span></div><div class="usage-copy"><strong>Ton espace est prêt.</strong><p>Utilise les raccourcis ci-dessus pour lancer ton prochain projet. Ton plan actuel : <b>{{ plan.name }}</b>.</p><div class="usage-metrics"><div><span>PROJETS</span><b>{{ plan.max_projects }}</b></div><div><span>UPLOAD MAX.</span><b>{{ plan.max_upload_mb }} MB</b></div><div><span>STUDIO</span><b>{{ 'Inclus' if plan.studio else 'À débloquer' }}</b></div></div></div></div>
+    </section>
+    <section class="panel-v11 ai-spotlight"><div class="spotlight-glow"></div><span class="eyebrow-v11">AI WORKFLOW</span><h2>Crée plus vite sans perdre la main.</h2><p>KLYPSO sépare l'automatisation, l'édition et l'identité pour que tu puisses reprendre chaque étape.</p><div class="spotlight-list"><span>✦ Analyse & sélection</span><span>◫ Montage Studio</span><span>◈ Brand Kit</span><span>↗ Export social</span></div><a class="button ghost" href="{{ url_for('studio.studio') }}">Explorer Studio →</a></section>
+  </div>
+
+  <section class="panel-v11 activity-panel" id="history">
+    <div class="panel-head-v11"><div><span class="eyebrow-v11">PROJETS RÉCENTS</span><h2>Ta bibliothèque</h2></div><a class="text-link-v11" href="{{ url_for('clips.clips') }}">Voir tout →</a></div>
+    {% if jobs %}
+      <div class="project-list">
+      {% for job in jobs %}
+        <div class="project-row"><div class="project-thumb"><span>{{ '✦' if job.job_type == 'analysis' else '◫' }}</span></div><div class="project-main"><strong>Projet #{{ job.id }}</strong><span>{{ job.job_type|replace('_',' ')|title }}</span></div><div class="project-status"><i class="status-led {{ job.status|lower }}"></i>{{ job.status }}</div><div class="project-date">{{ job.created_at }}</div><a class="project-open" href="{{ url_for('clips.clips') }}">Ouvrir →</a></div>
+      {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state-v11"><div class="empty-visual"><span>✦</span></div><div><h3>Ta bibliothèque est vide.</h3><p>Importe une VOD pour créer ton premier projet et le retrouver ici.</p></div><a class="button" href="{{ url_for('clips.create_clips') }}">Créer mon premier projet →</a></div>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}
