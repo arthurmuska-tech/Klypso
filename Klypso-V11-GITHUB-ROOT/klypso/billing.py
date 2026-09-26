@@ -63,7 +63,8 @@ def checkout():
             success_url=current_app.config["STRIPE_SUCCESS_URL"],
             cancel_url=current_app.config["STRIPE_CANCEL_URL"],
             metadata={"user_id": str(session["user_id"]), "plan": plan_key, "billing_interval": billing_interval},
-            subscription_data={"metadata": {"user_id": str(session["user_id"]), "plan": plan_key, "billing_interval": billing_interval}},
+            subscription_data={"metadata": {"user_id": str(session["user_id"]), "plan": plan_key, "billing_interval": billing_interval}, "trial_period_days": current_app.config["STRIPE_TRIAL_DAYS"]},
+            payment_method_collection="always",
             client_reference_id=str(session["user_id"]),
             customer_email=user["email"] if not user["stripe_customer_id"] else None,
         )
@@ -130,7 +131,7 @@ def webhook():
             metadata = data.get("metadata", {})
             user_id = metadata.get("user_id") or data.get("client_reference_id")
             if user_id and data.get("customer"):
-                db.execute("UPDATE users SET stripe_customer_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?", (data["customer"], user_id))
+                db.execute("UPDATE users SET stripe_customer_id=?, trial_started_at=COALESCE(trial_started_at,CURRENT_TIMESTAMP), updated_at=CURRENT_TIMESTAMP WHERE id=?", (data["customer"], user_id))
 
         elif event_type in {"customer.subscription.created", "customer.subscription.updated"}:
             metadata = data.get("metadata", {})
