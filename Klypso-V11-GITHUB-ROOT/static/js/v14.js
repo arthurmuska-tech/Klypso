@@ -90,6 +90,7 @@
   backTop.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
 
   /* Motion preference */
+  /* V14.5: animations are enabled by default. Only an explicit user choice can disable them. */
   const saved=storage.get('klypso.motion','1');
   function setMotion(enabled){body.classList.toggle('v14-no-motion',!enabled);storage.set('klypso.motion',enabled?'1':'0');}
   setMotion(saved!=='0');
