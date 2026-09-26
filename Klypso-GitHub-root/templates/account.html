@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Compte — Klypso{% endblock %}
+{% block content %}
+<section class="form-page" aria-labelledby="account-title">
+  <div class="panel">
+    <span class="eyebrow">COMPTE</span>
+    <h1 id="account-title">{{ current_user }}</h1>
+    <p>Gère ton abonnement, tes codes promotionnels et la suppression de ton compte.</p>
+    <a class="button ghost" href="{{ url_for('billing.subscription') }}">Gérer l’abonnement</a>
+    <hr>
+    <h2>Code promo</h2>
+    <p>Un code peut activer Pro ou Ultra pendant une durée exprimée en semaines, selon les paramètres définis côté serveur.</p>
+    <form method="post" action="{{ url_for('promo.redeem') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label for="promo-code">Code promo<input id="promo-code" name="code" maxlength="64" required autocomplete="off" placeholder="KLYPSO-XXXX-XXXX"></label>
+      <button class="button" type="submit">Activer le code</button>
+    </form>
+    <hr>
+    <h2>Suppression</h2>
+    <p>La suppression efface le compte et les fichiers locaux associés lorsqu’ils sont encore présents sur le stockage configuré.</p>
+    <form method="post" action="{{ url_for('auth.delete_account') }}" onsubmit="return confirm('Supprimer définitivement le compte ?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="danger" type="submit">Supprimer mon compte</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

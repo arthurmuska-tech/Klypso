@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Mentions légales — Klypso{% endblock %}
+{% block content %}
+<article class="legal">
+  <span class="eyebrow">INFORMATIONS LÉGALES</span>
+  <h1>Mentions légales</h1>
+  <p>Cette page est prévue pour la mise en ligne de Klypso. Les champs encore inconnus sont volontairement signalés et doivent être complétés avec les informations réelles de l’éditeur et de l’hébergeur.</p>
+  <h2>Éditeur du site</h2>
+  <p><strong>Dénomination / nom :</strong> {{ legal.entity_name }}<br>
+  <strong>Forme / statut :</strong> {{ legal.legal_status }}<br>
+  <strong>Adresse :</strong> {{ legal.legal_address }}<br>
+  <strong>SIRET :</strong> {{ legal.legal_siret }}<br>
+  <strong>RCS / ville, si applicable :</strong> {{ legal.legal_rcs }}<br>
+  <strong>TVA intracommunautaire, si applicable :</strong> {{ legal.legal_vat }}<br>
+  <strong>Directeur de la publication :</strong> {{ legal.publication_director }}<br>
+  <strong>E-mail :</strong> {{ legal.contact_email }}<br>
+  <strong>Téléphone :</strong> {{ legal.contact_phone }}</p>
+  <h2>Hébergeur</h2>
+  <p><strong>Nom :</strong> {{ legal.hoster_name }}<br>
+  <strong>Adresse :</strong> {{ legal.hoster_address }}<br>
+  <strong>Téléphone :</strong> {{ legal.hoster_phone }}</p>
+  <h2>À compléter avant mise en ligne</h2>
+  <p>Vérifier que les informations d’identité, de publication et d’hébergement correspondent exactement à la structure réellement exploitée et au prestataire d’hébergement effectivement utilisé.</p>
+</article>
+{% endblock %}
