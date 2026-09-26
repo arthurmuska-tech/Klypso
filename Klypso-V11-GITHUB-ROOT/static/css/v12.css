@@ -1,0 +1,9 @@
+/* KLYPSO V12.1 — auth, AI and billing polish */
+.auth-v12{min-height:72vh;display:grid;place-items:center;padding:48px 20px}
+.auth-card{width:min(560px,100%);padding:42px;border:1px solid rgba(255,255,255,.10);border-radius:24px;background:rgba(15,18,25,.86);box-shadow:0 24px 80px rgba(0,0,0,.25)}
+.auth-card.narrow{width:min(470px,100%)}.auth-card h1{font-size:42px;line-height:1.02;margin:10px 0 14px}.auth-lead{opacity:.72;line-height:1.6}
+.auth-form{display:grid;gap:18px;margin-top:24px}.auth-form label{display:grid;gap:8px;font-weight:650}.auth-form input[type=email],.auth-form input[name=code]{width:100%;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.045);color:inherit;font-size:16px}
+.oauth-button{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px 16px;margin-top:18px;border:1px solid rgba(255,255,255,.13);border-radius:12px;text-decoration:none;font-weight:700;background:#fff;color:#111}
+.oauth-button b{font-size:19px}.auth-divider{display:flex;align-items:center;gap:12px;margin:24px 0;color:rgba(255,255,255,.45);font-size:11px;font-weight:800;letter-spacing:.12em}.auth-divider:before,.auth-divider:after{content:"";height:1px;background:rgba(255,255,255,.10);flex:1}.auth-foot{margin-top:22px;text-align:center;opacity:.7}.auth-foot a{font-weight:700}
+.check{display:flex!important;grid-template-columns:none!important;align-items:flex-start;gap:10px!important;font-size:13px}.check input{margin-top:3px}.payment-grid-v12{display:grid;grid-template-columns:1fr 1fr;gap:18px}.payment-card-v12{min-height:240px}.payment-list-v12{display:grid;gap:18px;margin-top:20px}.payment-list-v12 div{display:grid;gap:4px}.payment-list-v12 span{opacity:.62;font-size:14px;line-height:1.5}
+@media(max-width:800px){.payment-grid-v12{grid-template-columns:1fr}.auth-card{padding:28px}.auth-card h1{font-size:34px}}
