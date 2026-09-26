@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}Nouvelle analyse — Klypso Clips{% endblock %}
+{% block content %}
+<div class="v10-shell upload-page-v10"><section class="workspace-top"><div><span class="v10-kicker">NOUVELLE ANALYSE</span><h1>Dépose ta vidéo.</h1><p>Klypso prépare les métadonnées et un premier ensemble de moments candidats.</p></div></section>
+<section class="upload-grid-v10"><form class="upload-card-v10" method="post" enctype="multipart/form-data" id="upload-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div class="upload-icon-v10">↑</div><span class="v10-kicker">SOURCE VIDÉO</span><h2>Choisir une VOD</h2><p>MP4, MOV, MKV, WebM ou M4V selon la configuration du serveur.</p><label class="source-picker-v10" for="video"><strong>Parcourir les fichiers</strong><small id="file-name">Aucun fichier sélectionné</small><input id="video" type="file" name="video" accept="video/*" required></label><button class="button button-lg full" type="submit">Lancer l'analyse →</button></form>
+<aside class="upload-process-v10"><span class="v10-kicker">PIPELINE KLYPSO</span><div><b>01 · Metadata</b><span>durée, fps, pistes, format</span></div><div><b>02 · Candidats</b><span>fenêtres de moments à analyser</span></div><div><b>03 · Score</b><span>potentiel du moment + raisons</span></div><div><b>04 · Sélection</b><span>éviter les doublons et chevauchements</span></div><div><b>05 · Préparation</b><span>cadrage, sous-titres et rendu selon les options disponibles</span></div></aside></section></div>
+{% endblock %}
+{% block scripts %}<script>const i=document.getElementById('video'),n=document.getElementById('file-name');i?.addEventListener('change',()=>{n.textContent=i.files?.[0]?.name||'Aucun fichier sélectionné';});</script>{% endblock %}

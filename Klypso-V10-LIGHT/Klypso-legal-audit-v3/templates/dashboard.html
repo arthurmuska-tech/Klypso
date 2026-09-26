@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Workspace — KLYPSO{% endblock %}
+{% block content %}
+<div class="v10-shell workspace-shell">
+  <section class="workspace-top">
+    <div><span class="v10-kicker">TON WORKSPACE</span><h1>Bonjour, {{ current_user.split('@')[0] }}.</h1><p>Tout ce qu'il te faut pour passer de la source au contenu final.</p></div>
+    <div class="workspace-actions"><a class="button" href="{{ url_for('clips.create_clips') }}">＋ Nouveau clip</a><a class="button ghost" href="{{ url_for('studio.studio') }}">Ouvrir Studio</a></div>
+  </section>
+
+  <section class="workspace-hero-grid">
+    <div class="workspace-plan-card">
+      <div class="plan-card-top"><div><span class="v10-kicker">PLAN ACTUEL</span><h2>{{ plan.name }}</h2></div><span class="plan-status">{% if plan_key == 'pro' and user['trial_started_at'] and user['plan'] == 'free' %}ESSAI{% else %}ACTIF{% endif %}</span></div>
+      <p>{% if plan_key == 'free' %}Découvre les outils fondamentaux de KLYPSO.{% elif plan_key == 'pro' %}Davantage de génération, d'automatisation et de personnalisation pour produire régulièrement.{% else %}Le workspace complet avec Studio et les workflows avancés.{% endif %}</p>
+      <div class="plan-meter"><div><span>Clips / mois</span><strong>{{ plan.clips_per_month }}</strong></div><div><span>Projets</span><strong>{{ plan.max_projects }}</strong></div><div><span>Upload max.</span><strong>{{ plan.max_upload_mb }} MB</strong></div></div>
+      <a class="text-link" href="{{ url_for('billing.pricing') }}">Voir les fonctionnalités du plan →</a>
+    </div>
+    <div class="workspace-ai-card"><span class="ai-orb">✦</span><span class="v10-kicker">MONTAGE AUTOMATIQUE</span><h2>Une première version à partir de ta vidéo.</h2><p>Studio peut appliquer les traitements disponibles sur ton serveur, puis te laisser reprendre le résultat.</p><a class="button" href="{{ url_for('studio.studio') }}">Lancer le Studio →</a></div>
+  </section>
+
+  <section class="v10-section compact-section"><div class="v10-section-head"><div><span class="v10-kicker">OUTILS</span><h2>Choisis ton workflow.</h2></div></div>
+    <div class="workspace-tool-grid">
+      <a class="tool-card tool-card-large" href="{{ url_for('clips.create_clips') }}"><span class="tool-label">KLYPSO CLIPS</span><div class="tool-symbol">✦</div><h3>Transformer une VOD en clips</h3><p>Importe une vidéo, analyse sa structure, crée des candidats et prépare les formats courts.</p><strong>Créer des clips <span>→</span></strong></a>
+      <a class="tool-card tool-card-large accent-tool" href="{{ url_for('studio.studio') }}"><span class="tool-label">KLYPSO STUDIO</span><div class="tool-symbol">✂</div><h3>Monter la vidéo entière</h3><p>Lance le montage assisté ou reprends toi-même le projet dans la timeline.</p><strong>Ouvrir Studio <span>→</span></strong></a>
+      <a class="tool-card" href="{{ url_for('brand_kit') }}"><span class="tool-label">IDENTITÉ</span><div class="tool-symbol small">◈</div><h3>Brand Kit</h3><p>Couleur, densité, rayon et style de sous-titres.</p><strong>Personnaliser →</strong></a>
+      <a class="tool-card" href="{{ url_for('billing.pricing') }}"><span class="tool-label">ABONNEMENT</span><div class="tool-symbol small">↗</div><h3>Free · Pro · Ultra</h3><p>Compare les limites et les fonctions disponibles.</p><strong>Voir les offres →</strong></a>
+    </div>
+  </section>
+
+  <section class="v10-section compact-section"><div class="v10-section-head"><div><span class="v10-kicker">ACTIVITÉ</span><h2>Derniers traitements.</h2></div><a class="text-link" href="{{ url_for('clips.clips') }}">Tout voir →</a></div>
+    {% if jobs %}<div class="activity-table"><div class="activity-row activity-head"><span>JOB</span><span>TYPE</span><span>STATUT</span><span>DATE</span></div>{% for job in jobs %}<div class="activity-row"><span>#{{ job.id }}</span><span>{{ job.job_type|replace('_',' ')|title }}</span><span><em class="status-dot {{ job.status|lower }}"></em>{{ job.status }}</span><span>{{ job.created_at }}</span></div>{% endfor %}</div>{% else %}<div class="empty-workspace"><div class="empty-orb">✦</div><div><h3>Aucune création pour le moment.</h3><p>Commence avec une VOD ou ouvre Studio pour lancer ton premier projet.</p></div><a class="button" href="{{ url_for('clips.create_clips') }}">Créer ma première vidéo →</a></div>{% endif %}
+  </section>
+</div>
+{% endblock %}

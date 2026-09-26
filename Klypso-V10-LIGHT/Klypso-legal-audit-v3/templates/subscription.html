@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Abonnement — Klypso{% endblock %}
+{% block content %}
+<section class="form-page" aria-labelledby="subscription-title">
+  <div class="panel">
+    <span class="eyebrow">ABONNEMENT</span>
+    <h1 id="subscription-title">{{ plan.name }}</h1>
+    <p>Statut technique : <strong>{{ user['subscription_status'] }}</strong>.</p>
+    {% if user['promo_plan'] and user['promo_started_at'] and user['promo_duration_weeks'] %}
+      <p>Accès promotionnel {{ user['promo_plan']|upper }} actif pendant {{ user['promo_duration_weeks'] }} semaine(s) à compter de son activation, sous réserve de la validité du code.</p>
+    {% elif user['trial_started_at'] %}
+      <p>Essai commercial Pro : 10 jours à compter de la création du compte. Cet essai est distinct du droit légal de rétractation applicable selon la situation.</p>
+    {% endif %}
+    {% if user['stripe_customer_id'] and config.STRIPE_SECRET_KEY %}
+      <form method="post" action="{{ url_for('billing.portal') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="button" type="submit">Gérer la facturation</button>
+      </form>
+    {% else %}
+      <p class="notice">Le portail de facturation sera disponible lorsqu’un abonnement Stripe réel sera relié à ce compte.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
