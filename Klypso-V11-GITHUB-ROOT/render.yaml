@@ -32,6 +32,8 @@ services:
         sync: false
       - key: STRIPE_ULTRA_ANNUAL_PRICE_ID
         sync: false
+      - key: GROQ_API_KEY
+        sync: false
       - key: PRO_ANNUAL_PRICE_EUR
         value: ""
       - key: ULTRA_ANNUAL_PRICE_EUR
