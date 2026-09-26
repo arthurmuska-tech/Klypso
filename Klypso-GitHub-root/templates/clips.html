@@ -1,9 +1,0 @@
-{% extends 'base.html' %}
-{% block title %}Klypso Clips — Moments{% endblock %}
-{% block content %}
-<div class="v10-shell clips-page-v10">
-  <section class="workspace-top"><div><span class="v10-kicker">KLYPSO CLIPS</span><h1>Transforme ta VOD en moments.</h1><p>Les analyses sont conservées dans ton espace. Lance une nouvelle source pour créer un job.</p></div><a class="button" href="{{ url_for('clips.create_clips') }}">＋ Nouvelle vidéo</a></section>
-  <section class="clips-overview-v10"><div><span class="metric-label">WORKFLOW</span><strong>Analyse → candidats → sélection</strong><small>Le pipeline de base structure les moments avant un éventuel rendu.</small></div><div><span class="metric-label">FORMATS</span><strong>9:16 · 4:5 · 16:9 · 1:1</strong><small>Les plans de cadrage sont disponibles dans l'architecture Clips.</small></div><div><span class="metric-label">FEEDBACK</span><strong>Conserver / Rejeter</strong><small>Les décisions peuvent être enregistrées pour améliorer la sélection future.</small></div></section>
-  <section class="v10-section compact-section"><div class="v10-section-head"><div><span class="v10-kicker">HISTORIQUE</span><h2>Dernières analyses.</h2></div></div>{% if jobs %}<div class="activity-table"><div class="activity-row activity-head"><span>JOB</span><span>TYPE</span><span>STATUT</span><span>CRÉÉ</span></div>{% for job in jobs %}<div class="activity-row"><span>#{{ job.id }}</span><span>{{ job.job_type|replace('_',' ')|title }}</span><span><em class="status-dot {{ job.status|lower }}"></em>{{ job.status }}</span><span>{{ job.created_at }}</span></div>{% endfor %}</div>{% else %}<div class="empty-workspace"><div class="empty-orb">✦</div><div><h3>Pas encore d'analyse.</h3><p>Dépose une VOD pour lancer ton premier workflow Clips.</p></div><a class="button" href="{{ url_for('clips.create_clips') }}">Importer une vidéo →</a></div>{% endif %}</section>
-</div>
-{% endblock %}
