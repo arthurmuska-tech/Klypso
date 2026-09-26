@@ -423,3 +423,50 @@ html,body{scroll-snap-type:none!important;scroll-behavior:auto!important;overflo
 @media(max-width:700px){.home-hero{padding:32px;min-height:auto}.home-hero h1{font-size:48px}.home-orbit-ring{width:230px;height:230px}.home-feature-grid,.capability-grid{grid-template-columns:1fr}.home-story{height:230vh}.home-story-sticky{padding:30px;height:100svh;min-height:560px}.story-step{top:50px}.home-intro{padding-top:90px}}
 @media(prefers-reduced-motion:reduce){.home-orbit-ring{animation:none}.v14-reveal{opacity:1!important;transform:none!important;filter:none!important}.story-step{transition:none}.story-visual{transition:none}}
 body.v14-no-motion .home-orbit-ring{animation:none!important}body.v14-no-motion .v14-reveal{opacity:1!important;transform:none!important;filter:none!important}
+
+/* ================= V14.5 — FIX LOGO + HOME MOTION ================= */
+.klypso-logo-mark{display:inline-flex!important;align-items:center!important;gap:10px!important;text-decoration:none!important}
+.klypso-logo-word{
+  display:inline-block!important;
+  font-family:'Manrope',sans-serif!important;
+  font-size:21px!important;
+  line-height:1!important;
+  font-weight:800!important;
+  letter-spacing:.14em!important;
+  color:var(--k-ink)!important;
+  background:none!important;
+  width:auto!important;
+  height:auto!important;
+  filter:none!important;
+  text-shadow:none!important;
+}
+.public-brand .klypso-logo-word{font-size:22px!important;color:var(--k-ink)!important}
+.public-footer .klypso-logo-word{font-size:19px!important;color:var(--k-ink)!important}
+.sidebar-brand .version-chip{margin-left:2px}
+
+/* Home motion must remain visible even if an old V14 state exists. */
+.klypso-home .v14-reveal{opacity:1!important;filter:none!important}
+.klypso-home .v14-reveal.v14-visible{animation:klypsoHomeReveal .85s cubic-bezier(.16,1,.3,1) both}
+@keyframes klypsoHomeReveal{
+  from{opacity:0;transform:translate3d(0,65px,0) scale(.975)}
+  to{opacity:1;transform:none}
+}
+.klypso-home .home-hero{animation:klypsoHeroIn 1s cubic-bezier(.16,1,.3,1) both}
+@keyframes klypsoHeroIn{from{opacity:0;transform:translateY(28px) scale(.985)}to{opacity:1;transform:none}}
+.klypso-home .home-feature{will-change:transform}
+.klypso-home .home-orbit-card{animation:klypsoFloat 4.8s ease-in-out infinite}
+.klypso-home .home-orbit-one{animation-delay:-1.5s}.klypso-home .home-orbit-two{animation-delay:-3s}
+@keyframes klypsoFloat{0%,100%{translate:0 0}50%{translate:0 -12px}}
+.klypso-home .home-orbit-ring{animation:klypsoOrbit 18s linear infinite}
+@keyframes klypsoOrbit{to{transform:rotate(360deg)}}
+
+/* The long presentation section is deliberately native-scroll: no wheel hijacking. */
+.klypso-home .home-story{contain:layout paint}
+.klypso-home .home-story-sticky{will-change:transform}
+.klypso-home .story-visual{transition:opacity .35s ease,transform .45s cubic-bezier(.16,1,.3,1)!important}
+.klypso-home .story-step{transition:opacity .35s ease,transform .45s cubic-bezier(.16,1,.3,1)!important}
+
+/* Never hide the home because an old motion flag was saved. */
+body.v14-no-motion .klypso-home .v14-reveal{opacity:1!important;transform:none!important;filter:none!important}
+body.v14-no-motion .klypso-home .home-hero{animation:none!important;opacity:1!important;transform:none!important}
+body.v14-no-motion .klypso-home .home-orbit-card{animation:none!important}
