@@ -65,3 +65,26 @@ class Config:
     PRO_ANNUAL_PRICE_EUR = os.environ.get("PRO_ANNUAL_PRICE_EUR", "")
     ULTRA_ANNUAL_PRICE_EUR = os.environ.get("ULTRA_ANNUAL_PRICE_EUR", "")
     PRICES_ARE_TTC = env_bool("PRICES_ARE_TTC", True)
+
+
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+    APPLE_CLIENT_ID = os.environ.get("APPLE_CLIENT_ID", "")
+    APPLE_TEAM_ID = os.environ.get("APPLE_TEAM_ID", "")
+    APPLE_KEY_ID = os.environ.get("APPLE_KEY_ID", "")
+    APPLE_PRIVATE_KEY = os.environ.get("APPLE_PRIVATE_KEY", "").replace("\\n", "\n")
+
+    EMAIL_SMTP_HOST = os.environ.get("EMAIL_SMTP_HOST", "")
+    EMAIL_SMTP_PORT = int(os.environ.get("EMAIL_SMTP_PORT", "587"))
+    EMAIL_SMTP_USER = os.environ.get("EMAIL_SMTP_USER", "")
+    EMAIL_SMTP_PASSWORD = os.environ.get("EMAIL_SMTP_PASSWORD", "")
+    EMAIL_SMTP_FROM = os.environ.get("EMAIL_SMTP_FROM", "")
+    EMAIL_SMTP_TLS = env_bool("EMAIL_SMTP_TLS", True)
+    EMAIL_OTP_MINUTES = int(os.environ.get("EMAIL_OTP_MINUTES", "10"))
+    EMAIL_OTP_DEV_LOG_CODE = env_bool("EMAIL_OTP_DEV_LOG_CODE", False)
+
+    AI_API_BASE_URL = os.environ.get("AI_API_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+    AI_API_KEY = os.environ.get("AI_API_KEY", "")
+    AI_TEXT_MODEL = os.environ.get("AI_TEXT_MODEL", "gpt-5-mini")
+    AI_TRANSCRIPTION_MODEL = os.environ.get("AI_TRANSCRIPTION_MODEL", "gpt-4o-mini-transcribe")
+    AI_API_TIMEOUT_SECONDS = int(os.environ.get("AI_API_TIMEOUT_SECONDS", "120"))

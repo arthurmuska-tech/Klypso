@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Paiements — KLYPSO{% endblock %}
+{% block crumb %}Paiements{% endblock %}
+{% block content %}
+<section class="dash-page payment-page-v12">
+<div class="page-title-row"><div><span class="eyebrow-v11">PAIEMENTS & FACTURATION</span><h1>Tout gérer au même endroit.</h1><p>Abonnement, moyen de paiement et factures sont gérés par Stripe.</p></div></div>
+<div class="payment-grid-v12">
+<section class="panel-v11 payment-card-v12"><span class="eyebrow-v11">PLAN ACTUEL</span><h2>{{ plan.name }}</h2><p>Statut : <strong>{{ user['subscription_status'] }}</strong></p>
+{% if user['stripe_customer_id'] and config.STRIPE_SECRET_KEY %}<form method="post" action="{{ url_for('billing.portal') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button" type="submit">Gérer dans Stripe →</button></form>{% else %}<a class="button" href="{{ url_for('billing.pricing') }}">Choisir un plan →</a>{% endif %}
+</section>
+<section class="panel-v11 payment-card-v12"><span class="eyebrow-v11">CENTRE DE FACTURATION</span>
+<div class="payment-list-v12"><div><b>Moyen de paiement</b><span>Cartes et moyens disponibles via Stripe.</span></div><div><b>Factures</b><span>Historique et reçus dans le portail Stripe.</span></div><div><b>Abonnement</b><span>Changer de plan ou annuler quand le portail est configuré.</span></div></div></section>
+</div></section>
+{% endblock %}

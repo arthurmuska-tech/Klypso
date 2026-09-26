@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
+    auth_provider TEXT NOT NULL DEFAULT 'email',
+    email_verified_at TEXT,
     plan TEXT NOT NULL DEFAULT 'free',
     trial_started_at TEXT,
     stripe_customer_id TEXT,
@@ -19,6 +21,27 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS oauth_identities (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    provider TEXT NOT NULL CHECK(provider IN ('google','apple')),
+    subject TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(provider, subject)
+);
+CREATE TABLE IF NOT EXISTS email_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL,
+    purpose TEXT NOT NULL CHECK(purpose IN ('register','login')),
+    code_hash TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    used_at TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_email_codes_lookup ON email_codes(email, purpose, created_at);
+
 CREATE TABLE IF NOT EXISTS promo_codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code TEXT NOT NULL UNIQUE,
@@ -117,6 +140,8 @@ def init_db(path):
     with connect(path) as conn:
         conn.executescript(SCHEMA)
         # Safe migrations for databases created by earlier Klypso versions.
+        _add_column_if_missing(conn, "users", "auth_provider", "TEXT NOT NULL DEFAULT 'email'")
+        _add_column_if_missing(conn, "users", "email_verified_at", "TEXT")
         _add_column_if_missing(conn, "promo_codes", "expires_at", "TEXT")
         _add_column_if_missing(conn, "user_consents", "cgu_version", "TEXT NOT NULL DEFAULT '2026-09-26'")
         _add_column_if_missing(conn, "user_consents", "privacy_version", "TEXT NOT NULL DEFAULT '2026-09-26'")
