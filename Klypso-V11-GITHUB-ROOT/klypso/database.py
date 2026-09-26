@@ -18,6 +18,10 @@ CREATE TABLE IF NOT EXISTS users (
     promo_started_at TEXT,
     promo_duration_weeks INTEGER,
     promo_code_id INTEGER,
+    credit_balance INTEGER NOT NULL DEFAULT 0,
+    credit_last_granted_at TEXT,
+    credit_month TEXT,
+    monthly_clip_count INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -42,6 +46,18 @@ CREATE TABLE IF NOT EXISTS email_codes (
 );
 CREATE INDEX IF NOT EXISTS idx_email_codes_lookup ON email_codes(email, purpose, created_at);
 
+CREATE TABLE IF NOT EXISTS credit_transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    amount INTEGER NOT NULL,
+    balance_after INTEGER NOT NULL,
+    transaction_type TEXT NOT NULL,
+    metadata_json TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_credit_transactions_user ON credit_transactions(user_id, created_at);
+
 CREATE TABLE IF NOT EXISTS promo_codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code TEXT NOT NULL UNIQUE,
@@ -59,7 +75,6 @@ CREATE TABLE IF NOT EXISTS promo_redemptions (
     user_id INTEGER NOT NULL,
     redeemed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(promo_code_id) REFERENCES promo_codes(id) ON DELETE CASCADE,
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(promo_code_id, user_id)
 );
 CREATE TABLE IF NOT EXISTS user_consents (
@@ -139,12 +154,15 @@ def init_db(path):
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with connect(path) as conn:
         conn.executescript(SCHEMA)
-        # Safe migrations for databases created by earlier Klypso versions.
         _add_column_if_missing(conn, "users", "auth_provider", "TEXT NOT NULL DEFAULT 'email'")
         _add_column_if_missing(conn, "users", "email_verified_at", "TEXT")
         _add_column_if_missing(conn, "promo_codes", "expires_at", "TEXT")
         _add_column_if_missing(conn, "user_consents", "cgu_version", "TEXT NOT NULL DEFAULT '2026-09-26'")
         _add_column_if_missing(conn, "user_consents", "privacy_version", "TEXT NOT NULL DEFAULT '2026-09-26'")
+        _add_column_if_missing(conn, "users", "credit_balance", "INTEGER NOT NULL DEFAULT 0")
+        _add_column_if_missing(conn, "users", "credit_last_granted_at", "TEXT")
+        _add_column_if_missing(conn, "users", "credit_month", "TEXT")
+        _add_column_if_missing(conn, "users", "monthly_clip_count", "INTEGER NOT NULL DEFAULT 0")
         conn.commit()
 
 
