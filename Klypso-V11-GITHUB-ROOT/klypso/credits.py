@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from flask import current_app
 import json
 
 from .database import get_db
@@ -81,7 +82,7 @@ def _sync_balance(db, user_id, plan_key, now):
 
 def consume_clip_credits(user_id, plan_key, cost, metadata=None):
     now = _now()
-    with get_db(_db_path := __import__("flask").current_app.config["DATABASE_PATH"]) as db:
+    with get_db(_db_path := current_app.config["DATABASE_PATH"]) as db:
         db.execute("BEGIN IMMEDIATE")
         balance, count, plan = _sync_balance(db, user_id, plan_key, now)
 
