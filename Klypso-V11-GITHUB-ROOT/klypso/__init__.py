@@ -12,6 +12,7 @@ from .ai_api import ai_bp
 from .security import register_security, csrf_token
 from .promo import effective_plan_key
 from .plans import get_plan
+from .credits import get_credit_state
 
 
 def create_app(test_config=None):
@@ -70,7 +71,8 @@ def create_app(test_config=None):
                 (session_user_id(),),
             ).fetchall()
         plan_key = effective_plan_key(user)
-        return render_template("dashboard.html", user=user, plan=get_plan(plan_key), plan_key=plan_key, jobs=jobs)
+        credits = get_credit_state(user["id"], plan_key)
+        return render_template("dashboard.html", user=user, plan=get_plan(plan_key), plan_key=plan_key, jobs=jobs, credits=credits)
 
     @app.route("/upload", methods=["GET", "POST"])
     def upload():
