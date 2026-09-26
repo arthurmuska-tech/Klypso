@@ -228,3 +228,7 @@ body.v14-no-motion .v14-scroll-scene{transform:none!important;opacity:1!importan
   *,*::before,*::after{animation:none!important;transition-duration:.01ms!important}
   .v14-scroll-scene{transform:none!important;opacity:1!important;filter:none!important}
 }
+
+
+.v14-material-panel{margin:20px 0 0;padding:22px;border:1px solid var(--k-line);border-radius:22px;background:color-mix(in srgb,var(--k-surface-strong) 78%,transparent);box-shadow:0 18px 55px rgba(36,28,21,.08)}
+.v14-material-panel h3{margin:5px 0 4px;font:800 20px 'Manrope',sans-serif;letter-spacing:-.03em}.v14-material-panel p{margin:0;color:var(--k-muted);font-size:13px;max-width:650px}.settings-card-v11{overflow:hidden}
