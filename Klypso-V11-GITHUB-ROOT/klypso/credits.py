@@ -63,7 +63,12 @@ def _sync_balance(db, user_id, plan_key, now):
         if last.tzinfo is None:
             last = last.replace(tzinfo=timezone.utc)
 
-    days = 1 if last is None else max(0, (now.date() - last.date()).days)
+    if last is None:
+        # Give a new account enough credit for one standard clip immediately.
+        balance = min(plan.credit_bank_cap, max(plan.daily_credits, 6))
+        days = 0
+    else:
+        days = max(0, (now.date() - last.date()).days)
     if days:
         balance = min(plan.credit_bank_cap, balance + days * plan.daily_credits)
         db.execute(
