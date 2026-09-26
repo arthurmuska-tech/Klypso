@@ -2,12 +2,13 @@ from pathlib import Path
 from flask import Flask, render_template
 from .config import Config
 from .database import init_db, get_db
-from .auth import auth_bp, login_required
+from .auth import auth_bp, login_required, init_oauth
 from .legal import legal_bp
 from .promo import promo_bp
 from .billing import billing_bp
 from .clips import clips_bp
 from .studio import studio_bp
+from .ai_api import ai_bp
 from .security import register_security, csrf_token
 from .promo import effective_plan_key
 from .plans import get_plan
@@ -22,12 +23,14 @@ def create_app(test_config=None):
     Path(app.config["STORAGE_PATH"]).mkdir(parents=True, exist_ok=True)
     init_db(app.config["DATABASE_PATH"])
     register_security(app)
+    init_oauth(app)
     app.register_blueprint(auth_bp)
     app.register_blueprint(legal_bp)
     app.register_blueprint(promo_bp)
     app.register_blueprint(billing_bp)
     app.register_blueprint(clips_bp)
     app.register_blueprint(studio_bp)
+    app.register_blueprint(ai_bp)
 
     @app.context_processor
     def inject_globals():
