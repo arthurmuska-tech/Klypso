@@ -30,6 +30,7 @@ class Config:
     STRIPE_ULTRA_PRICE_ID = os.environ.get("STRIPE_ULTRA_PRICE_ID", "")
     STRIPE_PRO_ANNUAL_PRICE_ID = os.environ.get("STRIPE_PRO_ANNUAL_PRICE_ID", "")
     STRIPE_ULTRA_ANNUAL_PRICE_ID = os.environ.get("STRIPE_ULTRA_ANNUAL_PRICE_ID", "")
+    STRIPE_TRIAL_DAYS = int(os.environ.get("STRIPE_TRIAL_DAYS", "10"))
     STRIPE_SUCCESS_URL = os.environ.get("STRIPE_SUCCESS_URL", "http://localhost:5000/subscription?success=1")
     STRIPE_CANCEL_URL = os.environ.get("STRIPE_CANCEL_URL", "http://localhost:5000/pricing?cancelled=1")
     STRIPE_PORTAL_RETURN_URL = os.environ.get("STRIPE_PORTAL_RETURN_URL", "http://localhost:5000/subscription")
@@ -65,6 +66,11 @@ class Config:
     PRO_ANNUAL_PRICE_EUR = os.environ.get("PRO_ANNUAL_PRICE_EUR", "")
     ULTRA_ANNUAL_PRICE_EUR = os.environ.get("ULTRA_ANNUAL_PRICE_EUR", "")
     PRICES_ARE_TTC = env_bool("PRICES_ARE_TTC", True)
+
+    # Credit economy. These can be tuned in Render without code changes.
+    FREE_DAILY_CREDITS = int(os.environ.get("FREE_DAILY_CREDITS", "3"))
+    PRO_DAILY_CREDITS = int(os.environ.get("PRO_DAILY_CREDITS", "12"))
+    ULTRA_DAILY_CREDITS = int(os.environ.get("ULTRA_DAILY_CREDITS", "24"))
 
 
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
