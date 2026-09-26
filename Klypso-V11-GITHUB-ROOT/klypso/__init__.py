@@ -71,7 +71,20 @@ def create_app(test_config=None):
                 (session_user_id(),),
             ).fetchall()
         plan_key = effective_plan_key(user)
-        credits = get_credit_state(user["id"], plan_key)
+        try:
+            credits = get_credit_state(user["id"], plan_key)
+        except Exception:
+            # L'accueil ne doit pas tomber sur la page 500 à cause d'un état de crédits.
+            # On affiche un état neutre et laisse les pages de crédits gérer leur propre synchronisation.
+            app.logger.exception("Unable to load credit state for dashboard")
+            plan = get_plan(plan_key)
+            credits = {
+                "balance": 0,
+                "daily_credits": plan.daily_credits,
+                "bank_cap": plan.credit_bank_cap,
+                "monthly_clip_count": 0,
+                "monthly_clip_limit": plan.clips_per_month,
+            }
         return render_template("dashboard.html", user=user, plan=get_plan(plan_key), plan_key=plan_key, jobs=jobs, credits=credits)
 
     @app.route("/upload", methods=["GET", "POST"])
