@@ -83,8 +83,8 @@ class Config:
     EMAIL_OTP_MINUTES = int(os.environ.get("EMAIL_OTP_MINUTES", "10"))
     EMAIL_OTP_DEV_LOG_CODE = env_bool("EMAIL_OTP_DEV_LOG_CODE", False)
 
-    AI_API_BASE_URL = os.environ.get("AI_API_BASE_URL", "https://api.openai.com/v1").rstrip("/")
-    AI_API_KEY = os.environ.get("AI_API_KEY", "")
-    AI_TEXT_MODEL = os.environ.get("AI_TEXT_MODEL", "gpt-5-mini")
-    AI_TRANSCRIPTION_MODEL = os.environ.get("AI_TRANSCRIPTION_MODEL", "gpt-4o-mini-transcribe")
+    AI_API_BASE_URL = os.environ.get("AI_API_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
+    AI_API_KEY = os.environ.get("GROQ_API_KEY") or os.environ.get("AI_API_KEY", "")
+    AI_TEXT_MODEL = os.environ.get("AI_TEXT_MODEL", "openai/gpt-oss-20b")
+    AI_TRANSCRIPTION_MODEL = os.environ.get("AI_TRANSCRIPTION_MODEL", "whisper-large-v3")
     AI_API_TIMEOUT_SECONDS = int(os.environ.get("AI_API_TIMEOUT_SECONDS", "120"))
