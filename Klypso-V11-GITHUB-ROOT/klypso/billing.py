@@ -12,6 +12,15 @@ def pricing():
     return render_template("pricing.html")
 
 
+@billing_bp.get("/payments")
+@login_required
+def payments():
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        user = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
+    key = effective_plan_key(user)
+    return render_template("payments.html", user=user, plan=get_plan(key), effective_plan_key=key)
+
+
 @billing_bp.get("/subscription")
 @login_required
 def subscription():
