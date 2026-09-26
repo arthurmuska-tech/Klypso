@@ -1,5 +1,5 @@
 from pathlib import Path
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, url_for
 from .config import Config
 from .database import init_db, get_db
 from .auth import auth_bp, login_required, init_oauth
@@ -76,6 +76,11 @@ def create_app(test_config=None):
     def upload():
         from .clips import handle_upload
         return handle_upload()
+
+    @app.route("/payments")
+    @login_required
+    def payments():
+        return redirect(url_for("billing.payments"))
 
     @app.route("/account")
     @login_required
