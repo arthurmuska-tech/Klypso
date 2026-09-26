@@ -32,6 +32,40 @@ services:
         sync: false
       - key: STRIPE_ULTRA_ANNUAL_PRICE_ID
         sync: false
+      - key: STRIPE_SUCCESS_URL
+        value: https://klypso-2pjf.onrender.com/subscription?success=1
+      - key: STRIPE_CANCEL_URL
+        value: https://klypso-2pjf.onrender.com/pricing?cancelled=1
+      - key: STRIPE_PORTAL_RETURN_URL
+        value: https://klypso-2pjf.onrender.com/subscription
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: APPLE_CLIENT_ID
+        sync: false
+      - key: APPLE_TEAM_ID
+        sync: false
+      - key: APPLE_KEY_ID
+        sync: false
+      - key: APPLE_PRIVATE_KEY
+        sync: false
+      - key: EMAIL_SMTP_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_SMTP_PORT
+        value: "587"
+      - key: EMAIL_SMTP_USER
+        sync: false
+      - key: EMAIL_SMTP_PASSWORD
+        sync: false
+      - key: EMAIL_SMTP_FROM
+        sync: false
+      - key: EMAIL_SMTP_TLS
+        value: "true"
+      - key: EMAIL_OTP_MINUTES
+        value: "10"
+      - key: PUBLIC_BASE_URL
+        value: https://klypso-2pjf.onrender.com
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_API_KEY_1
