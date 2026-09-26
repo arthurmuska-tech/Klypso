@@ -259,3 +259,150 @@ body.v14-no-motion .v14-scroll-scene{transform:none!important;opacity:1!importan
 body.v14-no-motion .v14-scroll-object,body.v14-no-motion .v14-write-target,body.v14-no-motion .v14-scene-enter{clip-path:none!important;transform:none!important;opacity:1!important;filter:none!important}
 body.v14-no-motion .v14-write-target::after{display:none}
 @media(prefers-reduced-motion:reduce){.v14-ripple-active::before{display:none}.v14-write-target{clip-path:none!important}.v14-write-target::after{display:none}}
+
+/* ================= V14.3 — KLYPSO MOTION ENGINE =================
+   Corrective layer: replaces fragile effects with deterministic scroll progress.
+*/
+html{background:var(--k-bg)!important}
+body{background-color:var(--k-bg)!important}
+
+/* Logo: readable on every material. */
+.sidebar-brand img{filter:brightness(0)!important;transition:filter .45s var(--k-ease),transform .45s var(--k-ease)!important}
+html[data-wood="walnut"] .sidebar-brand img,
+html[data-wood="ebony"] .sidebar-brand img{filter:brightness(0) invert(1)!important}
+html[data-wood="cherry"] .sidebar-brand img{filter:sepia(.18) saturate(.8) brightness(.28)!important}
+html[data-wood="birch"] .sidebar-brand img{filter:brightness(0)!important}
+html[data-wood="oak"] .sidebar-brand img{filter:brightness(0)!important}
+.public-brand img,.public-footer img{filter:none!important}
+
+/* Real scroll choreography — the browser moves these elements continuously. */
+.v14-scroll-scene{
+  opacity:0;
+  transform:translate3d(0,72px,0) scale(.965);
+  filter:blur(7px);
+  will-change:transform,opacity,filter;
+  transition:none!important;
+}
+.v14-scroll-scene.v14-inview{
+  opacity:1;
+  transform:translate3d(0,0,0) scale(1);
+  filter:blur(0);
+}
+.v14-scroll-scene.v14-past{
+  transform:translate3d(0,-22px,0) scale(.99);
+  opacity:.94;
+  filter:blur(0);
+}
+.v14-scroll-scene.v14-future{
+  transform:translate3d(0,78px,0) scale(.955);
+  opacity:0;
+  filter:blur(7px);
+}
+
+/* Objects literally travel from above into their final position. */
+.v14-scroll-object{
+  opacity:0;
+  transform:translate3d(0,-90px,0) scale(.88) rotate(-1.2deg);
+  filter:blur(5px);
+  will-change:transform,opacity,filter;
+  transition:none!important;
+}
+.v14-scroll-object.v14-object-in{
+  opacity:1;
+  transform:translate3d(0,0,0) scale(1) rotate(0);
+  filter:blur(0);
+}
+.v14-scroll-object.v14-object-in.v14-object-late{transition-delay:0s!important}
+
+/* Text reveals from left to right according to actual scroll position. */
+.v14-write-target{
+  --v14-write:0%;
+  clip-path:inset(0 calc(100% - var(--v14-write)) 0 0);
+  opacity:.35;
+  transform:translate3d(0,8px,0);
+  will-change:clip-path,opacity,transform;
+  transition:none!important;
+}
+.v14-write-target.v14-written{opacity:1;transform:none}
+.v14-write-target::after{
+  content:"";
+  display:inline-block;
+  width:2px;
+  height:1em;
+  margin-left:4px;
+  vertical-align:-.12em;
+  border-radius:2px;
+  background:var(--k-accent);
+  animation:v143Caret .7s steps(1,end) infinite;
+}
+.v14-write-target.v14-written::after{display:none}
+@keyframes v143Caret{50%{opacity:0}}
+
+/* A subtle "scene separator" makes transitions perceptible without looking futuristic. */
+.v14-scroll-scene::after{
+  content:"";
+  position:absolute;
+  left:7%;
+  right:7%;
+  bottom:-1px;
+  height:1px;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--k-accent) 22%,transparent),transparent);
+  opacity:0;
+  transform:scaleX(.45);
+  pointer-events:none;
+}
+.v14-scroll-scene.v14-inview::after{opacity:1;transform:scaleX(1);transition:transform .9s var(--k-ease),opacity .6s}
+.quick-card,.panel-v11,.project-row,.dropzone-v11,.settings-card-v11{will-change:transform}
+
+/* 170 Hz style: short tactile response, not fake refresh-rate control. */
+.button,.icon-button,.topbar-plan,.topbar-avatar,.v14-wood-option,.choice-card,.seg-btn,.sidebar-nav a{
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .16s cubic-bezier(.16,1,.3,1),box-shadow .22s,border-color .22s,background .22s!important;
+}
+.button:active,.icon-button:active,.topbar-plan:active,.topbar-avatar:active,.v14-wood-option:active,.choice-card:active,.seg-btn:active,.sidebar-nav a:active{
+  transform:translate3d(0,1px,0) scale(.965)!important;
+}
+.v14-ripple-active::before{animation:v143Ripple .48s cubic-bezier(.12,.75,.2,1) forwards!important}
+@keyframes v143Ripple{
+  0%{transform:translate(-50%,-50%) scale(0);opacity:.38}
+  55%{opacity:.16}
+  100%{transform:translate(-50%,-50%) scale(28);opacity:0}
+}
+
+/* Personalization card is always visible and clearly interactive. */
+.v14-material-panel{
+  position:relative;
+  margin:22px 0 0;
+  padding:24px;
+  border:1px solid var(--k-line);
+  border-radius:24px;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--k-surface-strong) 94%,transparent),color-mix(in srgb,var(--k-bg-soft) 72%,transparent));
+  box-shadow:0 18px 60px color-mix(in srgb,var(--k-wood-2) 9%,transparent);
+}
+.v14-material-panel::before{
+  content:"";
+  position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(115deg,transparent 20%,color-mix(in srgb,var(--k-accent) 7%,transparent) 50%,transparent 78%);
+}
+.v14-material-panel h3{position:relative;margin:6px 0 4px!important;font:800 22px/1.1 'Manrope',sans-serif!important;letter-spacing:-.035em}
+.v14-material-panel p{position:relative;margin:0!important;color:var(--k-muted)!important;font-size:13px!important;line-height:1.6}
+.v14-wood-picker{position:relative}
+.v14-wood-option{background:color-mix(in srgb,var(--k-surface-strong) 92%,transparent)!important}
+.v14-wood-option.selected{outline:2px solid color-mix(in srgb,var(--k-accent) 72%,transparent);outline-offset:2px}
+
+/* Do not allow the motion layer to break accessibility. */
+body.v14-no-motion .v14-scroll-scene,
+body.v14-no-motion .v14-scroll-object,
+body.v14-no-motion .v14-write-target{
+  opacity:1!important;transform:none!important;filter:none!important;clip-path:none!important
+}
+body.v14-no-motion .v14-write-target::after{display:none!important}
+@media(prefers-reduced-motion:reduce){
+  .v14-scroll-scene,.v14-scroll-object,.v14-write-target{opacity:1!important;transform:none!important;filter:none!important;clip-path:none!important}
+  .v14-write-target::after{display:none!important}
+}
+@media(max-width:800px){
+  .v14-scroll-scene{transform:translate3d(0,38px,0) scale(.98)}
+  .v14-scroll-object{transform:translate3d(0,-48px,0) scale(.94)}
+}
