@@ -44,7 +44,7 @@ def _analyze(transcript, duration, candidates):
     r = requests.post(
         f"{current_app.config['AI_API_BASE_URL']}/chat/completions",
         headers={**_headers(), 'Content-Type':'application/json'},
-        json={'model':current_app.config['AI_TEXT_MODEL'],'messages':[{'role':'system','content':'Tu es un éditeur vidéo expert. Réponds uniquement avec du JSON valide.'},{'role':'user','content':json.dumps(prompt,ensure_ascii=False)}],'temperature':0.2},
+        json={'model':current_app.config['AI_TEXT_MODEL'],'messages':[{'role':'system','content':'Tu es un éditeur vidéo expert. Réponds uniquement avec du JSON valide.'},{'role':'user','content':json.dumps(prompt,ensure_ascii=False)}]},
         timeout=current_app.config['AI_API_TIMEOUT_SECONDS'],
     )
     r.raise_for_status()
