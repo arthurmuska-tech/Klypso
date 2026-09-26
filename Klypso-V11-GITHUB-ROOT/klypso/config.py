@@ -85,6 +85,6 @@ class Config:
 
     AI_API_BASE_URL = os.environ.get("AI_API_BASE_URL", "https://api.openai.com/v1").rstrip("/")
     AI_API_KEY = os.environ.get("AI_API_KEY", "")
-    AI_TEXT_MODEL = os.environ.get("AI_TEXT_MODEL", "gpt-5.6-luna")
+    AI_TEXT_MODEL = os.environ.get("AI_TEXT_MODEL", "gpt-5-mini")
     AI_TRANSCRIPTION_MODEL = os.environ.get("AI_TRANSCRIPTION_MODEL", "gpt-4o-mini-transcribe")
     AI_API_TIMEOUT_SECONDS = int(os.environ.get("AI_API_TIMEOUT_SECONDS", "120"))
