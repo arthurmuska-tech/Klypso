@@ -32,8 +32,32 @@ services:
         sync: false
       - key: STRIPE_ULTRA_ANNUAL_PRICE_ID
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY_1
+        sync: false
+      - key: GEMINI_API_KEY_2
+        sync: false
       - key: GROQ_API_KEY
         sync: false
+      - key: GROQ_API_KEY_1
+        sync: false
+      - key: GROQ_API_KEY_2
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY_1
+        sync: false
+      - key: OPENROUTER_API_KEY_2
+        sync: false
+      - key: AI_PROVIDER_ORDER
+        value: gemini,groq,openrouter
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      - key: OPENROUTER_MODEL
+        value: openrouter/free
       - key: PRO_ANNUAL_PRICE_EUR
         value: ""
       - key: ULTRA_ANNUAL_PRICE_EUR
