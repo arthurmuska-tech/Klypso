@@ -5,6 +5,7 @@
 <span class="eyebrow-v11">CONNEXION</span><h1>Reviens dans ton workspace.</h1>
 <p class="auth-lead">Google ou ton adresse e-mail avec un code à usage unique.</p>
 {% if config.GOOGLE_CLIENT_ID %}<a class="oauth-button" href="{{ url_for('auth.google_login') }}"><b>G</b> Continuer avec Google</a>{% endif %}
+{% if config.APPLE_CLIENT_ID %}<a class="oauth-button" href="{{ url_for('auth.apple_login') }}"><b></b> Continuer avec Apple</a>{% endif %}
 <div class="auth-divider"><span>OU PAR E-MAIL</span></div>
 <form method="post" class="auth-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <label>Adresse e-mail<input name="email" type="email" required autocomplete="email" placeholder="toi@exemple.com"></label>
