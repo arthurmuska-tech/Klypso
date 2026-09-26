@@ -88,3 +88,7 @@ class Config:
     AI_TEXT_MODEL = os.environ.get("AI_TEXT_MODEL", "openai/gpt-oss-20b")
     AI_TRANSCRIPTION_MODEL = os.environ.get("AI_TRANSCRIPTION_MODEL", "whisper-large-v3")
     AI_API_TIMEOUT_SECONDS = int(os.environ.get("AI_API_TIMEOUT_SECONDS", "120"))
+    AI_PROVIDER_ORDER = os.environ.get("AI_PROVIDER_ORDER", "gemini,groq,openrouter")
+    GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
+    GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
+    OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openrouter/free")
