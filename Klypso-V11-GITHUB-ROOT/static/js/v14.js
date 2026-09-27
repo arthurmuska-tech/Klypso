@@ -23,7 +23,7 @@
       root.style.removeProperty('--k-accent-2');
       root.style.removeProperty('--k-accent-soft');
     }
-    $('[data-wood]').forEach(el=>{const on=el.dataset.wood===value;el.classList.toggle('selected',on);el.setAttribute('aria-pressed',String(on));});
+    $$('[data-wood]').forEach(el=>{const on=el.dataset.wood===value;el.classList.toggle('selected',on);el.setAttribute('aria-pressed',String(on));});
     const meta=document.querySelector('meta[name="theme-color"]');
     if(meta) meta.content={oak:'#f3efe8',walnut:'#241c18',birch:'#f7f5ef',cherry:'#f5e8e2',ebony:'#111315'}[value];
   }
