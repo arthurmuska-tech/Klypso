@@ -384,6 +384,6 @@
   syncClipLibrary();
 
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('/static/sw.js?v=21.0', { updateViaCache: 'none' }).catch(() => {}));
+    window.addEventListener('load', () => navigator.serviceWorker.register('/static/sw.js?v=22.0', { updateViaCache: 'none' }).catch(() => {}));
   }
 })();
