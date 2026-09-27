@@ -125,6 +125,8 @@ def build_montage_directive(clips, memory=None, preferences=None, agent_report=N
             "role": role,
             "duration": round(_num(clip.get("duration")), 1),
             "transition_in": "fade" if role != "hook" else "hard_cut",
+            "fade_seconds": 0.0 if role == "hook" else 0.12,
+            "zoom": 1.06 if role in {"hook", "payoff"} else 1.02,
             "caption_style": prefs.get("caption_style", "dynamic"),
             "social_preset": prefs.get("social_preset", "dynamic"),
         })
