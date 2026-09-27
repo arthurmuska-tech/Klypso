@@ -272,7 +272,11 @@ def _local_signal_result(candidates, mode="ai_clips"):
         chat = max(0.0, min(100.0, float(candidate.get("chat_signal_score", 0.0) or 0.0))) / 100.0
         base = max(0.0, min(100.0, float(candidate.get("base_score", 0.0) or 0.0))) / 100.0
         speech = max(0.0, min(1.0, float(candidate.get("speech_density", 0.0) or 0.0) / 3.0))
-        score = 100.0 * (0.36 * base + 0.30 * media + 0.20 * chat + 0.14 * speech)
+        audio = max(0.0, min(1.0, float(candidate.get("audio_quality_score", 72.0) or 72.0) / 100.0))
+        gameplay = max(0.0, min(1.0, float(candidate.get("gameplay_signal", 0.0) or 0.0)))
+        score = 100.0 * (
+            0.32 * base + 0.25 * media + 0.16 * chat + 0.12 * speech + 0.10 * audio + 0.05 * gameplay
+        )
         ranked.append((score, candidate))
     ranked.sort(key=lambda item: item[0], reverse=True)
 
