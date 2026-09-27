@@ -12,10 +12,10 @@
 <link rel="canonical" href="{{ public_base_url }}{{ request.path }}">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
 <link rel="icon" href="{{ url_for('static', filename='img/klypso-mark.svg') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=18.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v10.css') }}?v=18.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v11.css') }}?v=18.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v14.css') }}?v=18.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=20.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v10.css') }}?v=20.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v11.css') }}?v=20.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v14.css') }}?v=20.0">
 <title>{% block title %}KLYPSO{% endblock %}</title>
 {% block head_extra %}{% endblock %}
 </head>
@@ -104,7 +104,7 @@
 {% endif %}
 <script src="{{ url_for('static', filename='js/app.js') }}?v=20.0" defer></script>
 <script src="{{ url_for('static', filename='js/v11.js') }}?v=20.0" defer></script>
-<script src="{{ url_for('static', filename='js/v14.js') }}?v=18.0" defer></script>
+<script src="{{ url_for('static', filename='js/v14.js') }}?v=20.0" defer></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>
