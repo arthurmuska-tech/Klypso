@@ -293,6 +293,54 @@ def publish_queue_item(queue_id):
             return {"ok": False, "status": "failed", "error": str(exc)[:500]}
 
 
+
+def sync_native_processing(user_id=None, limit=30):
+    """Refresh asynchronous native posts, currently TikTok."""
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        query = "SELECT * FROM publish_queue WHERE status='processing' AND platform='tiktok' "
+        params = []
+        if user_id is not None:
+            query += "AND user_id=? "
+            params.append(user_id)
+        query += "ORDER BY id DESC LIMIT ?"
+        params.append(max(1, min(50, int(limit))))
+        rows = db.execute(query, tuple(params)).fetchall()
+        updated = []
+        for item in rows:
+            try:
+                metadata = json.loads(item["metadata_json"] or "{}")
+            except (TypeError, ValueError):
+                metadata = {}
+            native = metadata.get("native_publish") or {}
+            publish_id = native.get("publish_id")
+            if not publish_id:
+                continue
+            connection = connection_for(db, item["user_id"], "tiktok")
+            if not connection:
+                continue
+            try:
+                token = ensure_fresh_token(db, connection)
+                state, payload = tiktok_publish_status(publish_id, token)
+                native["platform_status"] = state
+                metadata["native_publish"] = native
+                if state in {"PUBLISH_COMPLETE", "PUBLISHED"}:
+                    db.execute(
+                        "UPDATE publish_queue SET status='published',published_at=COALESCE(published_at,CURRENT_TIMESTAMP),metadata_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                        (json.dumps(metadata, ensure_ascii=False), item["id"]),
+                    )
+                    updated.append({"queue_id": item["id"], "status": "published"})
+                elif state in {"FAILED", "ERROR", "CANCELED"}:
+                    db.execute(
+                        "UPDATE publish_queue SET status='failed',last_error=?,metadata_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                        (str(payload.get("fail_reason") or state)[:500], json.dumps(metadata, ensure_ascii=False), item["id"]),
+                    )
+                    updated.append({"queue_id": item["id"], "status": "failed"})
+            except Exception as exc:
+                current_app.logger.warning("Native post sync failed for queue %s: %s", item["id"], type(exc).__name__)
+        db.commit()
+    return {"processed": len(updated), "results": updated}
+
+
 def run_due_posts(user_id=None, limit=12):
     now = _iso(_now())
     with get_db(current_app.config["DATABASE_PATH"]) as db:
@@ -307,7 +355,8 @@ def run_due_posts(user_id=None, limit=12):
                 (user_id, now, max(1, min(50, int(limit)))),
             ).fetchall()
     results = [publish_queue_item(row["id"]) for row in rows]
-    return {"processed": len(results), "results": results}
+    sync = sync_native_processing(user_id=user_id, limit=30)
+    return {"processed": len(results) + sync["processed"], "results": results + sync["results"]}
 
 
 def _add_months(value, months):
