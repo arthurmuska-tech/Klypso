@@ -11,7 +11,7 @@
 <meta property="og:description" content="{% block og_description %}KLYPSO Clips et Klypso Studio dans un workspace pensé pour les créateurs.{% endblock %}">
 <link rel="canonical" href="{{ public_base_url }}{{ request.path }}">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-<link rel="icon" href="{{ url_for('static', filename='img/klypso-logo.png') }}">
+<link rel="icon" href="{{ url_for('static', filename='img/klypso-mark.svg') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=15.1">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/v10.css') }}?v=15.1">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/v11.css') }}?v=15.1">
@@ -65,7 +65,7 @@
 {% else %}
 <header class="public-nav">
   <a class="public-brand klypso-logo-mark" href="{{ url_for('index') }}" aria-label="KLYPSO"><span class="klypso-logo-word">KLYPSO</span></a>
-  <nav><a href="{{ url_for('billing.pricing') }}">Tarifs</a><a href="#features">Fonctionnalités</a><a href="{{ url_for('auth.login') }}">Connexion</a><a class="button small" href="{{ url_for('auth.register') }}">Commencer</a></nav>
+  <nav><a href="{{ url_for('billing.pricing') }}">Tarifs</a><a href="#fonctionnalites">Fonctionnalités</a><a href="{{ url_for('auth.login') }}">Connexion</a><a class="button small" href="{{ url_for('auth.register') }}">Commencer</a></nav>
 </header>
 {% endif %}
 <main id="main-content" tabindex="-1">
