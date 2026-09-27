@@ -104,6 +104,7 @@ class Config:
     AI_PROVIDER_ORDER = os.environ.get("AI_PROVIDER_ORDER", "gemini,groq,openrouter")
     REQUIRE_POSTGRES = env_bool("REQUIRE_POSTGRES", False)
     REQUIRE_OBJECT_STORAGE = env_bool("REQUIRE_OBJECT_STORAGE", False)
+    REQUIRE_LEGAL_CONFIG = env_bool("REQUIRE_LEGAL_CONFIG", False)
     JOB_STALE_SECONDS = int(os.environ.get("JOB_STALE_SECONDS", "1800"))
     JOB_MAX_ATTEMPTS = int(os.environ.get("JOB_MAX_ATTEMPTS", "3"))
     WORKER_HEARTBEAT_SECONDS = int(os.environ.get("WORKER_HEARTBEAT_SECONDS", "30"))
