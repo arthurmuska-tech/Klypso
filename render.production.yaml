@@ -90,6 +90,46 @@ services:
         sync: false
       - key: ELEVENLABS_VOICE_ID
         sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: KLYPSO_CRON_SECRET
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: LEGAL_ENTITY_NAME
+        sync: false
+      - key: LEGAL_STATUS
+        sync: false
+      - key: LEGAL_ADDRESS
+        sync: false
+      - key: LEGAL_SIRET
+        sync: false
+      - key: LEGAL_RCS
+        sync: false
+      - key: LEGAL_VAT
+        sync: false
+      - key: LEGAL_PUBLICATION_DIRECTOR
+        sync: false
+      - key: LEGAL_CONTACT_EMAIL
+        sync: false
+      - key: LEGAL_CONTACT_PHONE
+        sync: false
+      - key: HOSTER_NAME
+        sync: false
+      - key: HOSTER_ADDRESS
+        sync: false
+      - key: HOSTER_PHONE
+        sync: false
+      - key: PRIVACY_CONTACT_EMAIL
+        sync: false
+      - key: MEDIATOR_NAME
+        sync: false
+      - key: MEDIATOR_ADDRESS
+        sync: false
+      - key: MEDIATOR_WEBSITE
+        sync: false
 
   - type: worker
     name: klypso-ai-worker
@@ -117,6 +157,16 @@ services:
         value: /tmp/klypso-cache
       - key: AI_WORKER_MODE
         value: external
+      - key: REQUIRE_POSTGRES
+        value: "true"
+      - key: REQUIRE_OBJECT_STORAGE
+        value: "true"
+      - key: JOB_STALE_SECONDS
+        value: "1800"
+      - key: JOB_MAX_ATTEMPTS
+        value: "3"
+      - key: WORKER_HEARTBEAT_SECONDS
+        value: "30"
       - key: POSTGRES_POOL_MAX_SIZE
         value: "8"
       - key: S3_BUCKET
@@ -144,6 +194,27 @@ services:
       - key: TIKTOK_CLIENT_KEY
         sync: false
       - key: TIKTOK_CLIENT_SECRET
+        sync: false
+
+  - type: cron
+    name: klypso-publisher-cron
+    runtime: python
+    plan: starter
+    region: oregon
+    repo: https://github.com/arthurmuska-tech/Klypso
+    branch: main
+    rootDir: Klypso-V11-GITHUB-ROOT
+    buildCommand: pip install -r requirements.txt
+    schedule: "*/10 * * * *"
+    startCommand: python -m klypso.publisher_cron
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.14
+      - key: FLASK_ENV
+        value: production
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: KLYPSO_CRON_SECRET
         sync: false
 
 databases:
