@@ -1,4 +1,3 @@
-import base64
 import json
 
 from klypso import create_app
@@ -99,10 +98,6 @@ def test_v20_native_youtube_publish_path(tmp_path, monkeypatch):
                 (user_id, "clip.mp4", str(media_path), "video/mp4", media_path.stat().st_size),
             )
             media_id = db.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
-            db.execute(
-                "INSERT INTO social_connections(user_id,platform,access_token_enc,refresh_token_enc,account_name) VALUES(?,?,?,?,?)",
-                (user_id, "youtube", "", "", "Test Channel"),
-            )
             from klypso.social_connections import upsert_connection
             upsert_connection(db, user_id, "youtube", "access", "refresh", account_name="Test Channel")
             cur = db.execute(
