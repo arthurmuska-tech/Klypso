@@ -91,6 +91,7 @@
   const slides = track ? $$('.landing-story-slide', track) : [];
   const storyCurrent = document.querySelector('[data-story-current]');
   const storyProgress = document.querySelector('[data-story-progress]');
+  const storyDots = $('[data-story-jump]');
   let storyRaf = 0;
 
   function updateLandingStory() {
@@ -133,6 +134,10 @@
 
     if (storyCurrent) storyCurrent.textContent = String(index + 1).padStart(2, '0');
     if (storyProgress) storyProgress.style.width = ((progress * 100).toFixed(2)) + '%';
+    storyDots.forEach((dot, dotIndex) => {
+      dot.classList.toggle('active', dotIndex === index);
+      dot.setAttribute('aria-selected', String(dotIndex === index));
+    });
   }
 
   function requestLandingStoryUpdate() {
@@ -143,6 +148,16 @@
       });
     }
   }
+
+  storyDots.forEach((dot) => {
+    dot.addEventListener('click', () => {
+      if (!story) return;
+      const targetStep = Number(dot.dataset.storyJump || 0);
+      const travel = Math.max(1, story.offsetHeight - window.innerHeight);
+      const target = story.getBoundingClientRect().top + window.scrollY + (travel * (targetStep / Math.max(1, slides.length - 1)));
+      window.scrollTo({ top: target, behavior: motionEnabled ? 'smooth' : 'auto' });
+    });
+  });
 
   addEventListener('scroll', requestLandingStoryUpdate, { passive: true });
   addEventListener('resize', requestLandingStoryUpdate, { passive: true });
