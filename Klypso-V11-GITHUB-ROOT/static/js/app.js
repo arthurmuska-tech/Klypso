@@ -42,10 +42,8 @@
     root.dataset.radius = button.dataset.value; set('klypso.radius', button.dataset.value);
     document.querySelectorAll('[data-setting-group="radius"] button').forEach((b) => b.classList.toggle('selected', b === button));
   }));
-  document.querySelectorAll('[data-setting-group="radius"] button').forEach((button) => button.addEventListener('click', () => {
-    root.dataset.radius = button.dataset.value; set('klypso.radius', button.dataset.value);
-    document.querySelectorAll('[data-setting-group="radius"] button').forEach((b) => b.classList.toggle('selected', b === button));
-  }));
+  document.querySelectorAll('[data-setting-group="density"] button').forEach((b) => b.classList.toggle('selected', b.dataset.value === root.dataset.density));
+  document.querySelectorAll('[data-setting-group="radius"] button').forEach((b) => b.classList.toggle('selected', b.dataset.value === root.dataset.radius));
   document.querySelectorAll('[data-caption]').forEach((button) => button.addEventListener('click', () => {
     set('klypso.caption', button.dataset.caption);
     document.querySelectorAll('[data-caption]').forEach((b) => b.classList.toggle('selected', b === button));
