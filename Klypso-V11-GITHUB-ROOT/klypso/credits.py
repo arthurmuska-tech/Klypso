@@ -23,9 +23,10 @@ def credit_cost_from_request(request):
     # AI clips / clip only use the clip budget; AI montage / montage only
     # reserve more processing headroom for a full timeline.
     mode = request.form.get("mode", "").strip()
-    cost = 5
+    cost = 1
     if mode in {"ai_montage", "montage_only"} or request.form.get("goal") == "studio":
-        cost = 10
+        cost = 2
+    # Keep the economy legible: basic clip = 1 credit; heavier renders add cost.
     if request.form.get("output_format", "9:16") in {"1:1", "4:5", "16:9"}:
         cost += 1
     if request.form.get("subtitles") == "on":
@@ -34,7 +35,7 @@ def credit_cost_from_request(request):
         cost += 1
     if request.form.get("clean_audio") == "on":
         cost += 1
-    return min(cost, 14)
+    return min(cost, 6)
 
 
 def _sync_balance(db, user_id, plan_key, now):
