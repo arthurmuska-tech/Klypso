@@ -11,6 +11,7 @@ SOCIAL_PROFILES = {
         "recommended_max_seconds": 60,
         "preset": "gaming",
         "caption_style": "dynamic",
+        "hashtags": ["#shorts", "#gaming"],
     },
     "tiktok": {
         "name": "TikTok",
@@ -18,6 +19,7 @@ SOCIAL_PROFILES = {
         "recommended_max_seconds": 90,
         "preset": "dynamic",
         "caption_style": "dynamic",
+        "hashtags": ["#tiktok", "#gaming"],
     },
     "instagram": {
         "name": "Instagram Reels",
@@ -25,6 +27,7 @@ SOCIAL_PROFILES = {
         "recommended_max_seconds": 90,
         "preset": "dynamic",
         "caption_style": "classic",
+        "hashtags": ["#reels", "#gaming"],
     },
     "x": {
         "name": "X",
@@ -32,6 +35,7 @@ SOCIAL_PROFILES = {
         "recommended_max_seconds": 140,
         "preset": "clean",
         "caption_style": "classic",
+        "hashtags": ["#gaming"],
     },
 }
 
