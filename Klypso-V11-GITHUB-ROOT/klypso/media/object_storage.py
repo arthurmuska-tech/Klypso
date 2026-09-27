@@ -5,6 +5,7 @@ instance so web services and background workers can share the same objects.
 Without those variables, KLYPSO keeps using its local filesystem for development.
 """
 from contextlib import contextmanager
+import hashlib
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from uuid import uuid4
@@ -73,6 +74,28 @@ def persist_file(local_path, user_id, original_name, content_type="application/o
     )
     path.unlink(missing_ok=True)
     return f"s3://{_bucket()}/{key}"
+
+
+def materialize_media_path(stored_path):
+    """Return a local cache path for a local file or an S3 object."""
+    bucket, key = _parse_uri(stored_path)
+    if not bucket or not key:
+        return str(stored_path)
+    if not enabled():
+        raise RuntimeError("Le stockage objet est configuré avec un URI S3 mais ses identifiants sont absents.")
+    suffix = Path(key).suffix or ".bin"
+    cache_root = Path(current_app.config["STORAGE_PATH"]) / "object-cache"
+    cache_root.mkdir(parents=True, exist_ok=True)
+    digest = hashlib.sha256(str(stored_path).encode("utf-8")).hexdigest()
+    target = cache_root / f"{digest}{suffix}"
+    if not target.is_file():
+        temp = target.with_suffix(target.suffix + ".part")
+        try:
+            _client().download_file(bucket, key, str(temp))
+            temp.replace(target)
+        finally:
+            temp.unlink(missing_ok=True)
+    return str(target)
 
 
 def delete_stored_path(stored_path):
