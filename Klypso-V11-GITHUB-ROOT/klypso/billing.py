@@ -56,7 +56,10 @@ def checkout():
         import stripe
         stripe.api_key = current_app.config["STRIPE_SECRET_KEY"]
         with get_db(current_app.config["DATABASE_PATH"]) as db:
-            user = db.execute("SELECT email,stripe_customer_id FROM users WHERE id=?", (session["user_id"],)).fetchone()
+            user = db.execute(
+                "SELECT email,stripe_customer_id,promo_code_id FROM users WHERE id=?",
+                (session["user_id"],),
+            ).fetchone()
 
         subscription_data = {
             "metadata": {
@@ -65,7 +68,9 @@ def checkout():
                 "billing_interval": billing_interval,
             }
         }
-        remaining_trial = trial_days_remaining(user["trial_started_at"])
+        # A redeemed promo code replaces the normal signup trial.
+        # Keep the free trial unavailable even after the promo period ends.
+        remaining_trial = 0 if user["promo_code_id"] else trial_days_remaining(user["trial_started_at"])
         if remaining_trial > 0:
             subscription_data["trial_period_days"] = min(
                 current_app.config["STRIPE_TRIAL_DAYS"],
