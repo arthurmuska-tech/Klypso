@@ -11,6 +11,7 @@ from ..promo import effective_plan_key
 from ..plans import get_plan
 from ..utils.paths import user_storage
 from ..utils.validation import validate_upload
+from ..media.ffprobe import probe
 
 clips_bp = Blueprint("clips", __name__)
 
@@ -125,6 +126,19 @@ def handle_upload():
             )
 
         size_bytes = destination.stat().st_size
+        if size_bytes <= 0:
+            destination.unlink(missing_ok=True)
+            raise ValueError("Le fichier vidéo est vide.")
+        try:
+            media_probe = probe(str(destination))
+            duration = float((media_probe.get("format") or {}).get("duration") or 0)
+            has_video = any(stream.get("codec_type") == "video" for stream in (media_probe.get("streams") or []))
+        except Exception as exc:
+            destination.unlink(missing_ok=True)
+            raise ValueError("La vidéo ne peut pas être lue par FFprobe.") from exc
+        if not has_video or duration <= 0:
+            destination.unlink(missing_ok=True)
+            raise ValueError("Le fichier ne contient pas de flux vidéo exploitable.")
         stored_path = persist_file(destination, user_id, file.filename, file.mimetype)
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
@@ -166,7 +180,7 @@ def handle_upload():
         job_id = create_analysis_job(
             user_id,
             media_id,
-            str(destination),
+            stored_path,
             current_app.config["DATABASE_PATH"],
             metadata={
                 "project_id": project_id,
