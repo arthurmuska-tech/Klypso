@@ -346,7 +346,7 @@ def test_plan_and_product_scenarios(client, app, scenario):
             promo_ends_at(datetime.now(timezone.utc).isoformat(), 0)
     elif scenario == "health_version":
         body = client.get("/healthz").get_json()
-        assert body["version"] == "18.0.0"
+        assert body["version"] == "19.0.0"
     elif scenario == "no_github_login":
         text = Path(app.root_path).parent.joinpath("templates", "login.html").read_text(encoding="utf-8").lower()
         assert "github" not in text
@@ -604,7 +604,7 @@ def test_v17_ai_engine_scenarios(client, app, scenario):
             sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
         r = client.get("/api/ai/status")
         assert r.status_code == 200
-        assert r.get_json()["engine"] == "KLYPSO VIRAL ENGINE v2 · 15 agents"
+        assert r.get_json()["engine"].startswith("KLYPSO VIRAL ENGINE v3 · 15 agents")
 
     elif scenario == "ai_plan_gate_for_free":
         with app.app_context():
