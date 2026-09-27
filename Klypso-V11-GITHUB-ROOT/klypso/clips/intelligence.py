@@ -351,6 +351,14 @@ def creator_memory_for_prompt(memory):
     return "\n".join(lines)
 
 
+def _context_similarity(left, right):
+    left_tokens = {token.lower() for token in _text(left, 500).split() if len(token) > 2}
+    right_tokens = {token.lower() for token in _text(right, 500).split() if len(token) > 2}
+    if not left_tokens or not right_tokens:
+        return 0.0
+    return len(left_tokens & right_tokens) / len(left_tokens | right_tokens)
+
+
 def tighten_clip_boundaries(clip, segments, pad_before=1.8, pad_after=3.0, min_duration=8.0):
     """Remove dead-air lead-in/out when timestamped speech is available."""
     if not segments:
@@ -432,7 +440,11 @@ def enrich_ai_result(result, candidates, memory, transcript_segments=None):
     selected = []
     archetype_counts = Counter()
     for clip in normalized:
-        overlap = any(abs(clip["start"] - kept["start"]) < 9 for kept in selected)
+        overlap = any(
+            abs(clip["start"] - kept["start"]) < 9
+            or _context_similarity(clip.get("context", ""), kept.get("context", "")) >= 0.62
+            for kept in selected
+        )
         if overlap:
             continue
         if archetype_counts[clip["archetype"]] >= 2:
