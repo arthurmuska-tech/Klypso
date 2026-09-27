@@ -12,12 +12,30 @@ def analyze_video(path):
     for candidate in candidates:
         candidate["score"] = score_candidate(candidate)
     selected = select_candidates(candidates)
-    return {"analysis": analysis, "candidates": candidates, "selected": selected, "note": "Les signaux IA avancés ne sont pas activés dans cette base minimale."}
+    return {
+        "analysis": analysis,
+        "candidates": candidates,
+        "selected": selected,
+        "engine": "KLYPSO STANDARD ENGINE",
+        "note": "Sélection locale déterministe. L'IA avancée ajoute transcription, contexte créateur et scoring sémantique.",
+    }
 
 
-def create_analysis_job(user_id, media_id, path, db_path):
+def create_analysis_job(user_id, media_id, path, db_path, metadata=None):
+    metadata = metadata or {}
+    mode = metadata.get("mode", "clip_only")
+    job_type = {
+        "ai_clips": "ai_clip_analysis",
+        "ai_montage": "ai_montage_analysis",
+        "clip_only": "clip_analysis",
+        "montage_only": "montage_project",
+    }.get(mode, "clip_analysis")
+    payload = {"media_id": media_id, "path": path, **metadata}
     with get_db(db_path) as db:
-        cur = db.execute("INSERT INTO jobs(user_id,job_type,status,payload_json) VALUES(?,?,?,?)", (user_id, "clip_analysis", "queued", json.dumps({"media_id": media_id, "path": path})))
+        cur = db.execute(
+            "INSERT INTO jobs(user_id,job_type,status,payload_json) VALUES(?,?,?,?)",
+            (user_id, job_type, "queued", json.dumps(payload, ensure_ascii=False)),
+        )
         job_id = cur.lastrowid
         db.commit()
     return job_id
