@@ -18,7 +18,7 @@
     try { localStorage.setItem(key, value); } catch (_) {}
   };
 
-  const palettes = ['paper','linen','clay','ocean','forest','plum','graphite','midnight'];
+  const palettes = ['paper','linen','clay','ocean','forest','plum','graphite','midnight','sage','sand','lavender','slate'];
   function applyPalette(value) {
     const palette = palettes.includes(value) ? value : 'paper';
     root.dataset.palette = palette;
