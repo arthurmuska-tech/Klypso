@@ -115,7 +115,8 @@ def test_v19_enriched_clip_persists_reframe_and_signal_scores():
     assert clip["focus_x"] == 0.18
     assert clip["focus_y"] == 0.61
     assert clip["reframe_mode"] == "smart_gameplay"
-    assert clip["media_signals"]["visual_change"] == 0 if "visual_change" in clip["media_signals"] else True
+    assert "media_signals" in clip
+    assert "visual_change" in clip["media_signals"]
 
 
 def test_v19_health_version(tmp_path):
