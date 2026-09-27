@@ -187,3 +187,13 @@ def test_v18_creator_memory_can_keep_published_feedback(tmp_path):
             memory = build_creator_memory(db, user["id"])
     assert memory["feedback_count"] >= 1
     assert memory["kept_archetypes"]["clutch"] >= 1
+
+def test_v18_cron_secret_can_trigger_due_queue_without_browser_session(tmp_path, monkeypatch):
+    app = make_app(tmp_path)
+    monkeypatch.setenv("KLYPSO_CRON_SECRET", "cron-secret")
+    response = app.test_client().post(
+        "/api/publisher/run-due",
+        headers={"X-KLYPSO-CRON-KEY": "cron-secret"},
+    )
+    assert response.status_code == 200
+    assert response.get_json()["processed"] == 0
