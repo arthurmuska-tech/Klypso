@@ -1,33 +1,23 @@
 {% extends 'base.html' %}
 {% block title %}Connexion — KLYPSO{% endblock %}
 {% block content %}
-<section class="form-page auth-v12"><div class="auth-card">
-<span class="eyebrow-v11">CONNEXION</span><h1>Reviens dans ton workspace.</h1>
-<p class="auth-lead">Google ou ton adresse e-mail. Le mot de passe permet de te connecter même sans service e-mail.</p>
-<div class="oauth-status-card {{ 'is-ready' if config.GOOGLE_CLIENT_ID else 'is-missing' }}">
-  <div><span class="oauth-status-dot"></span><strong>Google</strong><small>
-    {% if config.GOOGLE_CLIENT_ID %}Connexion Google configurée{% else %}Configuration Google à compléter côté serveur{% endif %}
-  </small></div>
-</div>
-{% if config.GOOGLE_CLIENT_ID %}
-<div class="oauth-google-wrap"
-     data-google-signin
-     data-google-client-id="{{ config.GOOGLE_CLIENT_ID }}">
-  <div data-google-button></div>
-  <small class="google-inline-status" data-google-status></small>
-</div>
-{% else %}<div class="oauth-button oauth-button-disabled"><b class="google-mark">G</b> Google indisponible</div>{% endif %}
-<div class="auth-divider"><span>OU PAR E-MAIL</span></div>
-<form method="post" class="auth-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-<label>Adresse e-mail<input name="email" type="email" required autocomplete="email" placeholder="toi@exemple.com"></label>
-<label>Mot de passe<input name="password" type="password" minlength="8" autocomplete="current-password" placeholder="8 caractères minimum"></label>
-<button class="button button-lg full" type="submit">Se connecter →</button></form><div class="auth-trust-row"><span>✓ Connexion sans e-mail sortant</span><span>✓ Mot de passe chiffré</span><span>✓ Google disponible</span></div>
-<p class="auth-foot">Pas encore de compte ? <a href="{{ url_for('auth.register') }}">Créer mon compte</a> · <a href="{{ url_for('public_demo') }}">Voir la démo</a></p>
-</div></section>
-{% endblock %}{% block scripts %}<script src="{{ url_for('static', filename='js/auth-ui.js') }}?v=23.0" defer></script>{% endblock %}
-
-{% block head_extra %}
-{% if config.GOOGLE_CLIENT_ID %}
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-{% endif %}
+<section class="v24-auth-page">
+  <div class="v24-auth-brand"><a href="{{ url_for('index') }}"><span class="v24-brand-k">K</span><strong>KLYPSO</strong></a></div>
+  <div class="v24-auth-layout">
+    <div class="v24-auth-intro"><span class="v24-eyebrow">BIENVENUE</span><h1>Retrouve ton<br><em>workspace.</em></h1><p>Connecte-toi pour retrouver tes projets, tes réglages et ton espace de création.</p><div class="v24-auth-points"><div><b>01</b><span>Clips IA et projets centralisés</span></div><div><b>02</b><span>KLYPSO Studio pour reprendre le montage</span></div><div><b>03</b><span>Ton identité et tes préférences au même endroit</span></div></div></div>
+    <div class="v24-auth-card">
+      <div class="v24-auth-card-head"><span class="v24-eyebrow">CONNEXION</span><h2>Se connecter</h2><p>Choisis Google ou utilise ton adresse e-mail.</p></div>
+      {% if config.GOOGLE_CLIENT_ID %}<div class="oauth-google-wrap v24-google" data-google-signin data-google-client-id="{{ config.GOOGLE_CLIENT_ID }}"><div data-google-button></div><small class="google-inline-status" data-google-status></small></div>{% endif %}
+      <div class="v24-or"><span>OU CONTINUER PAR E-MAIL</span></div>
+      <form method="post" class="auth-form v24-auth-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="v24-field"><span>Adresse e-mail</span><input name="email" type="email" required autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="toi@exemple.com"></label>
+        <label class="v24-field"><span>Mot de passe</span><input name="password" type="password" minlength="8" autocomplete="current-password" placeholder="Ton mot de passe"></label>
+        <button class="button button-lg full v24-primary" type="submit">Se connecter <span>→</span></button>
+      </form>
+      <p class="v24-auth-switch">Pas encore de compte ? <a href="{{ url_for('auth.register') }}">Créer mon compte</a></p><a class="v24-auth-back" href="{{ url_for('index') }}">← Retour à l'accueil</a>
+    </div>
+  </div>
+</section>
 {% endblock %}
+{% block head_extra %}{% if config.GOOGLE_CLIENT_ID %}<script src="https://accounts.google.com/gsi/client" async defer></script>{% endif %}{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/auth-ui.js') }}?v=24.0" defer></script>{% endblock %}
