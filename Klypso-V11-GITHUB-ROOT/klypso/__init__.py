@@ -55,6 +55,9 @@ def create_app(test_config=None):
 
     @app.route("/")
     def index():
+        # The root URL is the public presentation page. Logged-in users go straight to their workspace.
+        if session_user_id():
+            return redirect(url_for("dashboard"))
         return render_template("index.html")
 
     @app.route("/healthz")
