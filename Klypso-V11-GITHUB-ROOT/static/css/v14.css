@@ -601,3 +601,14 @@ body.v14-no-motion .workspace-status-orbit{animation:none!important}
 .workspace-start-card:focus-visible,.landing-v15-feature-grid article:focus-visible,.landing-secondary:focus-visible{outline:3px solid color-mix(in srgb,var(--k-accent) 46%,transparent);outline-offset:4px}
 @media(prefers-reduced-motion:reduce){.landing-v15-hero-art{transform:none!important}.landing-v15-feature-grid article:before,.story-card-video:after,.story-card-analysis:after,.story-card-ready:after{display:none}.analysis-bars i,.story-card-editor div,.story-card-ready strong{animation:none}.landing-window:hover{transform:none!important}.workspace-hero,.workspace-metrics article{animation:none}}
 body.v14-no-motion .landing-v15-feature-grid article:before,.klypso-home .landing-v15-feature-grid article:before{animation:none}
+
+/* ================= V15.4 — PERSONALIZATION CONSISTENCY ================= */
+html[data-theme="amber"]{--accent:#ffb44c}
+html[data-theme="amber"]{--k-accent:#ffb44c;--k-accent-2:#ffd18a;--k-accent-soft:rgba(255,180,76,.14)}
+html[data-density="compact"] .settings-card-v11,.html[data-density="compact"] .panel-v11{padding:14px}
+html[data-density="spacious"] .settings-card-v11,.html[data-density="spacious"] .panel-v11{padding:24px}
+html[data-radius="sharp"] .button,html[data-radius="sharp"] .panel-v11,html[data-radius="sharp"] .settings-card-v11,html[data-radius="sharp"] .home-feature{border-radius:12px}
+html[data-radius="soft"] .button,html[data-radius="soft"] .panel-v11,html[data-radius="soft"] .settings-card-v11,html[data-radius="soft"] .home-feature{border-radius:30px}
+.v15-reset-button{margin-top:14px;padding:10px 13px;border:1px solid var(--k-line);border-radius:12px;background:transparent;color:var(--k-muted);font:700 10px 'DM Sans';cursor:pointer;transition:transform .2s,border-color .2s,color .2s}.v15-reset-button:hover{transform:translateY(-1px);border-color:var(--k-accent);color:var(--k-ink)}
+html[data-theme="amber"] .v14-wood-option.selected,html[data-theme="amber"] .v15-choice-row>button.selected{border-color:#ffb44c}
+@media(prefers-reduced-motion:reduce){.v15-reset-button{transition:none}}
