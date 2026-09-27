@@ -28,6 +28,20 @@
   let saveTimer = null;
 
   const clone = value => JSON.parse(JSON.stringify(value));
+  const clipPicker = document.getElementById('studio-clip-select');
+  let selectedClipIndex = 0;
+  const refreshClipPicker = () => {
+    if (!clipPicker) return;
+    clipPicker.innerHTML = projectState.clips.map((clip, index) =>
+      '<option value="' + index + '">#' + (index + 1) + ' · ' + escapeHtml(clip.name || ('Clip ' + (index + 1))) + ' · ' + Number(clip.duration || 0).toFixed(1) + 's</option>'
+    ).join('');
+    if (projectState.clips.length) {
+      selectedClipIndex = Math.min(selectedClipIndex, projectState.clips.length - 1);
+      clipPicker.value = String(selectedClipIndex);
+    } else {
+      selectedClipIndex = 0;
+    }
+  };
   const markDirty = () => {
     if (saveState) saveState.textContent = 'Modifications non enregistrées';
     clearTimeout(saveTimer);
@@ -40,7 +54,74 @@
   };
   const applyState = next => {
     projectState = clone(next);
-    document.querySelectorAll('[data-ratio]').forEach(btn => {
+    refreshClipPicker();
+    clipPicker?.addEventListener('change', () => {
+    selectedClipIndex = Number(clipPicker.value || 0);
+  });
+
+  const serverEdit = async operation => {
+    if (!projectId) await saveProject(false);
+    if (!projectId) throw new Error('Le projet doit être enregistré avant une modification.');
+    snapshot();
+    const response = await fetch('/api/studio/projects/' + projectId + '/edit', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},
+      body:JSON.stringify({operation}),
+      credentials:'same-origin'
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      undoStack.pop();
+      throw new Error(data.error || 'Modification Studio impossible.');
+    }
+    applyState(data.timeline);
+    if (saveState) saveState.textContent = 'Modification enregistrée';
+  };
+
+  const askNumber = (message, fallback) => {
+    const raw = window.prompt(message, String(fallback));
+    if (raw === null) return null;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : null;
+  };
+
+  document.querySelectorAll('[data-editor-op]').forEach(btn => btn.addEventListener('click', async () => {
+    if (!projectState.clips.length && btn.dataset.editorOp !== 'marker') {
+      alert('Ajoute d’abord un clip à la timeline.');
+      return;
+    }
+    const op = btn.dataset.editorOp;
+    const index = selectedClipIndex;
+    try {
+      if (op === 'split') {
+        const duration = Number(projectState.clips[index]?.duration || 0);
+        const at = askNumber('À quelle seconde couper ce clip ?', Math.max(1, Math.floor(duration / 2)));
+        if (at === null) return;
+        await serverEdit({type:'split', clip_index:index, at});
+      } else if (op === 'trim') {
+        const duration = Number(projectState.clips[index]?.duration || 0);
+        const inPoint = askNumber('Début du trim (secondes)', 0);
+        const outPoint = askNumber('Fin du trim (secondes)', duration);
+        if (inPoint === null || outPoint === null) return;
+        await serverEdit({type:'trim', clip_index:index, in_point:inPoint, out_point:outPoint});
+      } else if (op === 'move') {
+        const start = askNumber('Nouvelle position sur la timeline (secondes)', Number(projectState.clips[index]?.start || 0));
+        if (start === null) return;
+        await serverEdit({type:'move', clip_index:index, new_start:start});
+      } else if (op === 'duplicate') {
+        await serverEdit({type:'duplicate', clip_index:index});
+      } else if (op === 'marker') {
+        const time = Number(previewVideo?.currentTime || 0);
+        const label = window.prompt('Nom du marker', 'Moment fort');
+        if (label === null) return;
+        await serverEdit({type:'add_marker', time, label});
+      }
+    } catch (error) {
+      alert(error.message || 'Modification impossible.');
+    }
+  });
+
+  document.querySelectorAll('[data-ratio]').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.ratio === (projectState.settings.ratio || '9:16'));
     });
   };
