@@ -192,6 +192,7 @@ def build_creator_memory(db, user_id, limit=8):
     rows = db.execute(
         "SELECT id, payload_json, result_json, created_at FROM jobs "
         "WHERE user_id=? AND status='completed' AND result_json IS NOT NULL "
+        "AND job_type IN ('ai_clip_analysis','ai_montage_analysis') "
         "ORDER BY id DESC LIMIT ?",
         (user_id, limit),
     ).fetchall()
