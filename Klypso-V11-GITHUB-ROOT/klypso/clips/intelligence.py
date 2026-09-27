@@ -401,8 +401,10 @@ def enrich_ai_result(result, candidates, memory, transcript_segments=None):
         "context_score": 0.10,
         "shareability_score": 0.10,
         "creator_fit_score": 0.11,
-        "replay_score": 0.08,
-        "base_score": 0.10,
+        "replay_score": 0.07,
+        "base_score": 0.08,
+        "media_signal_score": 0.07,
+        "chat_signal_score": 0.03,
     }
 
     for raw in raw_clips[:8]:
@@ -416,7 +418,16 @@ def enrich_ai_result(result, candidates, memory, transcript_segments=None):
         end = min(end, candidate["end"] + 2.0)
         if end - start < 8:
             start, end = candidate["start"], candidate["end"]
-        scores = {key: max(0, min(100, int(_number(raw.get(key), 60 if key != "base_score" else candidate["base_score"])))) for key in weights}
+        scores = {}
+        for key in weights:
+            if key == "media_signal_score":
+                value = _number(candidate.get(key), 0.5) * 100.0
+            elif key == "chat_signal_score":
+                value = _number(candidate.get(key), 0.0)
+            else:
+                fallback = 60 if key != "base_score" else candidate["base_score"]
+                value = _number(raw.get(key), fallback)
+            scores[key] = max(0, min(100, int(value)))
         weighted = sum(scores[key] * weight for key, weight in weights.items())
         item = {
                 "id": candidate["id"],
@@ -431,6 +442,17 @@ def enrich_ai_result(result, candidates, memory, transcript_segments=None):
                 "archetype": raw.get("archetype") if raw.get("archetype") in ARCHETYPES else "surprise",
                 "scores": scores,
                 "context": candidate.get("context", ""),
+                "focus_x": round(max(0.0, min(1.0, _number(raw.get("focus_x"), 0.5))), 4),
+                "focus_y": round(max(0.0, min(1.0, _number(raw.get("focus_y"), 0.5))), 4),
+                "reframe_mode": _text(raw.get("reframe_mode"), 30) or "smart_center",
+                "media_signals": {
+                    "visual_change": candidate.get("visual_change", 0.0),
+                    "audio_peak": candidate.get("audio_peak", 0.0),
+                    "event_density": candidate.get("event_density", 0.0),
+                    "silence_fraction": candidate.get("silence_fraction", 0.0),
+                    "chat_spike": candidate.get("chat_spike", 0.0),
+                    "signal_sources": candidate.get("signal_sources", []),
+                },
             }
         if transcript_segments:
             item = tighten_clip_boundaries(item, transcript_segments)
