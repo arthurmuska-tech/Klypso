@@ -29,7 +29,7 @@ from .social_connections import (
     tiktok_user_info,
     upsert_connection,
     youtube_authorize,
-    youtube_callback,
+    youtube_callback as youtube_oauth_callback,
     youtube_channel,
     youtube_upload,
 )
@@ -489,7 +489,7 @@ def connect_youtube():
 @login_required
 def youtube_callback():
     try:
-        token = youtube_callback()
+        token = youtube_oauth_callback()
         channel_id, channel_name = youtube_channel(token["access_token"])
         expires_at = _now() + timedelta(seconds=int(token.get("expires_in", 3600)))
         with get_db(current_app.config["DATABASE_PATH"]) as db:
