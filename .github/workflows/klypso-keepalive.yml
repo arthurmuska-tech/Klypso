@@ -1,0 +1,19 @@
+name: Klypso Keepalive
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping Render health endpoint
+        run: |
+          set -e
+          curl --fail --silent --show-error --max-time 30 \
+            --retry 2 --retry-delay 5 \
+            https://klypso-2pjf.onrender.com/healthz
+          echo
