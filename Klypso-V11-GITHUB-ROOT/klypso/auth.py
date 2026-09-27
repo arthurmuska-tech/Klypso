@@ -2,6 +2,8 @@ import hashlib
 import re
 import secrets
 import smtplib
+import json
+from urllib.request import Request, urlopen
 import shutil
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
@@ -87,27 +89,76 @@ def _hash_code(code):
 
 
 def _send_code(email, code):
-    host = current_app.config["EMAIL_SMTP_HOST"]
-    sender = current_app.config["EMAIL_SMTP_FROM"] or current_app.config["EMAIL_SMTP_USER"]
-    if not host or not sender:
+    sender = current_app.config["EMAIL_FROM"] or current_app.config["EMAIL_SMTP_FROM"] or current_app.config["EMAIL_SMTP_USER"]
+    if not sender:
         if current_app.config["EMAIL_OTP_DEV_LOG_CODE"]:
             current_app.logger.warning("KLYPSO OTP for %s: %s", email, code)
             return
-        raise RuntimeError("EMAIL_SMTP_HOST et EMAIL_SMTP_FROM doivent être configurés.")
-    msg = EmailMessage()
-    msg["Subject"] = "Ton code KLYPSO"
-    msg["From"] = sender
-    msg["To"] = email
-    msg.set_content(
+        raise RuntimeError("Aucun expéditeur e-mail n'est configuré.")
+
+    subject = "Ton code KLYPSO"
+    text_body = (
         f"Ton code KLYPSO est : {code}\n\n"
         f"Il est valable {current_app.config['EMAIL_OTP_MINUTES']} minutes."
     )
-    with smtplib.SMTP(host, current_app.config["EMAIL_SMTP_PORT"], timeout=20) as smtp:
-        if current_app.config["EMAIL_SMTP_TLS"]:
-            smtp.starttls()
-        if current_app.config["EMAIL_SMTP_USER"]:
-            smtp.login(current_app.config["EMAIL_SMTP_USER"], current_app.config["EMAIL_SMTP_PASSWORD"])
-        smtp.send_message(msg)
+    resend_key = current_app.config["RESEND_API_KEY"]
+    if resend_key:
+        payload = json.dumps({
+            "from": sender,
+            "to": [email],
+            "subject": subject,
+            "text": text_body,
+            "html": (
+                "<div style=\"font-family:Arial,sans-serif;line-height:1.5\">"
+                "<h2>Ton code KLYPSO</h2>"
+                f"<p style=\"font-size:28px;font-weight:700;letter-spacing:6px\">{code}</p>"
+                f"<p>Ce code est valable {current_app.config['EMAIL_OTP_MINUTES']} minutes.</p>"
+                "</div>"
+            ),
+        }).encode("utf-8")
+        req = Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {resend_key}",
+                "Content-Type": "application/json",
+                "User-Agent": "KLYPSO/21",
+            },
+            method="POST",
+        )
+        try:
+            with urlopen(req, timeout=20) as response:
+                if response.status >= 300:
+                    raise RuntimeError(f"Resend HTTP {response.status}")
+            return
+        except Exception as exc:
+            current_app.logger.exception("Resend OTP send failed: %s", exc)
+            raise RuntimeError("Le service d'e-mail est momentanément indisponible.") from exc
+
+    host = current_app.config["EMAIL_SMTP_HOST"]
+    if not host:
+        if current_app.config["EMAIL_OTP_DEV_LOG_CODE"]:
+            current_app.logger.warning("KLYPSO OTP for %s: %s", email, code)
+            return
+        raise RuntimeError("Configure RESEND_API_KEY pour envoyer les codes e-mail sur Render Free.")
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = email
+    msg.set_content(text_body)
+    try:
+        with smtplib.SMTP(host, current_app.config["EMAIL_SMTP_PORT"], timeout=20) as smtp:
+            if current_app.config["EMAIL_SMTP_TLS"]:
+                smtp.starttls()
+            if current_app.config["EMAIL_SMTP_USER"]:
+                smtp.login(current_app.config["EMAIL_SMTP_USER"], current_app.config["EMAIL_SMTP_PASSWORD"])
+            smtp.send_message(msg)
+    except OSError as exc:
+        current_app.logger.exception("SMTP OTP send failed: %s", exc)
+        raise RuntimeError(
+            "SMTP est bloqué sur le plan Render Free. Configure RESEND_API_KEY ou utilise un plan Render payant."
+        ) from exc
 
 
 def _issue_code(email, purpose):
@@ -119,6 +170,8 @@ def _issue_code(email, purpose):
         if latest and latest["created_at"]:
             try:
                 last = datetime.fromisoformat(latest["created_at"].replace("Z", "+00:00"))
+                if last.tzinfo is None:
+                    last = last.replace(tzinfo=timezone.utc)
                 if (_now() - last).total_seconds() < current_app.config["EMAIL_OTP_COOLDOWN_SECONDS"]:
                     raise RuntimeError("Trop de demandes. Attends quelques secondes avant de redemander un code.")
             except ValueError:
