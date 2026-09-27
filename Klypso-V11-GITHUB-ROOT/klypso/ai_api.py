@@ -364,7 +364,7 @@ def analyze_job(job_id):
         # with these richer anchors and make one final deterministic selection pass.
         if transcript_data.get("segments"):
             candidates = generate_intelligent_candidates(analysis["duration"], transcript_data["segments"])
-            result = enrich_ai_result(result, candidates, memory)
+            result = enrich_ai_result(result, candidates, memory, transcript_data.get("segments", []))
         else:
             result = enrich_ai_result(result, candidates, memory)
 
