@@ -160,7 +160,7 @@ def test_v18_publisher_schema_links_metrics():
 
 def test_v18_health_version(tmp_path):
     app = make_app(tmp_path)
-    response = app.get("/healthz")
+    response = app.test_client().get("/healthz")
     assert response.get_json()["version"] == "18.0.0"
 
 
