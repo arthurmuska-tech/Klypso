@@ -1,4 +1,8 @@
 name: KLYPSO — V18 scenario tests
+concurrency:
+  group: klypso-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     paths:
