@@ -22,7 +22,7 @@ PLANS = {
     "ultra": Plan("ultra", "Ultra", 30, 500, int(os.environ.get("ULTRA_DAILY_CREDITS", "24")), 96, 100, 4096, True, True, True),
 }
 
-TRIAL_DAYS = 10
+TRIAL_DAYS = max(1, int(os.environ.get("TRIAL_DAYS", "14")))
 TRIAL_PLAN = "pro"
 
 
