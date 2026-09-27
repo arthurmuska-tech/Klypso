@@ -18,6 +18,7 @@ from .clips.intelligence import (
     generate_intelligent_candidates,
     update_creator_memory,
 )
+from .clips.agents import build_montage_directive, run_agent_suite
 from .clips.renderer import concat_videos, render_candidate
 
 
@@ -89,7 +90,7 @@ def _transcribe_groq(video_path, key):
         audio.unlink(missing_ok=True)
 
 
-def _prompt(duration, candidates, transcript_data=None, memory=None, mode="ai_clips", preferences=None):
+def _prompt(duration, candidates, transcript_data=None, memory=None, mode="ai_clips", preferences=None, agent_report=None):
     transcript_data = transcript_data or {}
     preferences = preferences or {}
     memory_text = creator_memory_for_prompt(memory or {})
@@ -112,6 +113,8 @@ def _prompt(duration, candidates, transcript_data=None, memory=None, mode="ai_cl
         "PRÉFÉRENCES DE CETTE PRODUCTION:\n"
         f"- style: {style}; priorité: {scene_priority}; rythme: {pace}\n"
         "Respecte ces préférences sans jamais inventer un événement.\n\n"
+        "DOSSIER DES 15 AGENTS KLYPSO:\n"
+        f"{json.dumps({'consensus_score': (agent_report or {}).get('consensus_score', 0), 'priority_archetypes': (agent_report or {}).get('priority_archetypes', []), 'agents': [{'name': a.get('name'), 'score': a.get('score'), 'signals': a.get('signals')} for a in (agent_report or {}).get('agents', [])]}, ensure_ascii=False)}\n\n"
         "RUBRIQUE DE SÉLECTION:\n"
         "1) hook compréhensible très vite; 2) payoff ou révélation; 3) émotion/réaction/changement de dynamique; "
         "4) nouveauté; 5) contexte suffisant sans intro inutile; 6) partageabilité/replay; 7) adéquation au style précédent; "
@@ -126,7 +129,7 @@ def _prompt(duration, candidates, transcript_data=None, memory=None, mode="ai_cl
     )
 
 
-def _text(provider, key, duration, candidates, transcript_data, memory, mode, preferences):
+def _text(provider, key, duration, candidates, transcript_data, memory, mode, preferences, agent_report=None):
     base = "https://api.groq.com/openai/v1" if provider == "groq" else "https://openrouter.ai/api/v1"
     response_format = {"type": "json_object"}
     if provider == "groq":
@@ -199,7 +202,7 @@ def _text(provider, key, duration, candidates, transcript_data, memory, mode, pr
                     "role": "system",
                     "content": "Tu es un moteur de montage. Tu dois respecter strictement les timestamps et produire du JSON exploitable.",
                 },
-                {"role": "user", "content": _prompt(duration, candidates, transcript_data, memory, mode, preferences)},
+                {"role": "user", "content": _prompt(duration, candidates, transcript_data, memory, mode, preferences, agent_report)},
             ],
             "temperature": 0.18,
             "response_format": response_format,
@@ -210,7 +213,7 @@ def _text(provider, key, duration, candidates, transcript_data, memory, mode, pr
     return _json(response.json()["choices"][0]["message"]["content"])
 
 
-def _gemini_video(video_path, duration, candidates, memory, mode, preferences, key):
+def _gemini_video(video_path, duration, candidates, memory, mode, preferences, key, agent_report=None):
     path = Path(video_path)
     if path.stat().st_size >= 95 * 1024 * 1024:
         raise RuntimeError("inline_video_limit")
@@ -228,7 +231,7 @@ def _gemini_video(video_path, duration, candidates, memory, mode, preferences, k
             "contents": [{
                 "parts": [
                     {"inline_data": {"mime_type": mime, "data": base64.b64encode(path.read_bytes()).decode("ascii")}},
-                    {"text": _prompt(duration, candidates, {}, memory, mode, preferences)},
+                    {"text": _prompt(duration, candidates, {}, memory, mode, preferences, agent_report)},
                 ]
             }],
             "generationConfig": {"temperature": 0.18, "responseMimeType": "application/json"},
@@ -241,12 +244,12 @@ def _gemini_video(video_path, duration, candidates, memory, mode, preferences, k
     return _json(text)
 
 
-def _route(video_path, duration, candidates, memory, mode, preferences):
+def _route(video_path, duration, candidates, memory, mode, preferences, agent_report=None):
     attempts = []
     for number, key in enumerate(_keys("GEMINI_API_KEY"), start=1):
         try:
             return (
-                _gemini_video(video_path, duration, candidates, memory, mode, preferences, key),
+                _gemini_video(video_path, duration, candidates, memory, mode, preferences, key, agent_report),
                 {"provider": "gemini", "key_slot": number, "attempts": attempts},
                 {"text": "", "segments": []},
             )
@@ -267,7 +270,7 @@ def _route(video_path, duration, candidates, memory, mode, preferences):
         for number, key in enumerate(groq_keys, start=1):
             try:
                 return (
-                    _text("groq", key, duration, candidates, transcript_data, memory, mode, preferences),
+                    _text("groq", key, duration, candidates, transcript_data, memory, mode, preferences, agent_report),
                     {"provider": "groq", "key_slot": number, "attempts": attempts},
                     transcript_data,
                 )
@@ -276,7 +279,7 @@ def _route(video_path, duration, candidates, memory, mode, preferences):
         for number, key in enumerate(_keys("OPENROUTER_API_KEY"), start=1):
             try:
                 return (
-                    _text("openrouter", key, duration, candidates, transcript_data, memory, mode, preferences),
+                    _text("openrouter", key, duration, candidates, transcript_data, memory, mode, preferences, agent_report),
                     {"provider": "openrouter", "key_slot": number, "attempts": attempts},
                     transcript_data,
                 )
@@ -325,7 +328,7 @@ def status():
         "plan": effective_plan_key(user),
         "enabled": effective_plan_key(user) in {"pro", "ultra"} and bool(providers),
         "providers": providers,
-        "engine": "KLYPSO VIRAL ENGINE v1",
+        "engine": "KLYPSO VIRAL ENGINE v2 · 15 agents",
     })
 
 
@@ -348,8 +351,71 @@ def analyze_job(job_id):
 
     mode = payload.get("mode", "ai_clips")
     output_format = payload.get("output_format", "9:16")
-    preferences = payload.get("preferences") or {}
+    preferences = dict(payload.get("preferences") or {})
+    preferences.setdefault("mode", mode)
+    preferences.setdefault("output_format", output_format)
+    preferences.setdefault("distribution_ready", False)
     try:
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            memory = build_creator_memory(db, session["user_id"])
+        from .clips.analyzer import analyze_media
+
+        analysis = analyze_media(path)
+        transcript_seed = []
+        # First evidence pass: broad candidate coverage + specialist agent consensus.
+        candidates = generate_intelligent_candidates(analysis["duration"], transcript_seed)
+        agent_report = run_agent_suite(
+            analysis["duration"],
+            analysis=analysis,
+            segments=transcript_seed,
+            candidates=candidates,
+            memory=memory,
+            preferences=preferences,
+        )
+        result, router, transcript_data = _route(
+            path, analysis["duration"], candidates, memory, mode, preferences, agent_report
+        )
+
+        # A timestamped transcript creates a richer second evidence pass.
+        if transcript_data.get("segments"):
+            candidates = generate_intelligent_candidates(analysis["duration"], transcript_data["segments"])
+            agent_report = run_agent_suite(
+                analysis["duration"],
+                analysis=analysis,
+                segments=transcript_data["segments"],
+                candidates=candidates,
+                memory=memory,
+                preferences=preferences,
+            )
+            result = enrich_ai_result(result, candidates, memory, transcript_data.get("segments", []))
+        else:
+            result = enrich_ai_result(result, candidates, memory)
+
+        director = build_montage_directive(
+            result.get("clips", []),
+            memory=memory,
+            preferences=preferences,
+            agent_report=agent_report,
+        )
+        sequence_ids = [item["clip_id"] for item in director.get("sequence", [])]
+        result["montage"] = {
+            "clip_ids": sequence_ids,
+            "opening_clip_id": sequence_ids[0] if sequence_ids else None,
+            "closing_clip_id": sequence_ids[-1] if sequence_ids else None,
+        }
+        result["montage_director"] = director
+        result["agents"] = agent_report
+
+        saved = {
+            "mode": mode,
+            "router": router,
+            "ai": result,
+            "analysis": analysis,
+            "candidates": candidates,
+            "transcript": transcript_data,
+            "output_format": output_format,
+            "preferences": preferences,
+        }
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             memory = build_creator_memory(db, session["user_id"])
         from .clips.analyzer import analyze_media
@@ -389,7 +455,7 @@ def analyze_job(job_id):
             "ok": True,
             "job_id": job_id,
             "result": saved,
-            "message": "Analyse terminée: KLYPSO a appris du contexte précédent et classé les scènes.",
+            "message": "Analyse terminée: 15 agents ont croisé contexte, rythme, diversité, Creator DNA et distribution.",
         })
     except Exception:
         current_app.logger.exception("AI router failed")
