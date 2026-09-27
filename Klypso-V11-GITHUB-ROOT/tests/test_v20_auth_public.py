@@ -142,3 +142,9 @@ def test_v22_ai_analysis_is_queued(tmp_path, monkeypatch):
     status = client.get(f"/api/ai/analyze/status/{job_id}")
     assert status.status_code == 202
     assert status.get_json()["status"] == "processing"
+
+
+def test_v22_postgres_placeholder_adapter():
+    import klypso.database as database
+    assert database._pg_sql("SELECT * FROM users WHERE id=? AND email=?") == "SELECT * FROM users WHERE id=%s AND email=%s"
+    assert database._pg_sql("SELECT 'literal ?' AS value WHERE id=?") == "SELECT 'literal ?' AS value WHERE id=%s"
