@@ -288,6 +288,23 @@ def youtube_upload(video_path, access_token, title, description, privacy="privat
     }
 
 
+def tiktok_creator_info(access_token):
+    response = requests.post(
+        "https://open.tiktokapis.com/v2/post/publish/creator_info/query/",
+        headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json; charset=UTF-8"},
+        timeout=45,
+    )
+    response.raise_for_status()
+    data = response.json().get("data") or {}
+    return {
+        "privacy_level_options": list(data.get("privacy_level_options") or []),
+        "max_video_post_duration_sec": int(data.get("max_video_post_duration_sec") or 0),
+        "comment_disabled": bool(data.get("comment_disabled")),
+        "duet_disabled": bool(data.get("duet_disabled")),
+        "stitch_disabled": bool(data.get("stitch_disabled")),
+    }
+
+
 def tiktok_publish_status(publish_id, access_token):
     response = requests.post(
         "https://open.tiktokapis.com/v2/post/publish/status/fetch/",
@@ -301,14 +318,14 @@ def tiktok_publish_status(publish_id, access_token):
     return state, data
 
 
-def tiktok_publish(media_url, access_token, title, is_aigc=False):
+def tiktok_publish(media_url, access_token, title, is_aigc=False, privacy_level="SELF_ONLY"):
     init = requests.post(
         "https://open.tiktokapis.com/v2/post/publish/video/init/",
         headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json; charset=UTF-8"},
         json={
             "post_info": {
                 "title": str(title or "Clip KLYPSO")[:2200],
-                "privacy_level": "PUBLIC_TO_EVERYONE",
+                "privacy_level": str(privacy_level or "SELF_ONLY"),
                 "is_aigc": bool(is_aigc),
             },
             "source_info": {
