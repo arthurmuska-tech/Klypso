@@ -81,3 +81,60 @@ def asset_status():
         "ai_broll": bool(_gemini_key()),
         "ai_voiceover": bool(_eleven_key() and os.getenv("ELEVENLABS_VOICE_ID", "").strip()),
     }
+
+
+def compose_assets(base_video, output_path, broll_image=None, voiceover_audio=None, broll_start=0.0, broll_duration=5.0):
+    """Overlay optional B-roll and mix optional voiceover onto a rendered clip."""
+    import shutil
+    import subprocess
+
+    if not shutil.which("ffmpeg"):
+        raise RuntimeError("FFmpeg est introuvable dans le PATH.")
+    inputs = ["-i", str(base_video)]
+    filter_parts = []
+    maps = []
+    next_input = 1
+
+    if broll_image:
+        inputs += ["-loop", "1", "-i", str(broll_image)]
+        end = max(float(broll_start) + 0.5, float(broll_start) + float(broll_duration))
+        filter_parts.append(
+            f"[{next_input}:v]scale=520:-1,format=rgba,colorchannelmixer=aa=0.95[broll];"
+            f"[0:v][broll]overlay=(W-w)/2:120:enable='between(t,{float(broll_start):.3f},{end:.3f})'[vout]"
+        )
+        maps.extend(["-map", "[vout]"])
+        next_input += 1
+    else:
+        maps.extend(["-map", "0:v"])
+
+    if voiceover_audio:
+        inputs += ["-i", str(voiceover_audio)]
+        filter_parts.append(
+            f"[0:a][{next_input}:a]amix=inputs=2:duration=first:dropout_transition=2,"
+            "loudnorm=I=-14:TP=-1.5:LRA=11[aout]"
+        )
+        maps.extend(["-map", "[aout]"])
+    else:
+        maps.extend(["-map", "0:a?"])
+
+    args = inputs
+    if filter_parts:
+        args += ["-filter_complex", ";".join(filter_parts)]
+    args += maps + [
+        "-c:v", "libx264",
+        "-preset", "veryfast",
+        "-crf", "19",
+        "-c:a", "aac",
+        "-b:a", "160k",
+        "-movflags", "+faststart",
+        str(output_path),
+    ]
+    result = subprocess.run(
+        ["ffmpeg", "-hide_banner", "-y", *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip()[-4000:] or "Composition des assets échouée.")
+    return Path(output_path)
