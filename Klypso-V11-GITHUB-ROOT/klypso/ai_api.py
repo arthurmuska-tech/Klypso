@@ -23,6 +23,7 @@ from .clips.chat_intelligence import build_chat_signals, enrich_candidates_with_
 from .clips.media_intelligence import analyze_media_signals, enrich_candidates_with_media_signals, generate_signal_candidates
 from .clips.renderer import concat_videos, render_candidate
 from .clips.vision_tracking import analyze_face_tracking, enrich_candidates_with_face_tracking
+from .clips.gameplay_intelligence import classify_game_context, enrich_gameplay_candidates
 from .social_profiles import clamp_candidate_to_profile, get_social_profile
 from .ai_assets import asset_status, generate_broll_image, generate_voiceover
 
@@ -558,6 +559,7 @@ def status():
             "performance_memory": True,
             "smart_reframe": True,
             "face_tracking": True,
+            "gameplay_intelligence": True,
             "social_renderer": True,
             "scheduled_distribution": True,
             "native_platform_posting": False,
@@ -630,8 +632,15 @@ def analyze_job(job_id):
 
         chat_messages = normalize_chat_messages(payload.get("chat_messages") or [])
         chat_signals = build_chat_signals(chat_messages)
+        transcript_preview = " ".join(str(item.get("text", "")) for item in chat_signals.get("hot_messages", [])[:30])
+        game_context = classify_game_context(
+            payload.get("game_title") or preferences.get("game_title") or "",
+            transcript_preview,
+            chat_signals.get("top_terms", []),
+        )
 
         evidence_preferences = dict(preferences)
+        evidence_preferences["_game_context"] = game_context
         evidence_preferences["_media_signals"] = media_signals
         evidence_preferences["_chat_signals"] = chat_signals
 
@@ -650,6 +659,7 @@ def analyze_job(job_id):
         candidates = enrich_candidates_with_media_signals(candidates, media_signals)
         candidates = enrich_candidates_with_chat_signals(candidates, chat_signals)
         candidates = enrich_candidates_with_face_tracking(candidates, face_tracking)
+        candidates = enrich_gameplay_candidates(candidates, game_context)
         agent_report = run_agent_suite(
             analysis["duration"],
             analysis=analysis,
@@ -714,6 +724,7 @@ def analyze_job(job_id):
         result["media_intelligence"] = media_signals
         result["chat_intelligence"] = chat_signals
         result["vision_tracking"] = face_tracking
+        result["gameplay_intelligence"] = game_context
 
         saved = {
             "mode": mode,
@@ -727,6 +738,7 @@ def analyze_job(job_id):
             "preferences": preferences,
             "media_signals": media_signals,
             "vision_tracking": face_tracking,
+            "gameplay_intelligence": game_context,
         }
 
         with get_db(current_app.config["DATABASE_PATH"]) as db:
