@@ -1152,3 +1152,24 @@ body.v14-no-motion .button:after{display:none}
 
 @media(max-width:980px){.v16-plan-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:680px){.v16-plan-grid{grid-template-columns:1fr}.v16-billing-note{align-items:flex-start;flex-direction:column}}
+
+
+/* V16 dashboard + subscription */
+.workspace-personal-chip{
+  display:inline-flex;align-items:center;gap:7px;margin:16px 0 0;padding:7px 9px;border:1px solid var(--k-line);border-radius:999px;background:var(--k-surface);color:var(--k-muted);font:800 7px 'Space Grotesk';letter-spacing:.05em;
+}
+.workspace-personal-chip b{color:var(--k-ink)}.workspace-personal-chip i{display:grid;place-items:center;width:15px;height:15px;border-radius:50%;background:rgba(79,139,104,.12);color:#4f8b68;font-style:normal}
+.subscription-v16{padding-bottom:80px}
+.subscription-grid-v16{display:grid;grid-template-columns:1.25fr .75fr;gap:14px;margin-top:26px}
+.subscription-hero-v16,.subscription-info-v16,.subscription-manage-v16{border-radius:22px!important;box-shadow:var(--k-shadow)!important}
+.subscription-hero-v16{padding:28px;display:flex;align-items:center;justify-content:space-between;gap:26px;min-height:220px;background:linear-gradient(135deg,var(--k-surface-strong),color-mix(in srgb,var(--k-accent-soft) 36%,var(--k-surface)))}
+.subscription-hero-v16 h2{margin:10px 0 6px;font:800 44px 'Manrope';letter-spacing:-.06em}.subscription-hero-v16 p{margin:0;color:var(--k-muted);font-size:10px}
+.subscription-status-v16{min-width:180px;padding:18px;border:1px solid var(--k-line);border-radius:18px;background:var(--k-surface);text-align:center}
+.subscription-status-v16 span{display:block;width:9px;height:9px;margin:0 auto 10px;border-radius:50%;background:var(--k-accent);box-shadow:0 0 20px var(--k-accent)}
+.subscription-status-v16 strong,.subscription-status-v16 small{display:block}.subscription-status-v16 strong{font:800 13px 'Space Grotesk';letter-spacing:.08em}.subscription-status-v16 small{margin-top:5px;color:var(--k-muted);font-size:8px}
+.subscription-info-v16{padding:24px}.subscription-info-v16>.eyebrow-v11{display:block;margin-bottom:11px}
+.subscription-stat-v16{display:flex;align-items:baseline;justify-content:space-between;padding:14px 0;border-top:1px solid var(--k-line)}.subscription-stat-v16 b{font:800 24px 'Manrope';letter-spacing:-.04em}.subscription-stat-v16 span{color:var(--k-muted);font-size:8px}
+.subscription-banner-v16{display:grid;gap:5px;margin-top:14px;padding:18px 20px;border:1px solid color-mix(in srgb,var(--k-accent) 24%,var(--k-line));border-radius:18px;background:linear-gradient(90deg,var(--k-accent-soft),var(--k-surface));box-shadow:var(--k-shadow)}
+.subscription-banner-v16 strong{font:800 13px 'Manrope';letter-spacing:-.02em}.subscription-banner-v16 small{color:var(--k-muted);font-size:8px}
+.subscription-manage-v16{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-top:14px;padding:23px 25px}.subscription-manage-v16 h2{margin:7px 0 5px;font:800 19px 'Manrope'}.subscription-manage-v16 p{margin:0;color:var(--k-muted);font-size:9px}
+@media(max-width:850px){.subscription-grid-v16{grid-template-columns:1fr}.subscription-hero-v16{align-items:flex-start;flex-direction:column}.subscription-status-v16{width:100%;min-width:0}.subscription-manage-v16{align-items:flex-start;flex-direction:column}.subscription-manage-v16 .button{width:100%}}
