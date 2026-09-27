@@ -159,6 +159,76 @@ def handle_upload():
         return render_template("upload.html"), 500
 
 
+@clips_bp.post("/api/clips/render-standard/<int:job_id>")
+@login_required
+def render_standard_clip(job_id):
+    """Render one manually chosen clip without the semantic AI engine."""
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        job = db.execute(
+            "SELECT * FROM jobs WHERE id=? AND user_id=?",
+            (job_id, session["user_id"]),
+        ).fetchone()
+    if not job:
+        return {"error": "Projet introuvable."}, 404
+    if job["job_type"] != "clip_analysis":
+        return {"error": "Ce projet n'est pas un clip standard."}, 400
+
+    payload = json.loads(job["payload_json"] or "{}")
+    source = Path(payload.get("path", ""))
+    if not source.is_file():
+        return {"error": "Vidéo source introuvable."}, 404
+    body = request.get_json(silent=True) or {}
+    try:
+        from .analyzer import analyze_media
+        from .renderer import RATIOS, render_candidate
+
+        start = max(0.0, float(body.get("start", 0)))
+        end = float(body.get("end", start + 30))
+        output_format = body.get("output_format", payload.get("output_format", "9:16"))
+        if output_format not in RATIOS:
+            output_format = "9:16"
+        duration = float(analyze_media(str(source))["duration"])
+        if duration <= 0:
+            raise ValueError("Durée vidéo invalide.")
+        start = min(start, max(0.0, duration - 1.0))
+        end = max(start + 1.0, min(end, duration))
+        if end - start < 1.0:
+            raise ValueError("La durée du clip doit être positive.")
+
+        folder = user_storage(current_app.config["STORAGE_PATH"], session["user_id"]) / "standard"
+        folder.mkdir(parents=True, exist_ok=True)
+        output = folder / f"klypso-{job_id}-standard-{int(start * 10)}.mp4"
+        render_candidate(
+            str(source),
+            str(output),
+            {"start": start, "end": end, "duration": end - start},
+            output_format=output_format,
+            transcript_segments=None,
+            subtitles=False,
+            normalize_audio=True,
+        )
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            cur = db.execute(
+                "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
+                (session["user_id"], f"Clip standard #{job_id}.mp4", str(output), "video/mp4", output.stat().st_size),
+            )
+            media_id = cur.lastrowid
+            db.commit()
+        return {
+            "ok": True,
+            "media_id": media_id,
+            "start": round(start, 3),
+            "end": round(end, 3),
+            "duration": round(end - start, 3),
+            "download_url": f"/studio/ai-download/{media_id}",
+        }, 200
+    except ValueError as exc:
+        return {"error": str(exc)}, 400
+    except Exception:
+        current_app.logger.exception("Standard clip render failed")
+        return {"error": "Le rendu du clip standard a échoué."}, 500
+
+
 @clips_bp.post("/clips/feedback")
 @login_required
 def feedback():
