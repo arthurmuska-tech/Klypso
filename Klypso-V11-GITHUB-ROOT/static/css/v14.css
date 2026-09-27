@@ -1308,3 +1308,14 @@ body.v14-no-motion .showcase-card{transform:none!important}
 .demo-publish-card{padding:22px;border:1px solid var(--k-line);border-radius:20px}.demo-publish-icons{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:22px}.demo-publish-icons span{height:48px;display:grid;place-items:center;border:1px solid var(--k-line);border-radius:12px;font:800 10px 'Manrope'}.demo-publish-card strong{display:block;font:800 18px 'Manrope'}.demo-publish-card small{display:block;margin-top:8px;color:var(--k-muted);line-height:1.5}.demo-calendar{display:flex;align-items:center;gap:12px;margin-bottom:22px}.demo-calendar b,.demo-score{font:800 29px 'Manrope';color:var(--k-accent)}.demo-calendar span{font-size:11px}.demo-cta{padding:90px 0 40px;text-align:center}.demo-cta h2{margin:12px 0 22px;font:800 clamp(40px,6vw,72px)/.98 'Manrope';letter-spacing:-.06em}
 @media(max-width:900px){.demo-grid,.demo-clip-grid,.demo-publish-grid{grid-template-columns:1fr}.demo-studio{grid-template-columns:56px 1fr}.demo-inspector{display:none}}
 @media(max-width:700px){.public-demo-v20{width:min(100% - 32px,1380px)}.demo-shell{grid-template-columns:1fr}.demo-sidebar{display:none}.demo-main{padding:18px}.demo-studio-center{padding:14px}.demo-canvas{height:300px}.demo-clip{grid-template-columns:82px 1fr auto}.demo-clip-thumb{height:82px}.demo-tabs{top:6px}}
+
+
+/* V20 — OAuth status + public login clarity */
+.oauth-status-card{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 8px;padding:12px 14px;border:1px solid var(--k-line);border-radius:14px;background:color-mix(in srgb,var(--k-surface-strong) 92%,transparent)}
+.oauth-status-card>div{display:grid;grid-template-columns:10px 1fr;column-gap:9px;align-items:center}
+.oauth-status-card strong{font:800 11px 'Manrope'}.oauth-status-card small{grid-column:2;color:var(--k-muted);font-size:9px;line-height:1.4}
+.oauth-status-dot{width:8px;height:8px;border-radius:50%;background:#ffb44c;box-shadow:0 0 12px rgba(255,180,76,.35)}
+.oauth-status-card.is-ready .oauth-status-dot{background:#43d17a;box-shadow:0 0 12px rgba(67,209,122,.35)}
+.oauth-status-copy{border:1px solid var(--k-line);background:var(--k-surface);color:var(--k-muted);padding:7px 9px;border-radius:9px;cursor:pointer;font:700 9px 'DM Sans'}
+.oauth-status-copy:hover{color:var(--k-ink);border-color:color-mix(in srgb,var(--k-accent) 38%,var(--k-line))}
+.oauth-button-disabled{opacity:.55;cursor:not-allowed}
