@@ -18,7 +18,25 @@ clips_bp = Blueprint("clips", __name__)
 @login_required
 def clips():
     with get_db(current_app.config["DATABASE_PATH"]) as db:
-        jobs = db.execute("SELECT * FROM jobs WHERE user_id=? ORDER BY id DESC", (session["user_id"],)).fetchall()
+        rows = db.execute(
+            "SELECT * FROM jobs WHERE user_id=? ORDER BY id DESC",
+            (session["user_id"],),
+        ).fetchall()
+        jobs = []
+        for row in rows:
+            item = dict(row)
+            payload = {}
+            try:
+                payload = json.loads(row["payload_json"] or "{}")
+            except (TypeError, ValueError, json.JSONDecodeError):
+                payload = {}
+            project_id = payload.get("project_id")
+            project = db.execute(
+                "SELECT name FROM projects WHERE id=? AND user_id=?",
+                (project_id, session["user_id"]),
+            ).fetchone() if project_id else None
+            item["project_name"] = project["name"] if project else f"Projet #{row['id']}"
+            jobs.append(item)
     return render_template("clips.html", jobs=jobs)
 
 
