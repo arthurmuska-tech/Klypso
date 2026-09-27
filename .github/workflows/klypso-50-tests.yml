@@ -1,4 +1,4 @@
-name: KLYPSO — 88 scenario tests
+name: KLYPSO — 89 scenario tests
 on:
   push:
     paths:
@@ -37,5 +37,5 @@ jobs:
       - name: CSS structure check
         run: python -c "from pathlib import Path; css=Path('static/css/v14.css').read_text(encoding='utf-8'); assert css.count('{')==css.count('}'), 'Unbalanced CSS braces'; assert css.count('(')==css.count(')'), 'Unbalanced CSS parentheses'; print('CSS structure OK')"
 
-      - name: Run 88 scenarios
+      - name: Run 89 scenarios
         run: pytest -q tests/test_50_scenarios.py
