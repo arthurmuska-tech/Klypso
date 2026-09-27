@@ -102,10 +102,10 @@ def consume_clip_credits(user_id, plan_key, cost, metadata=None):
             )
 
         new_balance = balance - cost
-        new_count = count + 1
+        new_count = count
         db.execute(
-            "UPDATE users SET credit_balance=?, monthly_clip_count=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
-            (new_balance, new_count, user_id),
+            "UPDATE users SET credit_balance=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            (new_balance, user_id),
         )
         db.execute(
             "INSERT INTO credit_transactions(user_id,amount,balance_after,transaction_type,metadata_json) VALUES(?,?,?,?,?)",
@@ -196,4 +196,35 @@ def refund_processing_credits(user_id, cost, metadata=None):
             "INSERT INTO credit_transactions(user_id,amount,balance_after,transaction_type,metadata_json) VALUES(?,?,?,?,?)",
             (user_id, cost, new_balance, "processing_refund", json.dumps(metadata or {}, ensure_ascii=False)),
         )
+        db.commit()
+
+
+def consume_monthly_clip_units(user_id, plan_key, units, metadata=None):
+    """Increment the real clip-output quota atomically."""
+    units = max(1, int(units))
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        db.execute("BEGIN IMMEDIATE")
+        _, count, plan = _sync_balance(db, user_id, plan_key, _now())
+        if count + units > plan.clips_per_month:
+            raise CreditError(f"Limite de {plan.clips_per_month} clips atteinte pour ce mois.")
+        new_count = count + units
+        db.execute(
+            "UPDATE users SET monthly_clip_count=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            (new_count, user_id),
+        )
+        db.commit()
+        return {"monthly_clip_count": new_count, "monthly_limit": plan.clips_per_month}
+
+
+def refund_monthly_clip_units(user_id, units, metadata=None):
+    units = max(0, int(units))
+    if not units:
+        return
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute("SELECT monthly_clip_count FROM users WHERE id=?", (user_id,)).fetchone()
+        if not row:
+            return
+        new_count = max(0, int(row["monthly_clip_count"] or 0) - units)
+        db.execute("UPDATE users SET monthly_clip_count=?,updated_at=CURRENT_TIMESTAMP WHERE id=?", (new_count, user_id))
         db.commit()
