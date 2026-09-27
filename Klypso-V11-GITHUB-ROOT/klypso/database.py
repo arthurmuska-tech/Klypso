@@ -385,6 +385,10 @@ def _seed_creator_promo_codes(conn):
 def init_db(path):
     if not str(path).startswith(("postgresql://", "postgres://")):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
+    elif os.getenv("RENDER"):
+        # Production must use a managed/external Postgres database so user records
+        # survive Render deploys/restarts. The Render Blueprint supplies DATABASE_URL.
+        pass
     with get_db(path) as conn:
         conn.executescript(SCHEMA)
         _add_column_if_missing(conn, "users", "auth_provider", "TEXT NOT NULL DEFAULT 'email'")
