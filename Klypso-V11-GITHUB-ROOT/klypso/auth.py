@@ -174,6 +174,8 @@ def _create_email_user(email):
 
 def _oauth_user(provider, subject, email, profile=None):
     profile = profile or {}
+    if "email_verified" in profile and profile.get("email_verified") is False:
+        raise ValueError("L'adresse e-mail du fournisseur OAuth n'est pas vérifiée.")
     email = (email or "").lower().strip()
     display_name = str(profile.get("name") or profile.get("given_name") or email.split("@", 1)[0]).strip()[:80]
     avatar_url = str(profile.get("picture") or "").strip()[:1000] or None
@@ -284,6 +286,22 @@ def login():
     session["pending_purpose"] = "login"
     return redirect(url_for("auth.verify_email"))
 
+
+@auth_bp.post("/resend-code")
+def resend_code():
+    email = session.get("pending_email")
+    purpose = session.get("pending_purpose")
+    if not email or purpose not in {"register", "login"}:
+        return redirect(url_for("auth.login"))
+    try:
+        _issue_code(email, purpose)
+        flash("Un nouveau code a été envoyé.", "success")
+    except RuntimeError as exc:
+        flash(str(exc), "error")
+    except Exception:
+        current_app.logger.exception("OTP resend failed")
+        flash("Impossible d'envoyer un nouveau code pour le moment.", "error")
+    return redirect(url_for("auth.verify_email"))
 
 @auth_bp.get("/oauth/google")
 def google_login():
