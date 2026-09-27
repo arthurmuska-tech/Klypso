@@ -56,6 +56,13 @@ def _now():
     return datetime.now(timezone.utc)
 
 
+def _public_callback(endpoint):
+    base = (current_app.config.get("PUBLIC_BASE_URL") or "").rstrip("/")
+    if base:
+        return f"{base}{endpoint}"
+    return url_for(endpoint.lstrip("/"), _external=True)
+
+
 def _iso():
     return _now().isoformat()
 
@@ -315,7 +322,7 @@ def google_login():
     if client is None:
         flash("Google OAuth n'est pas encore configuré sur KLYPSO.", "error")
         return redirect(url_for("auth.login"))
-    redirect_uri = url_for("auth.google_callback", _external=True)
+    redirect_uri = _public_callback("/oauth/google/callback")
     return client.authorize_redirect(redirect_uri)
 
 
@@ -325,7 +332,7 @@ def apple_login():
     if client is None:
         flash("Apple OAuth n'est pas encore configuré sur KLYPSO.", "error")
         return redirect(url_for("auth.login"))
-    return client.authorize_redirect(url_for("auth.apple_callback", _external=True))
+    return client.authorize_redirect(_public_callback("/oauth/apple/callback"))
 
 
 @auth_bp.get("/oauth/apple/callback")
