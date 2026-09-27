@@ -568,3 +568,36 @@ body.v14-no-motion .landing-window,body.v14-no-motion .landing-float-one,body.v1
 @media(max-width:700px){.workspace-v15{padding-top:20px}.workspace-hero{padding:30px;min-height:auto}.workspace-hero h1{font-size:52px}.workspace-metrics,.workspace-start-grid{grid-template-columns:1fr}.workspace-start-main{grid-row:auto}.workspace-start-card{min-height:290px}.workspace-flow{margin:80px 0 60px;padding:20px 0}.workspace-flow-steps{grid-template-columns:1fr 1fr}.workspace-flow-steps div:nth-child(2){border-right:0}.workspace-flow-steps div:nth-child(-n+2){border-bottom:1px solid var(--k-line)}.workspace-project-row{grid-template-columns:28px 42px 1fr 28px}.workspace-project-state,.workspace-project-date{display:none}.workspace-note{flex-direction:column;align-items:flex-start}.workspace-note-button{width:100%;text-align:center}.workspace-empty{align-items:flex-start;flex-direction:column}.workspace-empty .button{margin-left:0}}
 @media(prefers-reduced-motion:reduce){.workspace-status-orbit{animation:none}.workspace-start-card,.workspace-project-row>a,.workspace-link{transition:none!important}}
 body.v14-no-motion .workspace-status-orbit{animation:none!important}
+
+/* ================= V15.3 — CINEMATIC DEPTH + MICRO INTERACTIONS ================= */
+.landing-v15-hero-art{transform:translate3d(0,var(--hero-depth-y,0),0) rotate(var(--hero-depth-r,0deg));transition:transform .18s linear;will-change:transform}
+.landing-v15-feature-grid article{isolation:isolate}
+.landing-v15-feature-grid article:before{content:"";position:absolute;inset:0;background:linear-gradient(118deg,transparent 18%,color-mix(in srgb,var(--k-accent) 8%,transparent) 46%,transparent 74%);transform:translateX(-120%);transition:transform .75s cubic-bezier(.16,1,.3,1);pointer-events:none;z-index:0}
+.landing-v15-feature-grid article:hover:before{transform:translateX(120%)}
+.landing-v15-feature-grid article>*{position:relative;z-index:1}
+.landing-v15-feature-grid article .landing-feature-icon{transition:transform .45s cubic-bezier(.16,1,.3,1),box-shadow .45s}
+.landing-v15-feature-grid article:hover .landing-feature-icon{transform:translateY(-4px) rotate(-5deg) scale(1.05);box-shadow:0 16px 35px color-mix(in srgb,var(--k-accent) 15%,transparent)}
+.landing-window{will-change:transform}.landing-window:hover{transform:perspective(1400px) rotateY(-2.5deg) rotateX(1deg) translateY(-5px)!important;box-shadow:0 52px 130px rgba(40,30,20,.19)}
+.landing-video-play{transition:transform .3s cubic-bezier(.16,1,.3,1),box-shadow .3s}.landing-window:hover .landing-video-play{transform:scale(1.06);box-shadow:0 20px 48px rgba(30,25,18,.18)}
+.landing-story{position:relative}
+.landing-story:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 70% 45%,color-mix(in srgb,var(--k-accent) 6%,transparent),transparent 35%);pointer-events:none}
+.landing-story-sticky{z-index:1}
+.landing-story-slide{opacity:calc(1 - (var(--slide-abs,1) * .48));transform:translate3d(0,calc(var(--slide-abs,1) * 14px),0) rotateY(var(--slide-tilt,0deg)) scale(calc(1 - (var(--slide-abs,1) * .035)));transform-origin:center center;filter:blur(calc(var(--slide-abs,1) * .45px));transition:opacity .28s ease,transform .16s linear,filter .16s linear}
+.landing-story-slide.is-active{opacity:1;filter:none}
+.landing-story-slide:after{content:"";position:absolute;inset:12% 10%;border:1px solid color-mix(in srgb,var(--k-accent) 12%,transparent);border-radius:40px;opacity:0;transform:scale(.94);pointer-events:none;transition:opacity .45s,transform .6s cubic-bezier(.16,1,.3,1)}
+.landing-story-slide.is-active:after{opacity:1;transform:scale(1)}
+.story-slide-card{transition:box-shadow .45s cubic-bezier(.16,1,.3,1),border-color .35s}
+.landing-story-slide.is-active .story-slide-card{box-shadow:0 45px 120px rgba(37,28,20,.19);border-color:color-mix(in srgb,var(--k-accent) 22%,var(--k-line))}
+.story-card-video:after,.story-card-analysis:after,.story-card-ready:after{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,var(--k-accent),transparent);opacity:.55;transform:translateX(-100%);animation:storyScanner 3.2s ease-in-out infinite}
+@keyframes storyScanner{0%,18%{transform:translateX(-100%)}48%,58%{transform:translateX(100%)}100%{transform:translateX(100%)}}
+.analysis-bars i{transform-origin:bottom;animation:analysisPulse 2.8s ease-in-out infinite}.analysis-bars i:nth-child(2){animation-delay:.15s}.analysis-bars i:nth-child(3){animation-delay:.3s}.analysis-bars i:nth-child(4){animation-delay:.45s}.analysis-bars i:nth-child(5){animation-delay:.6s}.analysis-bars i:nth-child(6){animation-delay:.75s}.analysis-bars i:nth-child(7){animation-delay:.9s}
+@keyframes analysisPulse{0%,100%{transform:scaleY(.72)}50%{transform:scaleY(1)}}
+.story-card-editor div{animation:editorBreath 4.2s ease-in-out infinite}.story-card-editor div:nth-child(2){animation-delay:.3s}.story-card-editor div:nth-child(3){animation-delay:.6s}.story-card-editor div:nth-child(4){animation-delay:.9s}
+@keyframes editorBreath{50%{filter:brightness(1.04);transform:translateY(-2px)}}
+.story-card-ready strong{animation:readyGlow 2.6s ease-in-out infinite}@keyframes readyGlow{50%{letter-spacing:-.045em;transform:scale(1.018)}}
+.workspace-hero{animation:workspaceHeroIn .8s cubic-bezier(.16,1,.3,1) both}@keyframes workspaceHeroIn{from{opacity:0;transform:translateY(22px) scale(.992)}to{opacity:1;transform:none}}
+.workspace-metrics article{animation:workspaceMetricIn .65s cubic-bezier(.16,1,.3,1) both}.workspace-metrics article:nth-child(2){animation-delay:.05s}.workspace-metrics article:nth-child(3){animation-delay:.1s}.workspace-metrics article:nth-child(4){animation-delay:.15s}
+@keyframes workspaceMetricIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.workspace-start-card:focus-visible,.landing-v15-feature-grid article:focus-visible,.landing-secondary:focus-visible{outline:3px solid color-mix(in srgb,var(--k-accent) 46%,transparent);outline-offset:4px}
+@media(prefers-reduced-motion:reduce){.landing-v15-hero-art{transform:none!important}.landing-v15-feature-grid article:before,.story-card-video:after,.story-card-analysis:after,.story-card-ready:after{display:none}.analysis-bars i,.story-card-editor div,.story-card-ready strong{animation:none}.landing-window:hover{transform:none!important}.workspace-hero,.workspace-metrics article{animation:none}}
+body.v14-no-motion .landing-v15-feature-grid article:before,.klypso-home .landing-v15-feature-grid article:before{animation:none}
