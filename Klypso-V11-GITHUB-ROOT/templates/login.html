@@ -3,7 +3,7 @@
 {% block content %}
 <section class="form-page auth-v12"><div class="auth-card">
 <span class="eyebrow-v11">CONNEXION</span><h1>Reviens dans ton workspace.</h1>
-<p class="auth-lead">Google ou ton adresse e-mail avec un code à usage unique.</p>
+<p class="auth-lead">Google, Apple ou ton adresse e-mail. Le mot de passe permet de te connecter même sans service e-mail.</p>
 <div class="oauth-status-card {{ 'is-ready' if config.GOOGLE_CLIENT_ID and config.GOOGLE_CLIENT_SECRET else 'is-missing' }}">
   <div><span class="oauth-status-dot"></span><strong>Google</strong><small>
     {% if config.GOOGLE_CLIENT_ID and config.GOOGLE_CLIENT_SECRET %}Connexion configurée · callback HTTPS{% else %}Configuration Google à compléter côté serveur{% endif %}
@@ -21,7 +21,14 @@
 <div class="auth-divider"><span>OU PAR E-MAIL</span></div>
 <form method="post" class="auth-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <label>Adresse e-mail<input name="email" type="email" required autocomplete="email" placeholder="toi@exemple.com"></label>
-<button class="button button-lg full" type="submit">Recevoir mon code →</button></form><div class="auth-trust-row"><span>✓ Code à usage unique</span><span>✓ E-mail vérifié</span><span>✓ Aucun mot de passe</span></div>
+<label>Mot de passe<input name="password" type="password" minlength="8" autocomplete="current-password" placeholder="8 caractères minimum"></label>
+<button class="button button-lg full" type="submit">Se connecter →</button></form><div class="auth-trust-row"><span>✓ Connexion sans e-mail sortant</span><span>✓ Mot de passe chiffré</span><span>✓ Google / Apple disponibles</span></div>
 <p class="auth-foot">Pas encore de compte ? <a href="{{ url_for('auth.register') }}">Créer mon compte</a> · <a href="{{ url_for('public_demo') }}">Voir la démo</a></p>
 </div></section>
 {% endblock %}{% block scripts %}<script src="{{ url_for('static', filename='js/auth-ui.js') }}?v=21.0" defer></script>{% endblock %}
+
+{% block head_extra %}
+{% if config.GOOGLE_CLIENT_ID and config.GOOGLE_CLIENT_SECRET %}
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+{% endif %}
+{% endblock %}
