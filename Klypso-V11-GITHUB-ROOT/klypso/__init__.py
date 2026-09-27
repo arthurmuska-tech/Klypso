@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 from flask import Flask, render_template, redirect, url_for
+from werkzeug.middleware.proxy_fix import ProxyFix
 from .config import Config
 from .database import init_db, get_db
 from .auth import auth_bp, login_required, init_oauth
@@ -19,6 +20,8 @@ from .credits import get_credit_state
 
 def create_app(test_config=None):
     app = Flask(__name__, template_folder="../templates", static_folder="../static", static_url_path="/static")
+    # Render terminates TLS at the proxy; trust the forwarded scheme/host for absolute OAuth URLs.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
     app.config.from_object(Config)
     if test_config:
         app.config.update(test_config)
