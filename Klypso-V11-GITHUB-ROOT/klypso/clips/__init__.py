@@ -301,8 +301,22 @@ def performance():
                 completion,
             ),
         )
+        # Immediately refresh Creator DNA so the next analysis can use this result.
+        try:
+            from .intelligence import update_creator_memory
+            saved_ai = saved.get("ai") or {}
+            payload = db.execute(
+                "SELECT payload_json FROM jobs WHERE id=? AND user_id=?",
+                (decision_job_id, session["user_id"]),
+            ).fetchone()
+            output_format = "9:16"
+            if payload:
+                output_format = json.loads(payload["payload_json"] or "{}").get("output_format", "9:16")
+            update_creator_memory(db, session["user_id"], saved_ai, output_format)
+        except Exception:
+            current_app.logger.exception("Unable to refresh Creator DNA from performance")
         db.commit()
-    return {"ok": True, "message": "Performance enregistrée. KLYPSO l'utilisera pour les prochaines sélections."}, 200
+    return {"ok": True, "message": "Performance enregistrée. Le Creator DNA est à jour."}, 200
 
 
 @clips_bp.post("/clips/feedback")
