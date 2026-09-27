@@ -25,7 +25,8 @@ class Config:
     FLASK_ENV = os.environ.get("FLASK_ENV", "development")
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
-    SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", FLASK_ENV == "production")
+    # Render terminates TLS before Flask. Default to secure cookies whenever the public URL is HTTPS.
+    SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", FLASK_ENV == "production" or os.environ.get("PUBLIC_BASE_URL", "").startswith("https://"))
     SESSION_COOKIE_NAME = "klypso_session"
     PERMANENT_SESSION_LIFETIME = 60 * 60 * 24 * 30
 
