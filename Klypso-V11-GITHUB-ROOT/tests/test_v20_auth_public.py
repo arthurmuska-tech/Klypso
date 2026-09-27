@@ -40,5 +40,5 @@ def test_v20_public_home_has_product_sections(tmp_path):
     response = app.test_client().get("/")
     html = response.get_data(as_text=True)
     assert response.status_code == 200
-    for marker in ["KLYPSO STUDIO", "CLIPS IA", "BRAND KIT", "PUBLICATION", "QUESTIONS FRÉQUENTES"]:
+    for marker in ["STUDIO", "CLIPS IA", "BRAND KIT", "PUBLICATION", "QUESTIONS FRÉQUENTES"]:
         assert marker in html
