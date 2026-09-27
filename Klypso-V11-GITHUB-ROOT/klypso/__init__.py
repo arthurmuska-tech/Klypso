@@ -62,7 +62,9 @@ def create_app(test_config=None):
 
     @app.route("/healthz")
     def healthz():
-        return {"status": "ok", "service": "klypso", "version": "11.0.0"}, 200
+        version_file = Path(app.root_path).parent / "VERSION"
+        version = version_file.read_text(encoding="utf-8").strip() if version_file.exists() else "unknown"
+        return {"status": "ok", "service": "klypso", "version": version}, 200
 
     @app.route("/dashboard")
     @login_required
@@ -113,7 +115,13 @@ def create_app(test_config=None):
     @app.route("/account")
     @login_required
     def account():
-        return render_template("account.html")
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            user = db.execute("SELECT * FROM users WHERE id=?", (session_user_id(),)).fetchone()
+            oauth_rows = db.execute(
+                "SELECT provider,created_at FROM oauth_identities WHERE user_id=? ORDER BY id",
+                (session_user_id(),),
+            ).fetchall()
+        return render_template("account.html", user=user, oauth_identities=oauth_rows)
 
     @app.route("/brand-kit")
     @login_required
