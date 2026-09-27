@@ -1858,3 +1858,38 @@ body.v14-no-motion .landing-story-slide,body.v14-no-motion .story-slide-card{tra
 body.v14-no-motion .landing-story-slide,body.v14-no-motion .story-slide-copy,body.v14-no-motion .story-slide-card{
   transform:none!important;transition:none!important;filter:none!important;opacity:1!important;
 }
+
+
+/* ================= V21.1 — AUTH PROVIDER SURFACES ================= */
+.oauth-google-wrap{
+  width:100%;
+  min-height:46px;
+  display:grid;
+  justify-items:center;
+  gap:6px;
+  margin-top:9px;
+}
+.oauth-google-wrap .g_id_signin{
+  width:min(100%,380px);
+  min-height:44px;
+  display:grid;
+  place-items:center;
+}
+.oauth-google-wrap .google-inline-status{
+  min-height:14px;
+  max-width:380px;
+  color:#b24b3e;
+  font-size:10px;
+  line-height:1.35;
+  text-align:center;
+}
+.oauth-google-wrap [aria-busy="true"]{opacity:.65;pointer-events:none}
+.oauth-button-disabled{
+  cursor:not-allowed!important;
+  opacity:.62;
+}
+.oauth-button-disabled small{
+  margin-left:auto;
+  color:var(--k-muted);
+  font-size:9px;
+}
