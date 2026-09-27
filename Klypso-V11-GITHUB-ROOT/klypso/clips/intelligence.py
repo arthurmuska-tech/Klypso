@@ -493,7 +493,13 @@ def enrich_ai_result(result, candidates, memory, transcript_segments=None):
         clip["performance_adjustment"] = performance_adjustment
 
     selected.sort(key=lambda item: item["opportunity_score"], reverse=True)
-    montage_ids = [clip["id"] for clip in selected[:5]]
+    selected_by_id = {str(clip["id"]): clip for clip in selected}
+    requested_montage = (result.get("montage") or {}).get("clip_ids") or []
+    montage_order = [str(clip_id) for clip_id in requested_montage if str(clip_id) in selected_by_id]
+    montage_order.extend(
+        clip["id"] for clip in selected if clip["id"] not in montage_order
+    )
+    montage_ids = montage_order[:5]
 
     return {
         "clips": selected,
