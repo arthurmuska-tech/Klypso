@@ -29,6 +29,33 @@ def _srt_time(seconds):
     return f"{hours:02d}:{minutes:02d}:{sec:02d},{milliseconds:03d}"
 
 
+def _caption_chunks(start, end, text, max_words=6, max_chars=42):
+    words = text.split()
+    if not words:
+        return []
+    chunks = []
+    current = []
+    for word in words:
+        proposal = " ".join(current + [word])
+        if current and (len(current) >= max_words or len(proposal) > max_chars):
+            chunks.append(" ".join(current))
+            current = [word]
+        else:
+            current.append(word)
+    if current:
+        chunks.append(" ".join(current))
+    duration = max(0.2, end - start)
+    total_weight = sum(max(1, len(chunk.split())) for chunk in chunks) or 1
+    cursor = start
+    output = []
+    for chunk in chunks:
+        portion = duration * (max(1, len(chunk.split())) / total_weight)
+        chunk_end = end if chunk == chunks[-1] else min(end, cursor + portion)
+        output.append((cursor, chunk_end, chunk))
+        cursor = chunk_end
+    return output
+
+
 def write_srt(segments, start, end, path):
     selected = []
     for segment in segments or []:
@@ -38,7 +65,9 @@ def write_srt(segments, start, end, path):
             continue
         text = " ".join(str(segment.get("text", "")).split()).strip()
         if text:
-            selected.append((seg_start - start, seg_end - start, text))
+            selected.extend(
+                _caption_chunks(seg_start - start, seg_end - start, text)
+            )
 
     with open(path, "w", encoding="utf-8") as handle:
         for index, (seg_start, seg_end, text) in enumerate(selected, start=1):
