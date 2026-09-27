@@ -41,12 +41,10 @@ _ANALYSIS_EXECUTOR = ThreadPoolExecutor(
 
 
 def _background_analyze(app, user_id, job_id):
-    """Run a long AI analysis outside the request thread while keeping Flask context."""
+    """Run a long AI analysis outside the request thread using an explicit user id."""
     try:
         with app.app_context():
-            with app.test_request_context("/"):
-                session["user_id"] = user_id
-                _run_analysis_job(job_id)
+            _run_analysis_job(user_id, job_id)
     except Exception:
         app.logger.exception("Background AI analysis failed for job %s", job_id)
 
@@ -688,12 +686,12 @@ def status():
     })
 
 
-def _run_analysis_job(job_id):
+def _run_analysis_job(user_id, job_id):
     with get_db(current_app.config["DATABASE_PATH"]) as db:
-        user = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
+        user = db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
         job = db.execute(
             "SELECT * FROM jobs WHERE id=? AND user_id=?",
-            (job_id, session["user_id"]),
+            (job_id, user_id),
         ).fetchone()
 
     denied = _assert_advanced(user)
@@ -723,7 +721,7 @@ def _run_analysis_job(job_id):
 
     try:
         with get_db(current_app.config["DATABASE_PATH"]) as db:
-            memory = build_creator_memory(db, session["user_id"])
+            memory = build_creator_memory(db, user_id)
 
         from .clips.analyzer import analyze_media
 
@@ -875,7 +873,7 @@ def _run_analysis_job(job_id):
                 "UPDATE jobs SET status=?,result_json=?,error_message=NULL,locked_at=NULL,heartbeat_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?",
                 ("completed", json.dumps(saved, ensure_ascii=False), job_id),
             )
-            update_creator_memory(db, session["user_id"], result, output_format)
+            update_creator_memory(db, user_id, result, output_format)
             db.commit()
 
         return jsonify({
