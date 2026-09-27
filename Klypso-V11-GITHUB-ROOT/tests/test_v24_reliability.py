@@ -151,6 +151,9 @@ def test_v24_free_plan_cannot_start_advanced_ai_mode(tmp_path):
     app = make_app(tmp_path)
     with app.app_context():
         user = _create_email_user("free@example.com")
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            db.execute("UPDATE users SET trial_started_at=NULL WHERE id=?", (user["id"],))
+            db.commit()
     client = app.test_client()
     with client.session_transaction() as sess:
         sess["user_id"] = user["id"]
