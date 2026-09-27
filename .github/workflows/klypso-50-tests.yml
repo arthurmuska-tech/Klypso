@@ -27,11 +27,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Python compile check
-        run: python -m py_compile web_app.py klypso/__init__.py klypso/ai_api.py klypso/clips/intelligence.py klypso/clips/renderer.py klypso/clips/pipeline.py klypso/clips/__init__.py klypso/clips/agents.py klypso/clips/audio_intelligence.py klypso/clips/chat_intelligence.py klypso/clips/media_intelligence.py klypso/clips/vision_tracking.py klypso/clips/gameplay_intelligence.py klypso/publisher.py klypso/publisher_cron.py klypso/social_connections.py klypso/studio/editor.py
+        run: python -m py_compile web_app.py klypso/__init__.py klypso/auth.py klypso/ai_api.py klypso/clips/intelligence.py klypso/clips/renderer.py klypso/clips/pipeline.py klypso/clips/__init__.py klypso/clips/agents.py klypso/clips/audio_intelligence.py klypso/clips/chat_intelligence.py klypso/clips/media_intelligence.py klypso/clips/vision_tracking.py klypso/clips/gameplay_intelligence.py klypso/publisher.py klypso/publisher_cron.py klypso/social_connections.py klypso/studio/editor.py
 
       - name: JavaScript syntax check
         run: |
           node --check static/js/app.js
+          node --check static/js/auth-ui.js
           node --check static/js/v11.js
           node --check static/js/v14.js
           node --check static/js/studio.js
