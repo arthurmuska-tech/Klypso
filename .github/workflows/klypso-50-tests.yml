@@ -1,4 +1,4 @@
-name: KLYPSO — V20 product tests
+name: KLYPSO — V22 production tests
 concurrency:
   group: klypso-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Python compile check
-        run: python -m py_compile web_app.py klypso/__init__.py klypso/auth.py klypso/ai_api.py klypso/clips/intelligence.py klypso/clips/renderer.py klypso/clips/pipeline.py klypso/clips/__init__.py klypso/clips/agents.py klypso/clips/audio_intelligence.py klypso/clips/chat_intelligence.py klypso/clips/media_intelligence.py klypso/clips/vision_tracking.py klypso/clips/gameplay_intelligence.py klypso/publisher.py klypso/publisher_cron.py klypso/social_connections.py klypso/studio/editor.py
+        run: python -m py_compile web_app.py klypso/__init__.py klypso/auth.py klypso/config.py klypso/database.py klypso/security.py klypso/ai_api.py klypso/clips/intelligence.py klypso/clips/renderer.py klypso/clips/pipeline.py klypso/clips/__init__.py klypso/clips/agents.py klypso/clips/audio_intelligence.py klypso/clips/chat_intelligence.py klypso/clips/media_intelligence.py klypso/clips/vision_tracking.py klypso/clips/gameplay_intelligence.py klypso/publisher.py klypso/publisher_cron.py klypso/social_connections.py klypso/studio/editor.py
 
       - name: JavaScript syntax check
         run: |
