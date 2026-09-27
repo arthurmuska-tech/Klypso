@@ -4,6 +4,7 @@ import secrets
 from flask import Blueprint, current_app, jsonify, render_template, request, send_file, session
 from ..auth import login_required
 from ..plans import get_plan
+from ..credits import CreditError, consume_processing_credits, refund_processing_credits
 from ..promo import effective_plan_key
 from ..database import get_db
 from ..media.ffprobe import probe
@@ -200,6 +201,19 @@ def render_studio_project(project_id):
     if not clips:
         return jsonify({"error": "La timeline est vide."}), 400
 
+    charged = max(1, (len(clips) + 1) // 2)
+    try:
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            user = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
+        consume_processing_credits(
+            session["user_id"],
+            effective_plan_key(user),
+            charged,
+            {"operation": "studio_render", "project_id": project_id, "clips": len(clips)},
+        )
+    except CreditError as exc:
+        return jsonify({"error": str(exc)}), 402
+
     ratio = str((timeline.get("settings") or {}).get("ratio") or "9:16")
     cleanup = str((timeline.get("settings") or {}).get("audio_cleanup") or "clean")
     preset = str((timeline.get("settings") or {}).get("social_preset") or "dynamic")
@@ -266,7 +280,12 @@ def render_studio_project(project_id):
             "output_format": output_format,
         })
     except (ValueError, RuntimeError) as exc:
+        refund_processing_credits(session["user_id"], charged, {"operation": "studio_render_failed", "project_id": project_id})
         return jsonify({"error": str(exc)}), 400
+    except Exception:
+        refund_processing_credits(session["user_id"], charged, {"operation": "studio_render_failed", "project_id": project_id})
+        current_app.logger.exception("Studio render failed")
+        return jsonify({"error": "Le rendu Studio a échoué."}), 500
     finally:
         for path in rendered_paths:
             if path.exists():
