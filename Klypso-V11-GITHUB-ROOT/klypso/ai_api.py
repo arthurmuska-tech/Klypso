@@ -22,6 +22,7 @@ from .clips.agents import build_montage_directive, run_agent_suite
 from .clips.chat_intelligence import build_chat_signals, enrich_candidates_with_chat_signals, generate_chat_candidates, normalize_chat_messages
 from .clips.media_intelligence import analyze_media_signals, enrich_candidates_with_media_signals, generate_signal_candidates
 from .clips.renderer import concat_videos, render_candidate
+from .clips.vision_tracking import analyze_face_tracking, enrich_candidates_with_face_tracking
 from .social_profiles import clamp_candidate_to_profile, get_social_profile
 
 
@@ -344,6 +345,7 @@ def status():
             "creator_dna": True,
             "performance_memory": True,
             "smart_reframe": True,
+            "face_tracking": True,
             "social_renderer": True,
             "scheduled_distribution": True,
             "native_platform_posting": False,
@@ -406,6 +408,12 @@ def analyze_job(job_id):
                 "event_windows": [],
             }
 
+        try:
+            face_tracking = analyze_face_tracking(path)
+        except Exception as vision_exc:
+            current_app.logger.warning("Face tracking unavailable: %s", type(vision_exc).__name__)
+            face_tracking = {"engine": "opencv-face-v1", "available": False, "tracks": []}
+
         chat_messages = normalize_chat_messages(payload.get("chat_messages") or [])
         chat_signals = build_chat_signals(chat_messages)
 
@@ -427,6 +435,7 @@ def analyze_job(job_id):
                 seen_windows.add(key)
         candidates = enrich_candidates_with_media_signals(candidates, media_signals)
         candidates = enrich_candidates_with_chat_signals(candidates, chat_signals)
+        candidates = enrich_candidates_with_face_tracking(candidates, face_tracking)
         agent_report = run_agent_suite(
             analysis["duration"],
             analysis=analysis,
@@ -455,6 +464,7 @@ def analyze_job(job_id):
                     candidates.append(item)
             candidates = enrich_candidates_with_media_signals(candidates, media_signals)
             candidates = enrich_candidates_with_chat_signals(candidates, chat_signals)
+            candidates = enrich_candidates_with_face_tracking(candidates, face_tracking)
             agent_report = run_agent_suite(
                 analysis["duration"],
                 analysis=analysis,
@@ -489,6 +499,7 @@ def analyze_job(job_id):
         result["agents"] = agent_report
         result["media_intelligence"] = media_signals
         result["chat_intelligence"] = chat_signals
+        result["vision_tracking"] = face_tracking
 
         saved = {
             "mode": mode,
@@ -501,6 +512,7 @@ def analyze_job(job_id):
             "output_format": output_format,
             "preferences": preferences,
             "media_signals": media_signals,
+            "vision_tracking": face_tracking,
         }
 
         with get_db(current_app.config["DATABASE_PATH"]) as db:
