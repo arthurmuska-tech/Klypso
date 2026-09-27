@@ -149,8 +149,8 @@ def create_app(test_config=None):
         with get_db(app.config["DATABASE_PATH"]) as db:
             user = db.execute("SELECT * FROM users WHERE id=?", (session_user_id(),)).fetchone()
             oauth_rows = db.execute(
-                "SELECT provider,created_at FROM oauth_identities WHERE user_id=? ORDER BY id",
-                (session_user_id(),),
+                "SELECT provider,created_at FROM oauth_identities WHERE user_id=? AND provider=? ORDER BY id",
+                (session_user_id(), "google"),
             ).fetchall()
         return render_template("account.html", user=user, oauth_identities=oauth_rows)
 
