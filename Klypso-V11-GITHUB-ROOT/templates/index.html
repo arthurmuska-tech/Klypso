@@ -1,6 +1,29 @@
 {% extends 'base.html' %}
 {% block title %}KLYPSO — Le workspace vidéo des créateurs{% endblock %}
 {% block meta_description %}KLYPSO transforme tes VOD et streams en clips, montages et contenus prêts à publier dans un workspace vidéo conçu pour les créateurs.{% endblock %}
+{% block head_extra %}
+<meta name="keywords" content="KLYPSO, clips IA, clipping IA, streamer, montage vidéo, clips Twitch, YouTube Shorts, TikTok, créateurs de contenu">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:title" content="KLYPSO — Clips IA et montage vidéo pour créateurs">
+<meta property="og:description" content="Transforme tes streams et VOD en clips et montages prêts à publier avec KLYPSO.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "KLYPSO",
+  "applicationCategory": "MultimediaApplication",
+  "operatingSystem": "Web",
+  "url": "{{ public_base_url }}/",
+  "description": "Workspace vidéo pour transformer des streams et VOD en clips et montages prêts à publier.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "EUR",
+    "category": "free"
+  }
+}
+</script>
+{% endblock %}
 {% block content %}
 <div class="landing-v15">
   <section class="landing-v15-hero">
