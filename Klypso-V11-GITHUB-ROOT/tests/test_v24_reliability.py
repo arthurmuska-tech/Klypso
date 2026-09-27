@@ -109,3 +109,10 @@ def test_v24_public_discovery_routes(tmp_path):
     verification = client.get("/google5ac38975c108f180.html")
     assert verification.status_code == 200
     assert "google-site-verification:" in verification.get_data(as_text=True)
+
+def test_v24_healthz_exposes_safe_dependency_status(tmp_path):
+    app = make_app(tmp_path)
+    payload = app.test_client().get("/healthz").get_json()
+    assert "google_configured" in payload
+    assert "email_configured" in payload
+    assert set(payload["media_tools"]) == {"ffmpeg", "ffprobe"}
