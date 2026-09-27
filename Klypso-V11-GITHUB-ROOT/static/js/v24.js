@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+  document.documentElement.classList.add('v24-motion-ready');
   const $$ = (s, root=document) => Array.from(root.querySelectorAll(s));
 
   const reveals = $$('.v24-reveal');
