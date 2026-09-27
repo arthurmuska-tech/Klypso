@@ -108,10 +108,20 @@ def create_app(test_config=None):
 
     @app.route("/healthz")
     def healthz():
+        import shutil
         version_file = Path(app.root_path).parent / "VERSION"
         version = version_file.read_text(encoding="utf-8").strip() if version_file.exists() else "unknown"
         database = "postgresql" if str(app.config["DATABASE_PATH"]).startswith(("postgresql://", "postgres://")) else "sqlite"
         storage = "s3" if object_storage_enabled() else "local"
+        email_ready = bool(
+            app.config.get("EMAIL_FROM")
+            and (app.config.get("RESEND_API_KEY") or app.config.get("EMAIL_SMTP_HOST"))
+        )
+        google_ready = bool(app.config.get("GOOGLE_CLIENT_ID") and app.config.get("GOOGLE_CLIENT_SECRET"))
+        media_tools = {
+            "ffmpeg": bool(shutil.which("ffmpeg")),
+            "ffprobe": bool(shutil.which("ffprobe")),
+        }
         db_status = "ok"
         try:
             with get_db(app.config["DATABASE_PATH"]) as db:
@@ -128,7 +138,11 @@ def create_app(test_config=None):
             "database_status": db_status,
             "storage": storage,
             "storage_required": bool(app.config.get("REQUIRE_OBJECT_STORAGE")),
+            "object_storage_configured": object_storage_enabled(),
             "worker_mode": app.config.get("AI_WORKER_MODE", "in_process"),
+            "google_configured": google_ready,
+            "email_configured": email_ready,
+            "media_tools": media_tools,
         }, 200 if status == "ok" else 503
 
     @app.route("/readyz")
