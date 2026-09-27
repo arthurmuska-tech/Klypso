@@ -61,9 +61,15 @@ def _iso():
 
 
 def _login(user):
+    now = _iso()
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        db.execute("UPDATE users SET last_login_at=?, updated_at=? WHERE id=?", (now, now, user["id"]))
+        db.commit()
     session.clear()
     session["user_id"] = user["id"]
     session["user_email"] = user["email"]
+    session["user_name"] = user["display_name"] or user["email"].split("@", 1)[0]
+    session["auth_provider"] = user["auth_provider"]
     session["csrf_token"] = secrets.token_urlsafe(32)
 
 
@@ -96,6 +102,24 @@ def _send_code(email, code):
 
 
 def _issue_code(email, purpose):
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        latest = db.execute(
+            "SELECT created_at FROM email_codes WHERE email=? AND purpose=? ORDER BY id DESC LIMIT 1",
+            (email, purpose),
+        ).fetchone()
+        if latest and latest["created_at"]:
+            try:
+                last = datetime.fromisoformat(latest["created_at"].replace("Z", "+00:00"))
+                if (_now() - last).total_seconds() < current_app.config["EMAIL_OTP_COOLDOWN_SECONDS"]:
+                    raise RuntimeError("Trop de demandes. Attends quelques secondes avant de redemander un code.")
+            except ValueError:
+                pass
+        recent = db.execute(
+            "SELECT COUNT(*) AS count FROM email_codes WHERE email=? AND purpose=? AND created_at >= ?",
+            (email, purpose, (_now() - timedelta(hours=1)).isoformat()),
+        ).fetchone()
+        if recent["count"] >= current_app.config["EMAIL_OTP_MAX_PER_HOUR"]:
+            raise RuntimeError("Trop de demandes de code. Réessaie plus tard.")
     code = f"{secrets.randbelow(1000000):06d}"
     expires = _now() + timedelta(minutes=current_app.config["EMAIL_OTP_MINUTES"])
     with get_db(current_app.config["DATABASE_PATH"]) as db:
@@ -133,10 +157,11 @@ def _verify_code(email, purpose, code):
 
 def _create_email_user(email):
     now = _iso()
+    display_name = email.split("@", 1)[0][:80]
     with get_db(current_app.config["DATABASE_PATH"]) as db:
         cur = db.execute(
-            "INSERT INTO users(email,password_hash,auth_provider,email_verified_at,trial_started_at) VALUES(?,?,?,?,?)",
-            (email, generate_password_hash(secrets.token_urlsafe(32)), "email", now, None),
+            "INSERT INTO users(email,password_hash,auth_provider,email_verified_at,trial_started_at,display_name) VALUES(?,?,?,?,?,?)",
+            (email, generate_password_hash(secrets.token_urlsafe(32)), "email", now, None, display_name),
         )
         uid = cur.lastrowid
         db.execute(
@@ -147,8 +172,11 @@ def _create_email_user(email):
         return db.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
 
 
-def _oauth_user(provider, subject, email):
+def _oauth_user(provider, subject, email, profile=None):
+    profile = profile or {}
     email = (email or "").lower().strip()
+    display_name = str(profile.get("name") or profile.get("given_name") or email.split("@", 1)[0]).strip()[:80]
+    avatar_url = str(profile.get("picture") or "").strip()[:1000] or None
     if not EMAIL_RE.match(email) or not subject:
         raise ValueError("Identité OAuth incomplète.")
     now = _iso()
@@ -162,8 +190,8 @@ def _oauth_user(provider, subject, email):
         user = db.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
         if not user:
             cur = db.execute(
-                "INSERT INTO users(email,password_hash,auth_provider,email_verified_at,trial_started_at) VALUES(?,?,?,?,?)",
-                (email, generate_password_hash(secrets.token_urlsafe(32)), provider, now, None),
+                "INSERT INTO users(email,password_hash,auth_provider,email_verified_at,trial_started_at,display_name,avatar_url) VALUES(?,?,?,?,?,?,?)",
+                (email, generate_password_hash(secrets.token_urlsafe(32)), provider, now, None, display_name, avatar_url),
             )
             uid = cur.lastrowid
             db.execute(
@@ -173,8 +201,8 @@ def _oauth_user(provider, subject, email):
         else:
             uid = user["id"]
             db.execute(
-                "UPDATE users SET auth_provider=?,email_verified_at=COALESCE(email_verified_at,?),updated_at=? WHERE id=?",
-                (provider, now, now, uid),
+                "UPDATE users SET auth_provider=?,email_verified_at=COALESCE(email_verified_at,?),display_name=COALESCE(NULLIF(?,''),display_name),avatar_url=COALESCE(NULLIF(?,''),avatar_url),updated_at=? WHERE id=?",
+                (provider, now, display_name, avatar_url or "", now, uid),
             )
         db.execute(
             "INSERT INTO oauth_identities(user_id,provider,subject) VALUES(?,?,?)",
@@ -284,7 +312,7 @@ def apple_callback():
     try:
         token = client.authorize_access_token()
         info = token.get("userinfo") or client.userinfo()
-        user = _oauth_user("apple", str(info["sub"]), info.get("email"))
+        user = _oauth_user("apple", str(info.get("sub") or ""), info.get("email"), info)
         _login(user)
         return redirect(url_for("dashboard"))
     except Exception:
@@ -301,7 +329,7 @@ def google_callback():
     try:
         token = client.authorize_access_token()
         info = token.get("userinfo") or client.userinfo()
-        user = _oauth_user("google", str(info["sub"]), info.get("email"))
+        user = _oauth_user("google", str(info.get("sub") or ""), info.get("email"), info)
         _login(user)
         return redirect(url_for("dashboard"))
     except Exception:
