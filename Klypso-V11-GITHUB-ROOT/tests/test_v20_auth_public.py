@@ -31,6 +31,16 @@ def test_v20_google_oauth_uses_public_base_url(tmp_path, monkeypatch):
     assert response == "REDIRECT"
 
 
+def test_v20_auth_pages_expose_google_and_no_apple(tmp_path):
+    app = make_app(tmp_path)
+    client = app.test_client()
+    for path in ["/login", "/register"]:
+        html = client.get(path).get_data(as_text=True)
+        assert "Google" in html
+        assert "Apple" not in html
+        assert "mot de passe" in html.lower()
+
+
 def test_v20_email_password_registration_and_login(tmp_path):
     app = make_app(tmp_path)
     client = app.test_client()
