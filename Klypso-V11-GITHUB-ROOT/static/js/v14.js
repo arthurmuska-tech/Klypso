@@ -199,8 +199,8 @@
   function updateLandingStory() {
     if (!story || !track || !slides.length) return;
 
-    /* Natural vertical storytelling: the browser owns scrolling.
-       Each scene reacts to its viewport position without hijacking the wheel. */
+    const viewport = window.innerHeight || 800;
+    const isMobile = window.matchMedia('(max-width: 900px)').matches;
     track.style.transform = 'none';
 
     let bestIndex = 0;
@@ -209,53 +209,60 @@
     slides.forEach((slide, i) => {
       const rect = slide.getBoundingClientRect();
       const center = rect.top + rect.height / 2;
-      const viewport = window.innerHeight || 800;
-      const distance = Math.abs(center - viewport * 0.55);
-      const focus = clamp01(1 - distance / Math.max(viewport * 0.78, 1));
-      const reveal = clamp01(1 - Math.max(0, rect.top - viewport * 0.9) / Math.max(rect.height * 1.5, 1));
+      const distancePx = center - viewport * 0.52;
+      const distance = distancePx / Math.max(viewport, 1);
+      const focus = clamp01(1 - Math.abs(distance) / (isMobile ? 1.05 : 0.9));
+      const enter = clamp01(1 - Math.max(0, rect.top - viewport * 0.95) / Math.max(rect.height * 0.9, 1));
+      const leave = clamp01(1 - Math.max(0, viewport * 0.12 - rect.bottom) / Math.max(rect.height * 0.8, 1));
 
       if (focus > bestFocus) {
         bestFocus = focus;
         bestIndex = i;
       }
 
-      slide.classList.toggle('is-active', focus > 0.22);
+      slide.classList.toggle('is-active', focus > 0.16);
       slide.classList.toggle('is-focused', focus > 0.58);
-      slide.style.setProperty('--slide-distance', ((center - viewport * 0.55) / Math.max(viewport, 1)).toFixed(3));
-      slide.style.setProperty('--slide-abs', Math.min(1.4, distance / Math.max(viewport, 1)).toFixed(3));
-      slide.style.setProperty('--slide-near', focus.toFixed(3));
-      slide.style.setProperty('--slide-opacity', Math.max(0.56, 0.58 + focus * 0.42).toFixed(3));
-      slide.style.setProperty('--story-viewport-focus', focus.toFixed(3));
+      slide.style.setProperty('--story-focus', focus.toFixed(3));
+      slide.style.setProperty('--story-distance', distance.toFixed(3));
+      slide.style.setProperty('--story-enter', enter.toFixed(3));
+      slide.style.setProperty('--story-leave', leave.toFixed(3));
 
-      const local = clamp01(reveal);
-      updateStoryWords(slide, local);
-      updateStoryCard(slide, local, (center - viewport * 0.55) / Math.max(viewport, 1));
+      const clampedDistance = Math.max(-1.2, Math.min(1.2, distance));
+      const drift = clampedDistance * (isMobile ? 32 : 76);
+      const scale = 0.94 + focus * 0.06;
+      const rotate = clampedDistance * (isMobile ? -0.8 : -2.2);
+      const opacity = 0.38 + focus * 0.62;
+
+      slide.style.setProperty('--story-drift', drift.toFixed(2) + 'px');
+      slide.style.setProperty('--story-scale', scale.toFixed(4));
+      slide.style.setProperty('--story-rotate', rotate.toFixed(2) + 'deg');
+      slide.style.setProperty('--story-opacity', opacity.toFixed(3));
+
+      updateStoryWords(slide, clamp01(0.2 + enter * 0.8));
+      updateStoryCard(slide, focus, clampedDistance);
     });
 
     if (storyCurrent) storyCurrent.textContent = String(bestIndex + 1).padStart(2, '0');
 
     const storyRect = story.getBoundingClientRect();
-    const storyVisible = clamp01(1 - Math.max(0, storyRect.top - viewportHeightSafe()) / Math.max(story.offsetHeight, 1));
-    if (storyProgress) storyProgress.style.width = (storyVisible * 100).toFixed(2) + '%';
+    const progress = clamp01((document.documentElement.scrollTop - (storyRect.top + window.scrollY) + viewport * 0.15) / Math.max(story.offsetHeight - viewport * 0.3, 1));
+    if (storyProgress) storyProgress.style.width = (progress * 100).toFixed(2) + '%';
+
     storyDots.forEach((dot, dotIndex) => {
       dot.classList.toggle('active', dotIndex === bestIndex);
       dot.setAttribute('aria-selected', String(dotIndex === bestIndex));
     });
 
-    storyActive = bestFocus > 0.08;
+    storyActive = bestFocus > 0.05;
     story.classList.toggle('is-live', storyActive);
 
     const heroArt = document.querySelector('.landing-v15-hero-art');
     if (heroArt) {
       const heroRect = heroArt.parentElement.getBoundingClientRect();
-      const heroProgress = Math.max(-1, Math.min(1, -heroRect.top / Math.max(1, window.innerHeight)));
-      heroArt.style.setProperty('--hero-depth-y', (heroProgress * -12).toFixed(2) + 'px');
-      heroArt.style.setProperty('--hero-depth-r', (heroProgress * 0.9).toFixed(2) + 'deg');
+      const heroProgress = Math.max(-1, Math.min(1, -heroRect.top / Math.max(1, viewport)));
+      heroArt.style.setProperty('--hero-depth-y', (heroProgress * -26).toFixed(2) + 'px');
+      heroArt.style.setProperty('--hero-depth-r', (heroProgress * 1.6).toFixed(2) + 'deg');
     }
-  }
-
-  function viewportHeightSafe() {
-    return window.innerHeight || 800;
   }
 
   function requestLandingStoryUpdate() {
