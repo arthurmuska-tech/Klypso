@@ -229,6 +229,60 @@ def render_standard_clip(job_id):
         return {"error": "Le rendu du clip standard a échoué."}, 500
 
 
+@clips_bp.post("/clips/performance")
+@login_required
+def performance():
+    body = request.get_json(silent=True) or {}
+    candidate_id = str(body.get("candidate_id", "")).strip()
+    decision_job_id = body.get("job_id")
+    platform = str(body.get("platform", "unknown")).strip().lower()
+    if platform not in {"youtube", "tiktok", "instagram", "x", "other", "unknown"}:
+        platform = "other"
+    if not candidate_id or not decision_job_id:
+        return {"error": "Projet ou clip invalide."}, 400
+
+    def non_negative_int(value):
+        try:
+            return max(0, int(value))
+        except (TypeError, ValueError):
+            return 0
+
+    try:
+        completion = float(body.get("completion_rate", 0) or 0)
+    except (TypeError, ValueError):
+        completion = 0.0
+    completion = max(0.0, min(100.0, completion))
+
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        job = db.execute(
+            "SELECT result_json FROM jobs WHERE id=? AND user_id=?",
+            (decision_job_id, session["user_id"]),
+        ).fetchone()
+        if not job:
+            return {"error": "Projet invalide."}, 404
+        saved = json.loads(job["result_json"] or "{}")
+        known = {str(clip.get("id")) for clip in (saved.get("ai", {}).get("clips") or [])}
+        if candidate_id not in known:
+            return {"error": "Clip invalide pour ce projet."}, 400
+        db.execute(
+            "INSERT INTO clip_metrics(user_id,job_id,candidate_id,platform,views,likes,comments,shares,completion_rate) "
+            "VALUES(?,?,?,?,?,?,?,?,?)",
+            (
+                session["user_id"],
+                decision_job_id,
+                candidate_id,
+                platform,
+                non_negative_int(body.get("views")),
+                non_negative_int(body.get("likes")),
+                non_negative_int(body.get("comments")),
+                non_negative_int(body.get("shares")),
+                completion,
+            ),
+        )
+        db.commit()
+    return {"ok": True, "message": "Performance enregistrée. KLYPSO l'utilisera pour les prochaines sélections."}, 200
+
+
 @clips_bp.post("/clips/feedback")
 @login_required
 def feedback():
