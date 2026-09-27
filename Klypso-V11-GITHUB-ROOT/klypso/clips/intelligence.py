@@ -6,6 +6,7 @@ and the creator's own history/feedback so each new project becomes more personal
 """
 from collections import Counter
 import json
+import math
 from statistics import mean
 
 
@@ -182,6 +183,63 @@ def _feedback_summary(db, user_id, limit=16):
     return feedback
 
 
+def _performance_summary(db, user_id, limit=24):
+    rows = db.execute(
+        "SELECT id, job_id, candidate_id, platform, views, likes, comments, shares, completion_rate "
+        "FROM clip_metrics WHERE user_id=? ORDER BY id DESC LIMIT ?",
+        (user_id, limit),
+    ).fetchall()
+    if not rows:
+        return {"metrics": [], "by_archetype": {}, "winners": []}
+
+    max_views = max(int(row["views"] or 0) for row in rows) or 1
+    metrics = []
+    for row in rows:
+        archetype = "unknown"
+        title = ""
+        hook = ""
+        if row["job_id"]:
+            job = db.execute(
+                "SELECT result_json FROM jobs WHERE id=? AND user_id=?",
+                (row["job_id"], user_id),
+            ).fetchone()
+            if job:
+                saved = _safe_json(job["result_json"])
+                for clip in (saved.get("ai", {}).get("clips") or []):
+                    if str(clip.get("id")) == str(row["candidate_id"]):
+                        archetype = clip.get("archetype", "unknown")
+                        title = _text(clip.get("title"), 90)
+                        hook = _text(clip.get("hook"), 130)
+                        break
+
+        views = max(0, int(row["views"] or 0))
+        interactions = max(0, int(row["likes"] or 0)) + max(0, int(row["comments"] or 0)) + max(0, int(row["shares"] or 0))
+        engagement_pct = (interactions / max(views, 1)) * 100.0
+        completion = max(0.0, min(100.0, _number(row["completion_rate"], 0)))
+        view_score = math.log1p(views) / math.log1p(max_views) * 100.0
+        engagement_score = min(100.0, engagement_pct * 10.0)
+        performance_score = 0.55 * view_score + 0.25 * engagement_score + 0.20 * completion
+        metrics.append({
+            "platform": row["platform"],
+            "views": views,
+            "likes": max(0, int(row["likes"] or 0)),
+            "comments": max(0, int(row["comments"] or 0)),
+            "shares": max(0, int(row["shares"] or 0)),
+            "completion_rate": round(completion, 1),
+            "performance_score": round(performance_score, 1),
+            "archetype": archetype,
+            "title": title,
+            "hook": hook,
+        })
+
+    grouped = {}
+    for metric in metrics:
+        grouped.setdefault(metric["archetype"], []).append(metric["performance_score"])
+    by_archetype = {key: round(mean(values), 1) for key, values in grouped.items()}
+    winners = sorted(metrics, key=lambda item: item["performance_score"], reverse=True)[:5]
+    return {"metrics": metrics, "by_archetype": by_archetype, "winners": winners}
+
+
 def build_creator_memory(db, user_id, limit=8):
     """Read prior AI projects + feedback + persisted profile into creator DNA."""
     profile_row = db.execute(
@@ -230,6 +288,7 @@ def build_creator_memory(db, user_id, limit=8):
     examples.extend(persisted_examples[-6:])
     examples = sorted(examples, key=lambda item: item.get("score", 0), reverse=True)[:6]
     feedback = _feedback_summary(db, user_id)
+    performance = _performance_summary(db, user_id)
     kept = sum(item["decision"] == "keep" for item in feedback)
     rejected = sum(item["decision"] == "reject" for item in feedback)
     kept_archetypes = Counter(
@@ -260,6 +319,9 @@ def build_creator_memory(db, user_id, limit=8):
         "feedback_rejected": rejected,
         "kept_archetypes": dict(kept_archetypes),
         "rejected_archetypes": dict(rejected_archetypes),
+        "performance_by_archetype": performance["by_archetype"],
+        "performance_winners": performance["winners"],
+        "performance_count": len(performance["metrics"]),
     }
 
 
@@ -279,6 +341,13 @@ def creator_memory_for_prompt(memory):
     for example in (memory.get("feedback") or [])[:4]:
         if example.get("title"):
             lines.append(f"- feedback {example['decision']}: [{example.get('archetype','unknown')}] {example.get('title')} — {example.get('hook','')}")
+    if memory.get("performance_count"):
+        lines.append(f"- performances réelles enregistrées: {memory['performance_count']}")
+        for archetype, score in sorted((memory.get("performance_by_archetype") or {}).items(), key=lambda item: item[1], reverse=True)[:5]:
+            lines.append(f"- performance {archetype}: {score}/100")
+        for example in memory.get("performance_winners", [])[:3]:
+            if example.get("title"):
+                lines.append(f"- vidéo performante {example.get('platform')}: {example['title']} · {example['views']} vues · {example['performance_score']}/100")
     return "\n".join(lines)
 
 
@@ -399,12 +468,17 @@ def enrich_ai_result(result, candidates, memory, transcript_segments=None):
 
     kept_bias = memory.get("kept_archetypes", {}) if memory else {}
     rejected_bias = memory.get("rejected_archetypes", {}) if memory else {}
+    performance_bias = memory.get("performance_by_archetype", {}) if memory else {}
     for clip in selected:
         bonus = min(8, int(kept_bias.get(clip["archetype"], 0)) * 2)
         penalty = min(8, int(rejected_bias.get(clip["archetype"], 0)) * 2)
-        clip["opportunity_score"] = max(0, min(100, clip["opportunity_score"] + bonus - penalty))
+        performance_adjustment = 0
+        if clip["archetype"] in performance_bias:
+            performance_adjustment = max(-6, min(6, round((performance_bias[clip["archetype"]] - 50.0) / 8.0)))
+        clip["opportunity_score"] = max(0, min(100, clip["opportunity_score"] + bonus - penalty + performance_adjustment))
         clip["score"] = clip["opportunity_score"]
-        clip["creator_fit_adjustment"] = bonus - penalty
+        clip["creator_fit_adjustment"] = bonus - penalty + performance_adjustment
+        clip["performance_adjustment"] = performance_adjustment
 
     selected.sort(key=lambda item: item["opportunity_score"], reverse=True)
     montage_ids = [clip["id"] for clip in selected[:5]]
