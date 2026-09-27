@@ -71,3 +71,13 @@ def promo_active(started_at, duration_weeks, now=None):
 
 def monthly_clip_quota_reached(used, plan_key):
     return used >= get_plan(plan_key).clips_per_month
+
+
+def trial_days_remaining(started_at, now=None):
+    """Return the number of whole trial days still available."""
+    end = trial_ends_at(started_at)
+    if not end:
+        return 0
+    now = now or datetime.now(timezone.utc)
+    seconds = max(0, (end - now).total_seconds())
+    return int((seconds + 86399) // 86400) if seconds > 0 else 0
