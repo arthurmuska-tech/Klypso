@@ -124,11 +124,8 @@ def handle_upload():
                 f"Cette vidéo dépasse la limite de {plan.max_upload_mb} MB de ton plan."
             )
 
+        size_bytes = destination.stat().st_size
         stored_path = persist_file(destination, user_id, file.filename, file.mimetype)
-        size_bytes = destination.stat().st_size if destination.exists() else None
-        if size_bytes is None:
-            # Object storage backend consumed the local file; use its remote object metadata later.
-            size_bytes = 0
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
                 "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
