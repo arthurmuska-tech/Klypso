@@ -119,6 +119,11 @@ def _prompt(duration, candidates, transcript_data=None, memory=None, mode="ai_cl
         "PRÉFÉRENCES DE CETTE PRODUCTION:\n"
         f"- style: {style}; priorité: {scene_priority}; rythme: {pace}\n"
         "Respecte ces préférences sans jamais inventer un événement.\n\n"
+        "PREUVES MULTIMODALES:\n"
+        f"Media: {json.dumps(preferences.get('_media_signals', {}), ensure_ascii=False)[:12000]}\n"
+        f"Vision/tracking: {json.dumps(preferences.get('_vision_tracking', {}), ensure_ascii=False)[:8000]}\n"
+        f"Chat: {json.dumps(preferences.get('_chat_signals', {}), ensure_ascii=False)[:12000]}\n"
+        f"Gameplay: {json.dumps(preferences.get('_game_context', {}), ensure_ascii=False)[:4000]}\n\n"
         "DOSSIER DES 15 AGENTS KLYPSO:\n"
         f"{json.dumps({'consensus_score': (agent_report or {}).get('consensus_score', 0), 'priority_archetypes': (agent_report or {}).get('priority_archetypes', []), 'agents': [{'name': a.get('name'), 'score': a.get('score'), 'signals': a.get('signals')} for a in (agent_report or {}).get('agents', [])]}, ensure_ascii=False)}\n\n"
         "RUBRIQUE DE SÉLECTION:\n"
@@ -718,6 +723,7 @@ def analyze_job(job_id):
         evidence_preferences["_game_context"] = game_context
         evidence_preferences["_media_signals"] = media_signals
         evidence_preferences["_chat_signals"] = chat_signals
+        evidence_preferences["_vision_tracking"] = face_tracking
 
         # Broad deterministic coverage first, augmented by non-verbal media/chat events.
         candidates = generate_intelligent_candidates(analysis["duration"], [])
