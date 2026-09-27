@@ -27,6 +27,17 @@
 
 <section class="v24-showcase v24-reveal"><div class="v24-showcase-top"><div><span class="v24-eyebrow">KLYPSO STUDIO</span><h2>Du moment fort au <em>montage final.</em></h2></div><a class="v24-inline-link" href="{{ url_for('public_demo') }}">Voir la démo <span>↗</span></a></div><div class="v24-studio-card"><div class="v24-studio-canvas"><div class="v24-canvas-video"><span>PRÉVISUALISATION</span><b>▶</b><small>9:16 · 1080p</small></div></div><div class="v24-studio-side"><div><small>PROJET</small><strong>Stream highlight</strong></div><div class="v24-studio-controls"><span>Coupe</span><span>Sous-titres</span><span>Audio</span><span>Format</span></div><div class="v24-studio-track"><i></i><i></i><i></i><i></i><i></i></div><a class="button v24-primary" href="{{ url_for('auth.register') }}">Essayer gratuitement <span>→</span></a></div></div></section>
 
+<section class="v24-faq v24-reveal" id="faq">
+  <div class="v24-section-heading"><span class="v24-eyebrow">QUESTIONS FRÉQUENTES</span><h2>Les réponses avant<br><em>le premier projet.</em></h2></div>
+  <div class="v24-faq-list">
+    <details open><summary>Est-ce que KLYPSO remplace complètement un monteur ?</summary><p>KLYPSO automatise une partie de la sélection, du montage et de la préparation sociale, tout en laissant les décisions et les retouches à l'utilisateur.</p></details>
+    <details><summary>Est-ce que je peux commencer gratuitement ?</summary><p>Oui. Le plan Free permet de découvrir le workflow avec son quota prévu. Les fonctions IA avancées et Studio sont réservées aux plans supérieurs.</p></details>
+    <details><summary>Quels formats sociaux sont préparés ?</summary><p>KLYPSO prend en charge 9:16, 4:5, 1:1 et 16:9, avec des profils de rendu adaptés aux usages sociaux.</p></details>
+    <details><summary>Mes projets peuvent-ils apprendre de mes précédents résultats ?</summary><p>Le Creator DNA peut mémoriser des préférences éditoriales, les décisions conserver/rejeter et les performances renseignées pour personnaliser les sélections suivantes.</p></details>
+    <details><summary>Est-ce que KLYPSO garantit qu'une vidéo deviendra virale ?</summary><p>Non. Les scores représentent des opportunités éditoriales à partir des signaux disponibles ; ils ne garantissent pas la performance d'une publication.</p></details>
+  </div>
+</section>
+
 <section class="v24-cta v24-reveal"><div><span class="v24-eyebrow">PRÊT À ESSAYER ?</span><h2>Crée ton espace.<br><em>Commence avec une VOD.</em></h2><p>Commence gratuitement et découvre le workflow directement dans l'application.</p></div><a class="button button-lg v24-primary" href="{{ url_for('auth.register') }}">Créer mon compte <span>→</span></a></section>
 </div>
 {% endblock %}
