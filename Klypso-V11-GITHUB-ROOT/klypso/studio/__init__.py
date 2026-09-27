@@ -278,10 +278,12 @@ def render_studio_project(project_id):
         else:
             concat_videos(rendered_paths, output)
 
+        size_bytes = output.stat().st_size
+        stored_output = persist_file(output, session["user_id"], output.name, "video/mp4")
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
                 "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes,status) VALUES(?,?,?,?,?,'rendered')",
-                (session["user_id"], f"Klypso Studio #{project_id}.mp4", str(output), "video/mp4", output.stat().st_size),
+                (session["user_id"], f"Klypso Studio #{project_id}.mp4", stored_output, "video/mp4", size_bytes),
             )
             media_id = cur.lastrowid
             db.commit()
