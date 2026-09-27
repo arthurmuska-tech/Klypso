@@ -615,7 +615,7 @@ def test_v17_ai_engine_scenarios(client, app, scenario):
                 job_id = cur.lastrowid
         with client.session_transaction() as sess:
             sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
-        r = client.post(f"/api/ai/analyze/{job_id}")
+        r = client.post(f"/api/ai/analyze/{job_id}", headers={"X-CSRF-Token":"csrf-ok"})
         assert r.status_code == 403
 
     elif scenario == "ai_render_requires_analysis":
@@ -631,7 +631,7 @@ def test_v17_ai_engine_scenarios(client, app, scenario):
         with app.app_context():
             user = _create_email_user("montage-ai@example.com")
             with get_db(app.config["DATABASE_PATH"]) as db:
-                db.execute("UPDATE users SET plan='pro' WHERE id=?", (user["id"],))
+                db.execute("UPDATE users SET plan='pro', subscription_status='active' WHERE id=?", (user["id"],))
                 db.commit()
             job_id = create_analysis_job(user["id"], 1, "/tmp/nope.mp4", app.config["DATABASE_PATH"], {"mode":"ai_montage"})
         with client.session_transaction() as sess:
