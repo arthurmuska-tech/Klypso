@@ -99,3 +99,37 @@ def test_v22_studio_is_server_gated_to_ultra(tmp_path):
     response = client.get("/studio")
     assert response.status_code == 302
     assert "pricing" in response.headers["Location"]
+
+
+def test_v22_ai_analysis_is_queued(tmp_path, monkeypatch):
+    from klypso.auth import _create_email_user
+    from klypso.database import get_db
+    import klypso.ai_api as ai_api
+
+    app = make_app(tmp_path)
+    with app.app_context():
+        user = _create_email_user("queue@example.com")
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            db.execute("UPDATE users SET plan='pro',subscription_status='active' WHERE id=?", (user["id"],))
+            cur = db.execute(
+                "INSERT INTO jobs(user_id,job_type,status,payload_json) VALUES(?,?,?,?)",
+                (user["id"], "ai_clip_analysis", "queued", '{"path":"/tmp/nope.mp4","mode":"ai_clips"}'),
+            )
+            db.commit()
+            job_id = cur.lastrowid
+
+    submitted = {}
+    monkeypatch.setattr(ai_api._ANALYSIS_EXECUTOR, "submit", lambda fn, app, user_id, jid: submitted.update(job_id=jid))
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["user_id"] = user["id"]
+        sess["user_email"] = user["email"]
+        sess["csrf_token"] = "queue-csrf"
+
+    response = client.post(f"/api/ai/analyze/{job_id}", headers={"X-CSRF-Token":"queue-csrf"})
+    assert response.status_code == 202
+    assert submitted["job_id"] == job_id
+    assert response.get_json()["status"] == "processing"
+    status = client.get(f"/api/ai/analyze/status/{job_id}")
+    assert status.status_code == 202
+    assert status.get_json()["status"] == "processing"
