@@ -144,19 +144,25 @@ def build_montage_directive(clips, memory=None, preferences=None, agent_report=N
     }
 
 
-def run_agent_suite(duration, analysis=None, segments=None, candidates=None, memory=None, preferences=None):
+def run_agent_suite(duration, analysis=None, segments=None, candidates=None, memory=None, preferences=None, media_signals=None, chat_signals=None):
     """Run 15 specialized passes over the same evidence packet."""
     analysis = analysis or {}
     segments = segments or []
     candidates = candidates or []
     memory = memory or {}
     preferences = preferences or {}
+    media_signals = media_signals or {}
+    chat_signals = chat_signals or {}
 
     duration = max(0.0, _num(duration))
     words = _word_count(segments)
     density = _speech_density(candidates)
     context_text = " ".join(_clip_context(c) for c in candidates[:20])
     reaction_hits = _reaction_terms(context_text)
+    scene_change_count = int(media_signals.get("scene_change_count", 0) or 0)
+    audio_peak_count = int(media_signals.get("audio_peak_count", 0) or 0)
+    chat_message_count = int(chat_signals.get("message_count", 0) or 0)
+    chat_spike_count = len(chat_signals.get("spikes") or [])
     streams = analysis.get("streams") or []
     video_stream = next((s for s in streams if s.get("codec_type") == "video"), {})
     width = _num(video_stream.get("width"), 0)
@@ -180,18 +186,18 @@ def run_agent_suite(duration, analysis=None, segments=None, candidates=None, mem
             "Mesure la matière dialoguée et sa précision temporelle.",
         ),
         "audio_rhythm": (
-            min(100, 42 + density * 13),
-            {"speech_density": round(density, 2), "audio_present": bool(analysis.get("has_audio"))},
+            min(100, 38 + density * 10 + min(24, audio_peak_count * 1.2)),
+            {"speech_density": round(density, 2), "audio_present": bool(analysis.get("has_audio")), "audio_peaks": audio_peak_count},
             "Repère le rythme et les passages où la bande-son porte le moment.",
         ),
         "vision_activity": (
-            min(100, 46 + (18 if source_landscape else 8) + min(34, len(candidates) * 0.5)),
-            {"scene_candidates": len(candidates), "landscape_source": source_landscape, "fps": fps_text or "unknown"},
+            min(100, 42 + (14 if source_landscape else 8) + min(30, len(candidates) * 0.4) + min(22, scene_change_count * 1.2)),
+            {"scene_candidates": len(candidates), "scene_changes": scene_change_count, "landscape_source": source_landscape, "fps": fps_text or "unknown"},
             "Couverture visuelle sans dépendre du dialogue.",
         ),
         "gameplay_context": (
-            min(100, 35 + reaction_hits * 3 + (18 if "gameplay" == preferences.get("scene_priority") else 0)),
-            {"reaction_markers": reaction_hits, "priority": preferences.get("scene_priority", "balanced")},
+            min(100, 32 + reaction_hits * 3 + min(30, int(media_signals.get("audio_peak_count", 0) or 0) * 1.5) + (18 if "gameplay" == preferences.get("scene_priority") else 0)),
+            {"reaction_markers": reaction_hits, "audio_peaks": audio_peak_count, "priority": preferences.get("scene_priority", "balanced")},
             "Détecte les passages compatibles avec gameplay/action/réaction.",
         ),
         "reaction_detector": (
@@ -200,9 +206,9 @@ def run_agent_suite(duration, analysis=None, segments=None, candidates=None, mem
             "Cherche les ruptures émotionnelles et exclamations.",
         ),
         "chat_context": (
-            min(100, 40 + min(60, len(context_text.split()) / 45)),
-            {"context_words": len(context_text.split()), "chat_signal": "not_connected"},
-            "Prépare un canal de signaux chat quand il sera branché.",
+            min(100, 40 + min(38, chat_message_count / 40) + min(22, chat_spike_count * 5)),
+            {"context_words": len(context_text.split()), "chat_signal": "connected" if chat_message_count else "not_connected", "messages": chat_message_count, "spikes": chat_spike_count},
+            "Mesure les poussées d'activité du chat et leur utilité comme preuve d'événement.",
         ),
         "hook_lab": (
             min(100, 48 + len(candidates) * 0.55 + (10 if preferences.get("ai_style") == "punchy" else 0)),
@@ -267,5 +273,9 @@ def run_agent_suite(duration, analysis=None, segments=None, candidates=None, mem
             "speech_words": words,
             "speech_density": round(density, 3),
             "reaction_markers": reaction_hits,
+            "scene_changes": scene_change_count,
+            "audio_peaks": audio_peak_count,
+            "chat_messages": chat_message_count,
+            "chat_spikes": chat_spike_count,
         },
     }
