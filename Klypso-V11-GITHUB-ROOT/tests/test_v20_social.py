@@ -4,6 +4,7 @@ import json
 from klypso import create_app
 from klypso.database import get_db
 from klypso.social_connections import connection_status, tiktok_authorize_url, upsert_connection
+from klypso.clips.distribution_intelligence import build_distribution_strategy
 
 
 def make_app(tmp_path):
@@ -124,3 +125,33 @@ def test_v20_native_youtube_publish_path(tmp_path, monkeypatch):
             row = db.execute("SELECT status,remote_url FROM publish_queue WHERE id=?", (queue_id,)).fetchone()
     assert row["status"] == "published"
     assert row["remote_url"].endswith("abc123")
+
+
+def test_v20_distribution_strategy_learns_time_and_platform(tmp_path):
+    app = make_app(tmp_path)
+    with app.app_context():
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            cur = db.execute(
+                "INSERT INTO users(email,password_hash,display_name) VALUES(?,?,?)",
+                ("strategy-v20@example.com", "hash", "Strategy"),
+            )
+            user_id = cur.lastrowid
+            for idx, scheduled, platform, views, completion in [
+                (1, "2026-09-21T18:00:00Z", "youtube", 10000, 90),
+                (2, "2026-09-22T18:00:00Z", "youtube", 9000, 85),
+                (3, "2026-09-23T18:00:00Z", "tiktok", 1000, 50),
+            ]:
+                cur = db.execute(
+                    "INSERT INTO publish_queue(user_id,media_id,platform,scheduled_for,status) VALUES(?,?,?,?,'published')",
+                    (user_id, None, platform, scheduled),
+                )
+                queue_id = cur.lastrowid
+                db.execute(
+                    "INSERT INTO clip_metrics(user_id,queue_id,platform,views,likes,comments,shares,completion_rate) VALUES(?,?,?,?,?,?,?,?)",
+                    (user_id, queue_id, platform, views, 100, 10, 5, completion),
+                )
+            db.commit()
+            strategy = build_distribution_strategy(db, user_id)
+    assert strategy["samples"] == 3
+    assert strategy["best_hours"][0]["hour"] == 18
+    assert strategy["platforms"][0]["platform"] == "youtube"
