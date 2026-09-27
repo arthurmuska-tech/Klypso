@@ -1,3 +1,4 @@
+import os
 import secrets
 from functools import wraps
 from flask import request, session
@@ -13,6 +14,13 @@ def csrf_token():
 
 
 def validate_csrf():
+    # The scheduled publishing cron authenticates with its dedicated secret,
+    # because it has no browser session/CSRF token.
+    if request.path == "/api/publisher/run-due" and request.method == "POST":
+        expected_cron = os.getenv("KLYPSO_CRON_SECRET", "").strip()
+        received_cron = request.headers.get("X-KLYPSO-CRON-KEY", "").strip()
+        if expected_cron and received_cron and secrets.compare_digest(expected_cron, received_cron):
+            return
     if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
         return
     expected = session.get("csrf_token")
