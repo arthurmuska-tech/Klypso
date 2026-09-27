@@ -221,14 +221,21 @@ def render_standard_clip(job_id):
             "SELECT * FROM jobs WHERE id=? AND user_id=?",
             (job_id, session["user_id"]),
         ).fetchone()
+        user = db.execute(
+            "SELECT * FROM users WHERE id=?",
+            (session["user_id"],),
+        ).fetchone()
     if not job:
         return {"error": "Projet introuvable."}, 404
     if job["job_type"] != "clip_analysis":
         return {"error": "Ce projet n'est pas un clip standard."}, 400
+    if not user:
+        return {"error": "Compte introuvable."}, 404
 
     payload = json.loads(job["payload_json"] or "{}")
     source_value = payload.get("path", "")
     body = request.get_json(silent=True) or {}
+    quota_charged = False
     try:
         from .analyzer import analyze_media
         from .renderer import RATIOS, render_candidate
@@ -238,40 +245,49 @@ def render_standard_clip(job_id):
         output_format = body.get("output_format", payload.get("output_format", "9:16"))
         if output_format not in RATIOS:
             output_format = "9:16"
+
         with materialize_media(source_value) as source_path:
             duration = float(analyze_media(str(source_path))["duration"])
-        if duration <= 0:
-            raise ValueError("Durée vidéo invalide.")
-        start = min(start, max(0.0, duration - 1.0))
-        end = max(start + 1.0, min(end, duration))
-        if end - start < 1.0:
-            raise ValueError("La durée du clip doit être positive.")
+            if duration <= 0:
+                raise ValueError("Durée vidéo invalide.")
+            start = min(start, max(0.0, duration - 1.0))
+            end = max(start + 1.0, min(end, duration))
+            if end - start < 1.0:
+                raise ValueError("La durée du clip doit être positive.")
 
-        consume_monthly_clip_units(
-            session["user_id"],
-            effective_plan_key(user),
-            1,
-            {"operation": "render_standard_quota", "job_id": job_id},
-        )
-        quota_charged = True
+            consume_monthly_clip_units(
+                session["user_id"],
+                effective_plan_key(user),
+                1,
+                {"operation": "render_standard_quota", "job_id": job_id},
+            )
+            quota_charged = True
 
-        folder = user_storage(current_app.config["STORAGE_PATH"], session["user_id"]) / "standard"
-        folder.mkdir(parents=True, exist_ok=True)
-        output = folder / f"klypso-{job_id}-standard-{int(start * 10)}.mp4"
+            folder = user_storage(current_app.config["STORAGE_PATH"], session["user_id"]) / "standard"
+            folder.mkdir(parents=True, exist_ok=True)
+            output = folder / f"klypso-{job_id}-standard-{int(start * 10)}.mp4"
             render_candidate(
                 str(source_path),
                 str(output),
-            {"start": start, "end": end, "duration": end - start},
+                {"start": start, "end": end, "duration": end - start},
                 output_format=output_format,
                 transcript_segments=None,
                 subtitles=False,
                 normalize_audio=True,
             )
-        stored_output = persist_file(output, session["user_id"], output.name, "video/mp4")
+            size_bytes = output.stat().st_size
+            stored_output = persist_file(output, session["user_id"], output.name, "video/mp4")
+
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
                 "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
-                (session["user_id"], f"Clip standard #{job_id}.mp4", stored_output, "video/mp4", output.stat().st_size if output.exists() else 0),
+                (
+                    session["user_id"],
+                    f"Clip standard #{job_id}.mp4",
+                    stored_output,
+                    "video/mp4",
+                    size_bytes,
+                ),
             )
             media_id = cur.lastrowid
             db.commit()
@@ -283,12 +299,16 @@ def render_standard_clip(job_id):
             "duration": round(end - start, 3),
             "download_url": f"/studio/ai-download/{media_id}",
         }, 200
+    except CreditError as exc:
+        if quota_charged:
+            refund_monthly_clip_units(session["user_id"], 1, {"operation": "render_standard_quota_failed", "job_id": job_id})
+        return {"error": str(exc)}, 402
     except ValueError as exc:
-        if "quota_charged" in locals() and quota_charged:
+        if quota_charged:
             refund_monthly_clip_units(session["user_id"], 1, {"operation": "render_standard_quota_failed", "job_id": job_id})
         return {"error": str(exc)}, 400
     except Exception:
-        if "quota_charged" in locals() and quota_charged:
+        if quota_charged:
             refund_monthly_clip_units(session["user_id"], 1, {"operation": "render_standard_quota_failed", "job_id": job_id})
         current_app.logger.exception("Standard clip render failed")
         return {"error": "Le rendu du clip standard a échoué."}, 500
