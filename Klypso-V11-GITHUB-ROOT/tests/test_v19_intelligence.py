@@ -10,6 +10,7 @@ from klypso.clips.vision_tracking import enrich_candidates_with_face_tracking
 from klypso.social_profiles import clamp_candidate_to_profile, get_social_profile
 from klypso.clips.renderer import _video_filter, build_audio_filter
 from klypso.clips.audio_intelligence import analyze_audio_quality, enrich_candidates_with_audio_quality
+from klypso.studio.editor import apply_edit
 
 
 def make_app(tmp_path):
@@ -294,3 +295,30 @@ def test_v20_renderer_broadcast_audio_mode():
     assert "highpass=f=70" in audio_filter
     assert "acompressor" in audio_filter
     assert "loudnorm" in audio_filter
+
+
+def test_v20_studio_edit_operations_are_non_destructive():
+    timeline = {
+        "clips": [
+            {"start": 0, "duration": 12, "name": "Hook"},
+            {"start": 12, "duration": 10, "name": "Payoff"},
+        ],
+        "audio_tracks": [],
+        "markers": [],
+        "settings": {"ratio": "9:16"},
+    }
+    trimmed = apply_edit(timeline, {"type": "trim", "clip_index": 0, "in_point": 2, "out_point": 8})
+    assert trimmed["clips"][0]["start"] == 2
+    assert trimmed["clips"][0]["duration"] == 6
+
+    moved = apply_edit(trimmed, {"type": "move", "clip_index": 0, "new_start": 4})
+    assert moved["clips"][0]["start"] == 4
+
+    duplicated = apply_edit(moved, {"type": "duplicate", "clip_index": 0})
+    assert len(duplicated["clips"]) == 3
+
+    marked = apply_edit(duplicated, {"type": "add_marker", "time": 7.5, "label": "Payoff"})
+    assert marked["markers"][0]["label"] == "Payoff"
+
+    configured = apply_edit(marked, {"type": "set_setting", "key": "audio_cleanup", "value": "broadcast"})
+    assert configured["settings"]["audio_cleanup"] == "broadcast"
