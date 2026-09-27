@@ -339,8 +339,9 @@ def _add_column_if_missing(conn, table, column, declaration):
 
 
 def init_db(path):
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with connect(path) as conn:
+    if not str(path).startswith(("postgresql://", "postgres://")):
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+    with get_db(path) as conn:
         conn.executescript(SCHEMA)
         _add_column_if_missing(conn, "users", "auth_provider", "TEXT NOT NULL DEFAULT 'email'")
         _add_column_if_missing(conn, "users", "email_verified_at", "TEXT")
