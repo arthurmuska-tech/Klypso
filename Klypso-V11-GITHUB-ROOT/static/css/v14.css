@@ -445,8 +445,8 @@ body.v14-no-motion .home-orbit-ring{animation:none!important}body.v14-no-motion 
 .sidebar-brand .version-chip{margin-left:2px}
 
 /* Home motion must remain visible even if an old V14 state exists. */
-.klypso-home .v14-reveal{opacity:1!important;filter:none!important}
-.klypso-home .v14-reveal.v14-visible{animation:klypsoHomeReveal .85s cubic-bezier(.16,1,.3,1) both}
+.klypso-home .v14-reveal{opacity:0;filter:blur(6px)}
+.klypso-home .v14-reveal.v14-visible{opacity:1;filter:none;animation:klypsoHomeReveal .85s cubic-bezier(.16,1,.3,1) both}
 @keyframes klypsoHomeReveal{
   from{opacity:0;transform:translate3d(0,65px,0) scale(.975)}
   to{opacity:1;transform:none}
