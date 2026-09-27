@@ -66,7 +66,7 @@
 {% else %}
 <header class="public-nav">
   <a class="public-brand klypso-logo-mark" href="{{ url_for('index') }}" aria-label="KLYPSO"><span class="klypso-logo-word">KLYPSO</span></a>
-  <nav><a href="{{ url_for('public_demo') }}">Démo</a><a href="#fonctionnalites">Fonctionnalités</a><a href="{{ url_for('billing.pricing') }}">Tarifs</a><a href="{{ url_for('auth.login') }}">Connexion</a><a class="button small" href="{{ url_for('auth.register') }}">Commencer</a></nav>
+  <nav><a href="{{ url_for('public_demo') }}">Démo</a><a href="{{ url_for('index') }}#fonctionnalites">Fonctionnalités</a><a href="{{ url_for('billing.pricing') }}">Tarifs</a><a href="{{ url_for('auth.login') }}">Connexion</a><a class="button small" href="{{ url_for('auth.register') }}">Commencer</a></nav>
 </header>
 {% endif %}
 {% if current_user %}
