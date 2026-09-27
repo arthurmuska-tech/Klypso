@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 from flask import Flask, render_template, redirect, url_for
 from .config import Config
 from .database import init_db, get_db
@@ -79,6 +80,10 @@ def create_app(test_config=None):
                     "SELECT * FROM jobs WHERE user_id=? ORDER BY id DESC LIMIT 8",
                     (session_user_id(),),
                 ).fetchall()
+                creator_profile = db.execute(
+                    "SELECT profile_json,updated_at FROM creator_ai_profiles WHERE user_id=?",
+                    (session_user_id(),),
+                ).fetchone()
         except Exception:
             app.logger.exception("Unable to load dashboard data")
             return render_template("errors/500.html"), 500
@@ -101,7 +106,22 @@ def create_app(test_config=None):
                 "monthly_clip_count": 0,
                 "monthly_clip_limit": plan.clips_per_month,
             }
-        return render_template("dashboard.html", user=user, plan=get_plan(plan_key), plan_key=plan_key, jobs=jobs, credits=credits)
+        creator_dna = {}
+        if creator_profile:
+            try:
+                creator_dna = json.loads(creator_profile["profile_json"] or "{}")
+                creator_dna["updated_at"] = creator_profile["updated_at"]
+            except (TypeError, ValueError, json.JSONDecodeError):
+                creator_dna = {}
+        return render_template(
+            "dashboard.html",
+            user=user,
+            plan=get_plan(plan_key),
+            plan_key=plan_key,
+            jobs=jobs,
+            credits=credits,
+            creator_dna=creator_dna,
+        )
 
     @app.route("/upload", methods=["GET", "POST"])
     @login_required
