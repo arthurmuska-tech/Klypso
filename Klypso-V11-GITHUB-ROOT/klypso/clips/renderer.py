@@ -97,7 +97,7 @@ def _subtitle_filter(subtitle_file, caption_style):
     return f"subtitles=filename='{_escape_filter_path(subtitle_file)}':force_style='{force}'"
 
 
-def _video_filter(output_size, social_preset="dynamic", subtitle_file=None, caption_style=None, zoom=None, fade_seconds=0.0, reframe_plan=None):
+def _video_filter(output_size, social_preset="dynamic", subtitle_file=None, caption_style=None, zoom=None, fade_seconds=0.0, reframe_plan=None, motion_graphics=True, progress_duration=None):
     width, height = output_size
     preset = SOCIAL_PRESETS.get(social_preset, SOCIAL_PRESETS["dynamic"])
     zoom_factor = max(1.0, float(zoom if zoom is not None else preset["zoom"]))
@@ -125,6 +125,11 @@ def _video_filter(output_size, social_preset="dynamic", subtitle_file=None, capt
         filters.append("unsharp=5:5:0.35:5:5:0")
     if subtitle_file:
         filters.append(_subtitle_filter(subtitle_file, caption_style or preset["caption_style"]))
+    if motion_graphics:
+        duration_value = max(1.0, float(progress_duration or 30.0))
+        filters.append(
+            "drawbox=x=0:y=ih-10:w='iw*min(1,t/" + f"{duration_value:.3f}" + ")':h=10:color=white@0.88:t=fill"
+        )
     fade = max(0.0, float(fade_seconds if fade_seconds is not None else preset["fade"]))
     return filters, fade
 
@@ -142,6 +147,7 @@ def render_candidate(
     zoom=None,
     fade_seconds=0.0,
     reframe_plan=None,
+    motion_graphics=True,
 ):
     width, height = RATIOS.get(output_format, RATIOS["9:16"])
     start = max(0.0, float(candidate["start"]))
@@ -165,6 +171,8 @@ def render_candidate(
             zoom=zoom,
             fade_seconds=fade_seconds,
             reframe_plan=reframe_plan,
+            motion_graphics=motion_graphics,
+            progress_duration=duration,
         )
         if fade:
             fade = min(float(fade), duration / 3.0)
