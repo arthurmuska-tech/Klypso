@@ -11,11 +11,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
-from flask import Blueprint, current_app, jsonify, redirect, render_template, request, send_file, session, url_for
+from flask import Blueprint, current_app, jsonify, redirect, render_template, request, session, url_for
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from .auth import login_required
 from .database import get_db
+from .media.object_storage import materialize_media_path, send_stored_file
 from .clips.intelligence import update_creator_memory
 from .social_profiles import get_social_profile
 from .clips.distribution_intelligence import build_distribution_strategy
@@ -207,12 +208,15 @@ def publish_queue_item(queue_id):
                         "SELECT stored_path FROM media_files WHERE id=? AND user_id=?",
                         (item["media_id"], item["user_id"]),
                     ).fetchone()
-                    if not media or not Path(media["stored_path"]).is_file():
+                    if not media:
                         raise FileNotFoundError("Média source introuvable.")
                     token = ensure_fresh_token(db, connection)
                     if item["platform"] == "youtube":
+                        media_path = materialize_media_path(media["stored_path"])
+                        if not Path(media_path).is_file():
+                            raise FileNotFoundError("Média source introuvable.")
                         native_result = youtube_upload(
-                            media["stored_path"],
+                            media_path,
                             token,
                             title,
                             f"{caption}\n\n{hashtags}",
@@ -779,6 +783,10 @@ def publisher_media(token):
             "SELECT stored_path,mime_type,original_name FROM media_files WHERE id=? AND user_id=?",
             (media_id, user_id),
         ).fetchone()
-    if not row or not Path(row["stored_path"]).is_file():
+    if not row:
         return jsonify({"error": "Média introuvable."}), 404
-    return send_file(row["stored_path"], mimetype=row["mime_type"], download_name=Path(row["original_name"]).name)
+    return send_stored_file(
+        row["stored_path"],
+        download_name=Path(row["original_name"]).name,
+        mimetype=row["mime_type"],
+    )
