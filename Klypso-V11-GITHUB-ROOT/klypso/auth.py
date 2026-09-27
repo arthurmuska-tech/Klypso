@@ -248,7 +248,7 @@ def _oauth_user(provider, subject, email, profile=None):
     profile = profile or {}
     if "email_verified" in profile and profile.get("email_verified") is False:
         raise ValueError("L'adresse e-mail du fournisseur OAuth n'est pas vérifiée.")
-    email = (email or "").lower().strip()
+    email = _normalize_email(email)
     display_name = str(profile.get("name") or profile.get("given_name") or email.split("@", 1)[0]).strip()[:80]
     avatar_url = str(profile.get("picture") or "").strip()[:1000] or None
     if not EMAIL_RE.match(email) or not subject:
@@ -296,7 +296,7 @@ def _oauth_user(provider, subject, email, profile=None):
 def register():
     if request.method == "GET":
         return render_template("register.html")
-    email = request.form.get("email", "").strip().lower()
+    email = _normalize_email(request.form.get("email", ""))
     if not EMAIL_RE.match(email):
         flash("Adresse e-mail invalide.", "error")
         return render_template("register.html"), 400
