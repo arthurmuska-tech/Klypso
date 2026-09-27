@@ -18,6 +18,18 @@
     try { localStorage.setItem(key, value); } catch (_) {}
   };
 
+  const palettes = ['paper','linen','clay','ocean','forest','plum','graphite','midnight'];
+  function applyPalette(value) {
+    const palette = palettes.includes(value) ? value : 'paper';
+    root.dataset.palette = palette;
+    set('klypso.palette', palette);
+    $('[data-setting-group="palette"] [data-palette]').forEach((el) => {
+      const selected = el.dataset.palette === palette;
+      el.classList.toggle('selected', selected);
+      el.setAttribute('aria-pressed', String(selected));
+    });
+  }
+
   const accentTheme = {
     '#9b7bff': 'violet',
     '#63a4ff': 'blue',
@@ -83,12 +95,14 @@
 
   applyAccent(get('klypso.accent', '#9b7bff'));
   applyDensity(get('klypso.density', 'comfortable'));
+  applyPalette(get('klypso.palette', 'paper'));
   applyRadius(get('klypso.radius', 'round'));
   applyCaption(get('klypso.caption', 'dynamic'));
 
   $$('[data-accent]').forEach((button) => button.addEventListener('click', () => applyAccent(button.dataset.accent)));
   $$('[data-setting-group="density"] button').forEach((button) => button.addEventListener('click', () => applyDensity(button.dataset.value)));
-  $$('[data-setting-group="radius"] button').forEach((button) => button.addEventListener('click', () => applyRadius(button.dataset.value)));
+  $('[data-setting-group="radius"] button').forEach((button) => button.addEventListener('click', () => applyRadius(button.dataset.value)));
+  $('[data-setting-group="palette"] [data-palette]').forEach((button) => button.addEventListener('click', () => applyPalette(button.dataset.palette)));
   $$('[data-caption]').forEach((button) => button.addEventListener('click', () => applyCaption(button.dataset.caption)));
 
   /* Sidebar */
@@ -136,7 +150,7 @@
   });
 
   const resetAppearance = () => {
-    ['klypso.accent','klypso.density','klypso.radius','klypso.caption','klypso.displayName','klypso.watermark','klypso.motion','klypso.wood']
+    ['klypso.accent','klypso.density','klypso.radius','klypso.caption','klypso.displayName','klypso.watermark','klypso.motion','klypso.wood','klypso.palette']
       .forEach((key) => { try { localStorage.removeItem(key); } catch (_) {} });
     location.reload();
   };
