@@ -1,28 +1,25 @@
 {% extends 'base.html' %}
 {% block title %}Créer un compte — KLYPSO{% endblock %}
 {% block content %}
-<section class="form-page auth-v12"><div class="auth-card">
-<span class="eyebrow-v11">CRÉATION DE COMPTE</span><h1>Crée ton espace KLYPSO.</h1>
-<p class="auth-lead">Crée ton compte avec Google ou ton adresse e-mail + un mot de passe.</p>
-{% if config.GOOGLE_CLIENT_ID %}
-<div class="oauth-google-wrap" data-google-signin>
-  <div id="g_id_onload" data-client_id="{{ config.GOOGLE_CLIENT_ID }}" data-context="signup" data-ux_mode="popup" data-callback="handleGoogleCredential" data-auto_prompt="false"></div>
-  <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="signup_with" data-shape="rectangular" data-width="380"></div>
-  <small class="google-inline-status" data-google-status></small>
-</div>
-{% endif %}
-<div class="auth-divider"><span>OU PAR E-MAIL</span></div>
-<form method="post" class="auth-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-<label>Adresse e-mail<input name="email" type="email" required autocomplete="email" placeholder="toi@exemple.com"></label>
-<label>Mot de passe<input name="password" type="password" minlength="8" autocomplete="new-password" placeholder="8 caractères minimum"></label>
-<label class="check"><input name="cgu" type="checkbox" required> J'accepte les <a href="{{ url_for('legal.cgu') }}">CGU</a>.</label>
-<label class="check"><input name="privacy" type="checkbox" required> J'ai pris connaissance de la <a href="{{ url_for('legal.confidentialite') }}">politique de confidentialité</a>.</label>
-<button class="button button-lg full" type="submit">Créer mon compte →</button></form><div class="auth-trust-row"><span>✓ Connexion en quelques secondes</span><span>✓ Compte sécurisé</span><span>✓ Mot de passe protégé</span></div>
-<p class="auth-foot">Déjà un compte ? <a href="{{ url_for('auth.login') }}">Se connecter</a></p>
-</div></section>
+<section class="v24-auth-page">
+  <div class="v24-auth-brand"><a href="{{ url_for('index') }}"><span class="v24-brand-k">K</span><strong>KLYPSO</strong></a></div>
+  <div class="v24-auth-layout">
+    <div class="v24-auth-intro"><span class="v24-eyebrow">COMMENCE ICI</span><h1>Crée ton<br><em>espace KLYPSO.</em></h1><p>Un compte suffit pour ouvrir ton workspace et commencer à travailler sur tes vidéos.</p><div class="v24-auth-points"><div><b>01</b><span>Commence gratuitement</span></div><div><b>02</b><span>Importe tes premières VOD</span></div><div><b>03</b><span>Construis ton workflow de création</span></div></div></div>
+    <div class="v24-auth-card">
+      <div class="v24-auth-card-head"><span class="v24-eyebrow">NOUVEAU COMPTE</span><h2>Créer mon compte</h2><p>Google ou adresse e-mail + mot de passe.</p></div>
+      {% if config.GOOGLE_CLIENT_ID %}<div class="oauth-google-wrap v24-google" data-google-signin data-google-client-id="{{ config.GOOGLE_CLIENT_ID }}"><div data-google-button></div><small class="google-inline-status" data-google-status></small></div>{% endif %}
+      <div class="v24-or"><span>OU CONTINUER PAR E-MAIL</span></div>
+      <form method="post" class="auth-form v24-auth-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="v24-field"><span>Adresse e-mail</span><input name="email" type="email" required autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="toi@exemple.com"></label>
+        <label class="v24-field"><span>Mot de passe</span><input name="password" type="password" minlength="8" autocomplete="new-password" placeholder="8 caractères minimum"></label>
+        <label class="v24-check"><input name="cgu" type="checkbox" required><span>J'accepte les <a href="{{ url_for('legal.cgu') }}">CGU</a>.</span></label>
+        <label class="v24-check"><input name="privacy" type="checkbox" required><span>J'ai pris connaissance de la <a href="{{ url_for('legal.confidentialite') }}">politique de confidentialité</a>.</span></label>
+        <button class="button button-lg full v24-primary" type="submit">Créer mon compte <span>→</span></button>
+      </form>
+      <p class="v24-auth-switch">Déjà un compte ? <a href="{{ url_for('auth.login') }}">Se connecter</a></p><a class="v24-auth-back" href="{{ url_for('index') }}">← Retour à l'accueil</a>
+    </div>
+  </div>
+</section>
 {% endblock %}
-{% block head_extra %}
-{% if config.GOOGLE_CLIENT_ID %}
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-{% endif %}
-{% endblock %}
+{% block head_extra %}{% if config.GOOGLE_CLIENT_ID %}<script src="https://accounts.google.com/gsi/client" async defer></script>{% endif %}{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/auth-ui.js') }}?v=24.0" defer></script>{% endblock %}
