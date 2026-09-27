@@ -13,7 +13,7 @@ from pathlib import Path
 from authlib.integrations.flask_client import OAuth
 from authlib.jose import jwt
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
-from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from .database import get_db
 
@@ -217,13 +217,14 @@ def _verify_code(email, purpose, code):
         return True
 
 
-def _create_email_user(email):
+def _create_email_user(email, password=None):
     now = _iso()
     display_name = email.split("@", 1)[0][:80]
+    password_hash = generate_password_hash(password or secrets.token_urlsafe(32))
     with get_db(current_app.config["DATABASE_PATH"]) as db:
         cur = db.execute(
             "INSERT INTO users(email,password_hash,auth_provider,email_verified_at,trial_started_at,display_name) VALUES(?,?,?,?,?,?)",
-            (email, generate_password_hash(secrets.token_urlsafe(32)), "email", now, None, display_name),
+            (email, password_hash, "email", now, None, display_name),
         )
         uid = cur.lastrowid
         db.execute(
@@ -298,12 +299,19 @@ def register():
     if exists:
         flash("Ce compte existe déjà. Utilise la connexion.", "error")
         return redirect(url_for("auth.login"))
+
+    password = request.form.get("password", "")
+    if len(password) >= 8:
+        user = _create_email_user(email, password)
+        _login(user)
+        return redirect(url_for("dashboard"))
+
     try:
         _issue_code(email, "register")
     except Exception:
         current_app.logger.exception("OTP send failed")
-        flash("L'envoi du code n'est pas configuré sur le serveur.", "error")
-        return render_template("register.html"), 503
+        flash("Ajoute un mot de passe d'au moins 8 caractères pour créer le compte sans e-mail.", "error")
+        return render_template("register.html"), 400
     session["pending_email"] = email
     session["pending_purpose"] = "register"
     return redirect(url_for("auth.verify_email"))
@@ -339,17 +347,26 @@ def login():
     if request.method == "GET":
         return render_template("login.html")
     email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
     with get_db(current_app.config["DATABASE_PATH"]) as db:
-        exists = db.execute("SELECT 1 FROM users WHERE email=?", (email,)).fetchone()
-    if not EMAIL_RE.match(email) or not exists:
+        user = db.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+    if not EMAIL_RE.match(email) or not user:
         flash("Aucun compte trouvé avec cette adresse.", "error")
         return render_template("login.html"), 404
+
+    if password:
+        if not user["password_hash"] or not check_password_hash(user["password_hash"], password):
+            flash("Mot de passe incorrect.", "error")
+            return render_template("login.html"), 401
+        _login(user)
+        return redirect(url_for("dashboard"))
+
     try:
         _issue_code(email, "login")
     except Exception:
         current_app.logger.exception("OTP send failed")
-        flash("L'envoi du code n'est pas configuré sur le serveur.", "error")
-        return render_template("login.html"), 503
+        flash("Utilise ton mot de passe pour te connecter sans dépendre de l'envoi d'e-mails.", "error")
+        return render_template("login.html"), 400
     session["pending_email"] = email
     session["pending_purpose"] = "login"
     return redirect(url_for("auth.verify_email"))
@@ -370,6 +387,46 @@ def resend_code():
         current_app.logger.exception("OTP resend failed")
         flash("Impossible d'envoyer un nouveau code pour le moment.", "error")
     return redirect(url_for("auth.verify_email"))
+
+@auth_bp.post("/oauth/google/credential")
+def google_credential():
+    from flask import jsonify
+    credential = (request.form.get("credential") or (request.get_json(silent=True) or {}).get("credential") or "").strip()
+    if not credential:
+        return jsonify({"ok": False, "error": "Identifiant Google manquant."}), 400
+    client_id = current_app.config.get("GOOGLE_CLIENT_ID", "").strip()
+    if not client_id:
+        return jsonify({"ok": False, "error": "Google OAuth non configuré."}), 503
+    try:
+        import requests
+        response = requests.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"id_token": credential},
+            timeout=12,
+        )
+        if response.status_code != 200:
+            raise ValueError("Google token invalide.")
+        info = response.json()
+        if info.get("aud") != client_id:
+            raise ValueError("Google Client ID incorrect.")
+        if str(info.get("email_verified", "")).lower() != "true":
+            raise ValueError("Adresse Google non vérifiée.")
+        user = _oauth_user(
+            "google",
+            str(info.get("sub") or ""),
+            info.get("email"),
+            {
+                "email_verified": True,
+                "name": info.get("name"),
+                "picture": info.get("picture"),
+            },
+        )
+        _login(user)
+        return jsonify({"ok": True, "redirect": url_for("dashboard")})
+    except Exception as exc:
+        current_app.logger.exception("Google credential sign-in failed: %s", exc)
+        return jsonify({"ok": False, "error": "Connexion Google impossible."}), 401
+
 
 @auth_bp.get("/oauth/google")
 def google_login():
