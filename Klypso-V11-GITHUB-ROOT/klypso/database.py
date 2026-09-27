@@ -367,8 +367,14 @@ def _seed_creator_promo_codes(conn):
     for code in dict.fromkeys(codes):
         if len(code) > 64:
             continue
-        exists = conn.execute("SELECT 1 FROM promo_codes WHERE code=? LIMIT 1", (code,)).fetchone()
+        exists = conn.execute("SELECT id FROM promo_codes WHERE code=? LIMIT 1", (code,)).fetchone()
         if exists:
+            # Creator codes may have been seeded before the offer duration changed.
+            # Update the existing row without resetting redemption counts or status.
+            conn.execute(
+                "UPDATE promo_codes SET plan='pro', duration_weeks=2, max_redemptions=1 WHERE id=?",
+                (exists["id"],),
+            )
             continue
         conn.execute(
             "INSERT INTO promo_codes(code,plan,duration_weeks,max_redemptions,expires_at) VALUES(?,?,?,?,?)",
