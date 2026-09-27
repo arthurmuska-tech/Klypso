@@ -19,6 +19,24 @@
   };
 
   const palettes = ['paper','linen','clay','ocean','forest','plum','graphite','midnight','sage','sand','lavender','slate'];
+  const woods = ['oak','walnut','birch','cherry','ebony'];
+
+  function applyWood(value) {
+    const wood = woods.includes(value) ? value : 'oak';
+    root.dataset.wood = wood;
+    set('klypso.wood', wood);
+    $('[data-wood]').forEach((el) => {
+      const selected = el.dataset.wood === wood;
+      el.classList.toggle('selected', selected);
+      el.setAttribute('aria-pressed', String(selected));
+    });
+    const woodNames = { oak: 'Chêne', walnut: 'Noyer', birch: 'Bouleau', cherry: 'Cerisier', ebony: 'Ébène' };
+    const live = $('[data-live-wood]');
+    if (live) live.textContent = woodNames[wood];
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) themeMeta.content = getComputedStyle(root).getPropertyValue('--k-bg').trim() || '#f7f4ef';
+  }
+
   function applyPalette(value) {
     const palette = palettes.includes(value) ? value : 'paper';
     root.dataset.palette = palette;
@@ -95,17 +113,29 @@
     if (live) live.textContent = caption.charAt(0).toUpperCase() + caption.slice(1);
   }
 
+  applyWood(get('klypso.wood', 'oak'));
   applyAccent(get('klypso.accent', '#9b7bff'));
   applyDensity(get('klypso.density', 'comfortable'));
   applyPalette(get('klypso.palette', 'paper'));
   applyRadius(get('klypso.radius', 'round'));
   applyCaption(get('klypso.caption', 'dynamic'));
 
-  $$('[data-accent]').forEach((button) => button.addEventListener('click', () => applyAccent(button.dataset.accent)));
+  $('[data-wood]').forEach((button) => button.addEventListener('click', () => applyWood(button.dataset.wood)));
+  $('[data-accent]').forEach((button) => button.addEventListener('click', () => applyAccent(button.dataset.accent)));
   $$('[data-setting-group="density"] button').forEach((button) => button.addEventListener('click', () => applyDensity(button.dataset.value)));
   $('[data-setting-group="radius"] button').forEach((button) => button.addEventListener('click', () => applyRadius(button.dataset.value)));
   $('[data-setting-group="palette"] [data-palette]').forEach((button) => button.addEventListener('click', () => applyPalette(button.dataset.palette)));
   $$('[data-caption]').forEach((button) => button.addEventListener('click', () => applyCaption(button.dataset.caption)));
+
+
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'klypso.wood') applyWood(event.newValue || 'oak');
+    if (event.key === 'klypso.accent') applyAccent(event.newValue || '#9b7bff');
+    if (event.key === 'klypso.palette') applyPalette(event.newValue || 'paper');
+    if (event.key === 'klypso.density') applyDensity(event.newValue || 'comfortable');
+    if (event.key === 'klypso.radius') applyRadius(event.newValue || 'round');
+    if (event.key === 'klypso.caption') applyCaption(event.newValue || 'dynamic');
+  });
 
   /* V16 Command Center */
   const commandPalette = $('[data-command-palette]');
