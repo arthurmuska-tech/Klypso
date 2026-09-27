@@ -468,7 +468,7 @@ def analyze_job(job_id):
         return jsonify({"error": "Toutes les IA configurées ont échoué ou atteint leurs limites."}), 500
 
 
-def _render_ai_clips(job, result, requested_ids=None):
+def _render_ai_clips(job, result, requested_ids=None, social_preset=None, caption_style=None, montage=False):
     payload = json.loads(job["payload_json"] or "{}")
     source = Path(payload.get("path", ""))
     if not source.is_file():
@@ -487,6 +487,15 @@ def _render_ai_clips(job, result, requested_ids=None):
     for index, clip_id in enumerate(ids[:5], start=1):
         candidate = available[clip_id]
         output = folder / f"klypso-{job['id']}-clip-{index}.mp4"
+        preferences = result.get("preferences") or payload.get("preferences") or {}
+        preset = social_preset or preferences.get("social_preset", "dynamic")
+        captions = caption_style or preferences.get("caption_style") or (
+            (result.get("ai", {}).get("montage_director") or {}).get("caption_style")
+            if montage else None
+        )
+        director_sequence = result.get("ai", {}).get("montage_director", {}).get("sequence") or []
+        directed_item = next((item for item in director_sequence if str(item.get("clip_id")) == str(clip_id)), {})
+        fade = float(directed_item.get("fade_seconds", 0.0) or 0.0)
         render_candidate(
             str(source),
             str(output),
@@ -494,6 +503,10 @@ def _render_ai_clips(job, result, requested_ids=None):
             output_format=output_format,
             transcript_segments=transcript,
             subtitles=bool(transcript),
+            social_preset=preset,
+            caption_style=captions,
+            zoom=directed_item.get("zoom"),
+            fade_seconds=fade,
         )
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
@@ -529,9 +542,11 @@ def render_clips(job_id):
 
     body = request.get_json(silent=True) or {}
     requested_ids = body.get("clip_ids") if isinstance(body.get("clip_ids"), list) else None
+    social_preset = str(body.get("social_preset") or "").strip().lower() or None
+    caption_style = str(body.get("caption_style") or "").strip().lower() or None
     try:
         result = json.loads(job["result_json"])
-        rendered = _render_ai_clips(job, result, requested_ids)
+        rendered = _render_ai_clips(job, result, requested_ids, social_preset, caption_style)
         result["rendered_clips"] = rendered
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             db.execute("UPDATE jobs SET result_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?", (json.dumps(result, ensure_ascii=False), job_id))
@@ -558,11 +573,21 @@ def render_montage(job_id):
 
     try:
         result = json.loads(job["result_json"])
-        montage_ids = (result.get("ai", {}).get("montage", {}).get("clip_ids") or [])[:5]
+        director = result.get("ai", {}).get("montage_director") or {}
+        sequence = director.get("sequence") or []
+        montage_ids = [str(item.get("clip_id")) for item in sequence if item.get("clip_id")][:5]
         if not montage_ids:
-            montage_ids = [clip["id"] for clip in result.get("ai", {}).get("clips", [])[:5]]
+            montage_ids = [str(clip["id"]) for clip in result.get("ai", {}).get("clips", [])[:5]]
 
-        rendered = _render_ai_clips(job, result, montage_ids)
+        social_preset = director.get("social_preset") or (result.get("preferences") or {}).get("social_preset") or "story"
+        caption_style = director.get("caption_style") or (result.get("preferences") or {}).get("caption_style") or "classic"
+
+        rendered = _render_ai_clips(
+            job, result, montage_ids,
+            social_preset=social_preset,
+            caption_style=caption_style,
+            montage=True,
+        )
         paths = []
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             for item in rendered:
@@ -590,7 +615,15 @@ def render_montage(job_id):
             }
             db.execute("UPDATE jobs SET result_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?", (json.dumps(result, ensure_ascii=False), job_id))
             db.commit()
-        return jsonify({"ok": True, "montage": result["rendered_montage"]})
+        return jsonify({
+            "ok": True,
+            "montage": result["rendered_montage"],
+            "director": {
+                "story_arc": director.get("story_arc", []),
+                "social_preset": social_preset,
+                "caption_style": caption_style,
+            },
+        })
     except Exception:
         current_app.logger.exception("AI montage render failed")
         return jsonify({"error": "Le montage IA n'a pas pu être exporté."}), 500
