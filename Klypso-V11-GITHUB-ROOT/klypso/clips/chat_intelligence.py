@@ -83,6 +83,14 @@ def build_chat_signals(messages, bin_seconds=5.0):
             "intensity": spike["intensity"],
         })
 
+    hot_messages = []
+    if spikes:
+        for item in data:
+            if any(spike["start"] <= item["timestamp"] <= spike["end"] for spike in spikes):
+                hot_messages.append(item)
+                if len(hot_messages) >= 40:
+                    break
+
     return {
         "engine": "klypso-chat-v1",
         "message_count": len(data),
@@ -90,6 +98,7 @@ def build_chat_signals(messages, bin_seconds=5.0):
         "events": events[:120],
         "spikes": spikes[:120],
         "top_terms": [{"term": term, "count": count} for term, count in term_counter.most_common(15)],
+        "hot_messages": hot_messages,
     }
 
 
