@@ -317,6 +317,7 @@ def build_creator_memory(db, user_id, limit=8):
         "feedback": feedback,
         "feedback_kept": kept,
         "feedback_rejected": rejected,
+        "feedback_count": len(feedback),
         "kept_archetypes": dict(kept_archetypes),
         "rejected_archetypes": dict(rejected_archetypes),
         "performance_by_archetype": performance["by_archetype"],
