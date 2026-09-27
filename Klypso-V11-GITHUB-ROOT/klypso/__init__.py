@@ -10,6 +10,7 @@ from .billing import billing_bp
 from .clips import clips_bp
 from .studio import studio_bp
 from .ai_api import ai_bp
+from .publisher import publisher_bp
 from .security import register_security, csrf_token
 from .promo import effective_plan_key
 from .plans import get_plan
@@ -33,6 +34,7 @@ def create_app(test_config=None):
     app.register_blueprint(clips_bp)
     app.register_blueprint(studio_bp)
     app.register_blueprint(ai_bp)
+    app.register_blueprint(publisher_bp)
 
     @app.context_processor
     def inject_globals():
