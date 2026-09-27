@@ -6,6 +6,7 @@ from ..database import get_db
 from ..media.ffprobe import probe
 from ..media.ffmpeg import run
 from ..media.storage import safe_media_name, is_allowed_mime
+from ..clips.renderer import render_candidate, concat_videos
 from ..utils.paths import user_storage
 from ..utils.validation import validate_upload
 
@@ -144,6 +145,110 @@ def edit_studio_project(project_id):
     return jsonify({"ok": True, "project_id": project_id, "timeline": updated})
 
 
+@studio_bp.post("/api/studio/projects/<int:project_id>/render")
+@login_required
+def render_studio_project(project_id):
+    body = request.get_json(silent=True) or {}
+    timeline = body.get("timeline") if isinstance(body.get("timeline"), dict) else None
+    if not timeline:
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            row = db.execute(
+                "SELECT timeline_json FROM projects WHERE id=? AND user_id=?",
+                (project_id, session["user_id"]),
+            ).fetchone()
+        if not row:
+            return jsonify({"error": "Projet introuvable."}), 404
+        try:
+            timeline = json.loads(row["timeline_json"] or "{}")
+        except (TypeError, ValueError, json.JSONDecodeError):
+            timeline = {"clips": [], "audio_tracks": [], "markers": []}
+
+    from .timeline import validate_timeline
+    try:
+        validate_timeline(timeline)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    clips = timeline.get("clips") or []
+    if not clips:
+        return jsonify({"error": "La timeline est vide."}), 400
+
+    ratio = str((timeline.get("settings") or {}).get("ratio") or "9:16")
+    cleanup = str((timeline.get("settings") or {}).get("audio_cleanup") or "clean")
+    preset = str((timeline.get("settings") or {}).get("social_preset") or "dynamic")
+    output_format = ratio if ratio in {"9:16", "4:5", "1:1", "16:9"} else "9:16"
+
+    folder = user_storage(current_app.config["STORAGE_PATH"], session["user_id"])
+    temp_folder = folder / f"studio-render-{project_id}"
+    temp_folder.mkdir(parents=True, exist_ok=True)
+    rendered_paths = []
+    try:
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            for index, clip in enumerate(clips):
+                media_id = clip.get("media_id")
+                if not media_id:
+                    raise ValueError(f"Clip {index + 1} n'a pas de media_id.")
+                media = db.execute(
+                    "SELECT stored_path,original_name FROM media_files WHERE id=? AND user_id=?",
+                    (int(media_id), session["user_id"]),
+                ).fetchone()
+                if not media or not Path(media["stored_path"]).is_file():
+                    raise ValueError(f"Média du clip {index + 1} introuvable.")
+                source_start = float(clip.get("source_start", clip.get("start", 0)) or 0)
+                duration = float(clip.get("duration", 0) or 0)
+                if source_start < 0 or duration <= 0:
+                    raise ValueError(f"Durée/source invalide pour le clip {index + 1}.")
+                output = temp_folder / f"segment-{index:03d}.mp4"
+                render_candidate(
+                    media["stored_path"],
+                    output,
+                    {"start": source_start, "end": source_start + duration},
+                    output_format=output_format,
+                    transcript_segments=[],
+                    subtitles=False,
+                    normalize_audio=True,
+                    social_preset=preset,
+                    reframe_plan=clip.get("reframe_plan") or {
+                        "focus_x": clip.get("focus_x", 0.5),
+                        "focus_y": clip.get("focus_y", 0.5),
+                        "mode": clip.get("reframe_mode", "smart_center"),
+                    },
+                    audio_cleanup=cleanup,
+                )
+                rendered_paths.append(output)
+
+        output = folder / f"klypso-studio-{project_id}-{secrets.token_hex(4)}.mp4"
+        if len(rendered_paths) == 1:
+            rendered_paths[0].replace(output)
+        else:
+            concat_videos(rendered_paths, output)
+
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            cur = db.execute(
+                "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes,status) VALUES(?,?,?,?,?,'rendered')",
+                (session["user_id"], f"Klypso Studio #{project_id}.mp4", str(output), "video/mp4", output.stat().st_size),
+            )
+            media_id = cur.lastrowid
+            db.commit()
+        return jsonify({
+            "ok": True,
+            "project_id": project_id,
+            "media_id": media_id,
+            "download_url": f"/studio/ai-download/{media_id}",
+            "clip_count": len(rendered_paths),
+            "output_format": output_format,
+        })
+    except (ValueError, RuntimeError) as exc:
+        return jsonify({"error": str(exc)}), 400
+    finally:
+        for path in rendered_paths:
+            if path.exists():
+                path.unlink(missing_ok=True)
+        try:
+            temp_folder.rmdir()
+        except OSError:
+            pass
+
 @studio_bp.post("/studio/ai-edit")
 @login_required
 def ai_edit():
@@ -220,6 +325,7 @@ def ai_edit():
             "operations": operations,
             "download_url": f"/studio/ai-download/{media_id}",
             "has_audio": has_audio,
+            "duration": float(duration),
         })
     except ValueError as exc:
         if source and source.exists() and source.stat().st_size > current_app.config["MAX_CONTENT_LENGTH"]:
