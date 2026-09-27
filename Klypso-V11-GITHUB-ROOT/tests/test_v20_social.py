@@ -80,3 +80,47 @@ def test_v20_social_schema_created(tmp_path):
                 "SELECT name FROM sqlite_master WHERE type='table' AND name='social_connections'"
             ).fetchone()
     assert row is not None
+
+
+def test_v20_native_youtube_publish_path(tmp_path, monkeypatch):
+    app = make_app(tmp_path)
+    media_path = tmp_path / "clip.mp4"
+    media_path.write_bytes(b"fake")
+    with app.app_context():
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            cur = db.execute(
+                "INSERT INTO users(email,password_hash,display_name) VALUES(?,?,?)",
+                ("youtube-v20@example.com", "hash", "YouTube"),
+            )
+            user_id = cur.lastrowid
+            db.execute(
+                "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
+                (user_id, "clip.mp4", str(media_path), "video/mp4", media_path.stat().st_size),
+            )
+            media_id = db.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
+            db.execute(
+                "INSERT INTO social_connections(user_id,platform,access_token_enc,refresh_token_enc,account_name) VALUES(?,?,?,?,?)",
+                (user_id, "youtube", "", "", "Test Channel"),
+            )
+            from klypso.social_connections import upsert_connection
+            upsert_connection(db, user_id, "youtube", "access", "refresh", account_name="Test Channel")
+            cur = db.execute(
+                "INSERT INTO publish_queue(user_id,media_id,platform,scheduled_for,status,title,caption,hashtags) VALUES(?,?,?,'2099-01-01T00:00:00Z','scheduled',?,?,?)",
+                (user_id, media_id, "youtube", "Title", "Caption", "#tag"),
+            )
+            queue_id = cur.lastrowid
+            db.commit()
+    monkeypatch.setattr("klypso.publisher.ensure_fresh_token", lambda db, connection: "access")
+    monkeypatch.setattr(
+        "klypso.publisher.youtube_upload",
+        lambda *args, **kwargs: {"video_id": "abc123", "url": "https://youtube.com/watch?v=abc123", "status": "published"},
+    )
+    from klypso.publisher import publish_queue_item
+    with app.app_context():
+        result = publish_queue_item(queue_id)
+        assert result["native"] is True
+        assert result["status"] == "published"
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            row = db.execute("SELECT status,remote_url FROM publish_queue WHERE id=?", (queue_id,)).fetchone()
+    assert row["status"] == "published"
+    assert row["remote_url"].endswith("abc123")
