@@ -185,6 +185,24 @@ CREATE TABLE IF NOT EXISTS publish_queue (
 );
 CREATE INDEX IF NOT EXISTS idx_publish_queue_user ON publish_queue(user_id, scheduled_for);
 CREATE INDEX IF NOT EXISTS idx_publish_queue_due ON publish_queue(status, scheduled_for);
+
+CREATE TABLE IF NOT EXISTS social_connections (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    platform TEXT NOT NULL CHECK(platform IN ('youtube','tiktok','instagram','x')),
+    access_token_enc TEXT,
+    refresh_token_enc TEXT,
+    expires_at TEXT,
+    account_id TEXT,
+    account_name TEXT,
+    scopes TEXT NOT NULL DEFAULT '',
+    metadata_json TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, platform)
+);
+CREATE INDEX IF NOT EXISTS idx_social_connections_user ON social_connections(user_id, platform);
 """
 
 
