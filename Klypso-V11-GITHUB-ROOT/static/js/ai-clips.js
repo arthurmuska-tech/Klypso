@@ -41,6 +41,44 @@
   };
 
   document.addEventListener('click', async (event) => {
+    const standardOpen = event.target.closest('[data-standard-open]');
+    if (standardOpen) {
+      document.querySelector('[data-standard-panel="' + standardOpen.dataset.standardOpen + '"]')?.toggleAttribute('hidden');
+      return;
+    }
+
+    const standardRender = event.target.closest('[data-standard-render]');
+    if (standardRender) {
+      const jobId = standardRender.dataset.standardRender;
+      const panel = document.querySelector('[data-standard-panel="' + jobId + '"]');
+      const output = panel?.querySelector('[data-standard-output]');
+      const start = Number(panel?.querySelector('[data-standard-start]')?.value || 0);
+      const end = Number(panel?.querySelector('[data-standard-end]')?.value || 30);
+      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+        alert('Le début et la fin du clip sont invalides.');
+        return;
+      }
+      standardRender.disabled = true;
+      standardRender.textContent = 'Rendu…';
+      try {
+        const response = await fetch('/api/clips/render-standard/' + jobId, {
+          method:'POST',
+          headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},
+          body:JSON.stringify({start,end,output_format:'9:16'}),
+          credentials:'same-origin'
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Rendu impossible.');
+        if (output) output.innerHTML = '<a class="ai-download-card" href="' + data.download_url + '"><span>MP4</span><b>Clip standard prêt</b><small>' + data.start.toFixed(1) + 's → ' + data.end.toFixed(1) + 's · Télécharger →</small></a>';
+        standardRender.textContent = 'Clip prêt ✓';
+      } catch(error) {
+        standardRender.disabled = false;
+        standardRender.textContent = 'Rendre le MP4';
+        alert(error.message);
+      }
+      return;
+    }
+
     const analyze = event.target.closest('.ai-run-job');
     if (analyze) {
       analyze.disabled = true;
