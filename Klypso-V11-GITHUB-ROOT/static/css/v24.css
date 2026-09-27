@@ -361,3 +361,13 @@ html.v24-motion-ready .v24-reveal{opacity:0;transform:translate3d(0,38px,0)}html
   .v24-reveal{opacity:1;transform:none;transition:none}
   .v24-window{transform:none!important}
 }
+
+/* V24.1 reliability polish: clear locked project modes and plan messaging */
+.creation-mode-card.is-free-default{border-color:rgba(154,101,57,.30);box-shadow:0 10px 30px rgba(54,39,26,.07)}
+.creation-mode-card[data-locked="true"]{opacity:.62;cursor:not-allowed;position:relative}
+.creation-mode-card[data-locked="true"]::after{content:"🔒";position:absolute;right:14px;top:14px;font-size:12px;opacity:.72}
+.mode-lock-badge{display:inline-flex;align-items:center;margin-left:7px;padding:4px 7px;border-radius:999px;background:rgba(154,101,57,.10);color:#8b5a32;font:800 8px/1 'Space Grotesk';letter-spacing:.08em;font-style:normal}
+.mode-upgrade-note{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;margin-top:12px;padding:12px 14px;border:1px solid rgba(154,101,57,.18);border-radius:13px;background:rgba(154,101,57,.055);color:#685b50;font-size:12px}
+.mode-upgrade-note strong{font:800 10px 'Space Grotesk';letter-spacing:.08em;color:#8b5a32}
+.mode-upgrade-note a{font-weight:800;color:#8b5a32;white-space:nowrap}
+@media(max-width:760px){.mode-upgrade-note{grid-template-columns:1fr}.mode-upgrade-note a{justify-self:start}}
