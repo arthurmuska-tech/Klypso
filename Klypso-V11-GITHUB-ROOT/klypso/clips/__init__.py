@@ -258,6 +258,8 @@ def render_standard_clip(job_id):
             output_format = "9:16"
 
         with materialize_media(source_value) as source_path:
+            if not Path(source_path).is_file():
+                raise FileNotFoundError("Source vidéo introuvable.")
             duration = float(analyze_media(str(source_path))["duration"])
             if duration <= 0:
                 raise ValueError("Durée vidéo invalide.")
@@ -314,6 +316,10 @@ def render_standard_clip(job_id):
         if quota_charged:
             refund_monthly_clip_units(session["user_id"], 1, {"operation": "render_standard_quota_failed", "job_id": job_id})
         return {"error": str(exc)}, 402
+    except FileNotFoundError as exc:
+        if quota_charged:
+            refund_monthly_clip_units(session["user_id"], 1, {"operation": "render_standard_quota_failed", "job_id": job_id})
+        return {"error": str(exc)}, 404
     except ValueError as exc:
         if quota_charged:
             refund_monthly_clip_units(session["user_id"], 1, {"operation": "render_standard_quota_failed", "job_id": job_id})
