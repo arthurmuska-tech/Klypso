@@ -62,6 +62,10 @@ def build_chat_signals(messages, bin_seconds=5.0):
     counts = list(buckets.values())
     baseline = sum(counts) / max(1, len(counts))
     threshold = max(5.0, baseline * 2.2)
+    # A compact stream/export may contain only one populated time bucket. Treat
+    # a sufficiently large isolated burst as a spike instead of losing the signal.
+    if len(buckets) == 1 and max(counts) >= 5:
+        threshold = float(max(5, min(threshold, max(counts))))
     spikes = []
     for bucket, count in sorted(buckets.items()):
         if count >= threshold:
