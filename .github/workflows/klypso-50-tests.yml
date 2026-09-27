@@ -11,6 +11,8 @@ jobs:
     defaults:
       run:
         working-directory: Klypso-V11-GITHUB-ROOT
+    env:
+      PYTHONPATH: .
     steps:
       - name: Checkout
         uses: actions/checkout@v4
