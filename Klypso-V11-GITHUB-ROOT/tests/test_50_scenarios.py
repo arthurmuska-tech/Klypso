@@ -198,6 +198,7 @@ def test_oauth_and_account_scenarios(client, app, scenario, monkeypatch):
     elif scenario == "login_session_metadata":
         with app.app_context():
             user = _oauth_user("google", profile["sub"], profile["email"], profile)
+        with client.session_transaction():
             _login(user)
         with client.session_transaction() as sess:
             assert sess["auth_provider"] == "google"
@@ -256,7 +257,8 @@ def test_data_security_scenarios(client, app, scenario):
     with app.app_context():
         user = _create_email_user("security@example.com")
         user_id = user["id"]
-        _login(user)
+        with client.session_transaction():
+            _login(user)
         with get_db(app.config["DATABASE_PATH"]) as db:
             db.execute("INSERT INTO projects(user_id,name) VALUES(?,?)", (user_id, "Project test"))
             db.execute("INSERT INTO jobs(user_id,job_type) VALUES(?,?)", (user_id, "clip"))
