@@ -3,7 +3,7 @@
 {% block content %}
 <section class="form-page auth-v12"><div class="auth-card">
 <span class="eyebrow-v11">CRÉATION DE COMPTE</span><h1>Crée ton espace KLYPSO.</h1>
-<p class="auth-lead">Crée ton compte avec Google, Apple ou ton adresse e-mail + un mot de passe.</p>
+<p class="auth-lead">Crée ton compte avec Google ou ton adresse e-mail + un mot de passe.</p>
 {% if config.GOOGLE_CLIENT_ID %}
 <div class="oauth-google-wrap" data-google-signin>
   <div id="g_id_onload" data-client_id="{{ config.GOOGLE_CLIENT_ID }}" data-context="signup" data-ux_mode="popup" data-callback="handleGoogleCredential" data-auto_prompt="false"></div>
@@ -11,18 +11,13 @@
   <small class="google-inline-status" data-google-status></small>
 </div>
 {% endif %}
-{% if config.APPLE_CLIENT_ID and config.APPLE_TEAM_ID and config.APPLE_KEY_ID and config.APPLE_PRIVATE_KEY %}
-<a class="oauth-button" href="{{ url_for('auth.apple_login') }}"><b class="apple-mark"></b> S'inscrire avec Apple</a>
-{% else %}
-<div class="oauth-button oauth-button-disabled"><b class="apple-mark"></b> S'inscrire avec Apple <small>configuration requise</small></div>
-{% endif %}
 <div class="auth-divider"><span>OU PAR E-MAIL</span></div>
 <form method="post" class="auth-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <label>Adresse e-mail<input name="email" type="email" required autocomplete="email" placeholder="toi@exemple.com"></label>
 <label>Mot de passe<input name="password" type="password" minlength="8" autocomplete="new-password" placeholder="8 caractères minimum"></label>
 <label class="check"><input name="cgu" type="checkbox" required> J'accepte les <a href="{{ url_for('legal.cgu') }}">CGU</a>.</label>
 <label class="check"><input name="privacy" type="checkbox" required> J'ai pris connaissance de la <a href="{{ url_for('legal.confidentialite') }}">politique de confidentialité</a>.</label>
-<button class="button button-lg full" type="submit">Créer mon compte →</button></form><div class="auth-trust-row"><span>✓ Connexion en quelques secondes</span><span>✓ Compte sécurisé</span><span>✓ Pas de mot de passe</span></div>
+<button class="button button-lg full" type="submit">Créer mon compte →</button></form><div class="auth-trust-row"><span>✓ Connexion en quelques secondes</span><span>✓ Compte sécurisé</span><span>✓ Mot de passe protégé</span></div>
 <p class="auth-foot">Déjà un compte ? <a href="{{ url_for('auth.login') }}">Se connecter</a></p>
 </div></section>
 {% endblock %}
