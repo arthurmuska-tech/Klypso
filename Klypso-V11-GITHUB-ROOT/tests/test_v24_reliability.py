@@ -157,6 +157,6 @@ def test_v24_free_plan_cannot_start_advanced_ai_mode(tmp_path):
         sess["user_email"] = user["email"]
         sess["csrf_token"] = "free-mode-csrf"
 
-    response = client.post("/upload", data={"mode": "ai_clips"}, content_type="multipart/form-data")
+    response = client.post("/upload", data={"mode": "ai_clips", "csrf_token": "free-mode-csrf"}, content_type="multipart/form-data")
     assert response.status_code == 403
     assert "Pro" in response.get_data(as_text=True)
