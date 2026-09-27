@@ -149,15 +149,37 @@ def generate_intelligent_candidates(duration, segments=None, limit=60):
     return candidates[:limit]
 
 
-def _feedback_summary(db, user_id, limit=12):
+def _feedback_summary(db, user_id, limit=16):
     rows = db.execute(
-        "SELECT candidate_id, decision, created_at FROM clip_feedback WHERE user_id=? ORDER BY id DESC LIMIT ?",
+        "SELECT candidate_id, decision, created_at, job_id FROM clip_feedback "
+        "WHERE user_id=? ORDER BY id DESC LIMIT ?",
         (user_id, limit),
     ).fetchall()
-    return [
-        {"candidate_id": row["candidate_id"], "decision": row["decision"], "created_at": row["created_at"]}
-        for row in rows
-    ]
+    feedback = []
+    for row in rows:
+        item = {
+            "candidate_id": row["candidate_id"],
+            "decision": row["decision"],
+            "created_at": row["created_at"],
+        }
+        if row["job_id"]:
+            job = db.execute(
+                "SELECT result_json FROM jobs WHERE id=? AND user_id=?",
+                (row["job_id"], user_id),
+            ).fetchone()
+            if job:
+                saved = _safe_json(job["result_json"])
+                for clip in (saved.get("ai", {}).get("clips") or []):
+                    if str(clip.get("id")) == str(row["candidate_id"]):
+                        item.update({
+                            "title": _text(clip.get("title"), 90),
+                            "hook": _text(clip.get("hook"), 130),
+                            "archetype": clip.get("archetype", "unknown"),
+                            "score": int(_number(clip.get("opportunity_score", clip.get("score", 0)))),
+                        })
+                        break
+        feedback.append(item)
+    return feedback
 
 
 def build_creator_memory(db, user_id, limit=8):
