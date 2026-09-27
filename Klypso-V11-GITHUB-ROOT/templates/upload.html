@@ -35,7 +35,7 @@
             <span class="creation-mode-icon">✦</span>
             <span><b>Clips IA</b>{% if plan_key == 'free' %}<em class="mode-lock-badge">PRO</em>{% endif %}<small>Détecte, classe et fabrique les meilleurs moments sociaux.</small></span>
           </label>
-          <label class="creation-mode-card active{% if plan_key == 'free' %} is-free-default{% endif %}" data-creation-mode="clip_only" data-locked="false" tabindex="0">
+          <label class="creation-mode-card {% if plan_key == 'free' %}active is-free-default{% endif %}" data-creation-mode="clip_only" data-locked="false" tabindex="0">
             <input type="radio" name="mode_ui" value="clip_only" {% if plan_key == 'free' %}checked{% endif %} hidden>
             <span class="creation-mode-icon">◉</span>
             <span><b>Clip seul</b><small>Workflow simple, disponible dès le plan Free.</small></span>
