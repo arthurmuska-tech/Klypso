@@ -127,6 +127,33 @@ def create_app(test_config=None):
             "storage": "s3" if object_storage_enabled() else "local",
         }, 200
 
+    @app.get("/api/admin/metrics")
+    @login_required
+    def admin_metrics():
+        from flask import jsonify, session
+        admins = {item.strip().lower() for item in app.config.get("ADMIN_EMAILS", "").split(",") if item.strip()}
+        if session.get("user_email", "").lower() not in admins:
+            return jsonify({"error": "Not found"}), 404
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            metrics = {
+                "users_total": db.execute("SELECT COUNT(*) AS n FROM users").fetchone()["n"],
+                "users_paid": db.execute(
+                    "SELECT COUNT(*) AS n FROM users WHERE plan IN ('pro','ultra') AND subscription_status IN ('active','trialing')"
+                ).fetchone()["n"],
+                "trials_active": db.execute(
+                    "SELECT COUNT(*) AS n FROM users WHERE trial_started_at IS NOT NULL"
+                ).fetchone()["n"],
+                "jobs_total": db.execute("SELECT COUNT(*) AS n FROM jobs").fetchone()["n"],
+                "jobs_queued": db.execute("SELECT COUNT(*) AS n FROM jobs WHERE status='queued'").fetchone()["n"],
+                "jobs_processing": db.execute("SELECT COUNT(*) AS n FROM jobs WHERE status='processing'").fetchone()["n"],
+                "jobs_completed": db.execute("SELECT COUNT(*) AS n FROM jobs WHERE status='completed'").fetchone()["n"],
+                "jobs_failed": db.execute("SELECT COUNT(*) AS n FROM jobs WHERE status='failed'").fetchone()["n"],
+                "media_total": db.execute("SELECT COUNT(*) AS n FROM media_files").fetchone()["n"],
+                "published_total": db.execute("SELECT COUNT(*) AS n FROM publish_queue WHERE status='published'").fetchone()["n"],
+                "tracked_metrics": db.execute("SELECT COUNT(*) AS n FROM clip_metrics").fetchone()["n"],
+            }
+        return jsonify({"ok": True, "metrics": {key: int(value or 0) for key, value in metrics.items()}})
+    
     @app.route("/demo")
     def public_demo():
         return render_template("demo.html")
