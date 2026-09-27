@@ -16,10 +16,6 @@ def make_app(tmp_path):
         "PUBLIC_BASE_URL": "http://localhost",
         "GOOGLE_CLIENT_ID": "",
         "GOOGLE_CLIENT_SECRET": "",
-        "APPLE_CLIENT_ID": "",
-        "APPLE_TEAM_ID": "",
-        "APPLE_KEY_ID": "",
-        "APPLE_PRIVATE_KEY": "",
     })
 
 
