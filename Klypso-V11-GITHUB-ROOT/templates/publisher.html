@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Publication — KLYPSO{% endblock %}
 {% block crumb %}Publication{% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/publisher.js') }}?v=18.0" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/publisher.js') }}?v=19.0" defer></script>{% endblock %}
 {% block content %}
 <section class="publisher-page-v18">
   <div class="page-title-row">
@@ -62,6 +62,17 @@
       </div>
     </section>
   </div>
+
+  <section class="publisher-card">
+    <div class="publisher-card-head"><div><span class="eyebrow-v11">ANALYTICS</span><h2>Ce qui fonctionne vraiment</h2></div><button class="filter-btn" type="button" data-refresh-analytics>Actualiser</button></div>
+    <div class="publisher-stats" data-publisher-analytics>
+      <div><span>VUES</span><strong data-analytics-views>—</strong></div>
+      <div><span>LIKES</span><strong data-analytics-likes>—</strong></div>
+      <div><span>PARTAGES</span><strong data-analytics-shares>—</strong></div>
+      <div><span>COMPLÉTION MOY.</span><strong data-analytics-completion>—</strong></div>
+    </div>
+    <div class="publisher-platform-grid" data-analytics-platforms></div>
+  </section>
 
   <section class="publisher-card publisher-queue-card">
     <div class="publisher-card-head"><div><span class="eyebrow-v11">FILE D’ATTENTE</span><h2>Calendrier des publications</h2></div><button class="filter-btn" type="button" data-refresh-queue>Actualiser</button></div>
