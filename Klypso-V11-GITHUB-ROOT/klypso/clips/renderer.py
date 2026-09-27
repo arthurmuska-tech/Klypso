@@ -97,15 +97,27 @@ def _subtitle_filter(subtitle_file, caption_style):
     return f"subtitles=filename='{_escape_filter_path(subtitle_file)}':force_style='{force}'"
 
 
-def _video_filter(output_size, social_preset="dynamic", subtitle_file=None, caption_style=None, zoom=None, fade_seconds=0.0):
+def _video_filter(output_size, social_preset="dynamic", subtitle_file=None, caption_style=None, zoom=None, fade_seconds=0.0, reframe_plan=None):
     width, height = output_size
     preset = SOCIAL_PRESETS.get(social_preset, SOCIAL_PRESETS["dynamic"])
     zoom_factor = max(1.0, float(zoom if zoom is not None else preset["zoom"]))
     zoom_width = int(round(width * zoom_factor))
     zoom_height = int(round(height * zoom_factor))
+    plan = reframe_plan or {}
+    try:
+        focus_x = max(0.0, min(1.0, float(plan.get("focus_x", 0.5))))
+    except (TypeError, ValueError):
+        focus_x = 0.5
+    try:
+        focus_y = max(0.0, min(1.0, float(plan.get("focus_y", 0.5))))
+    except (TypeError, ValueError):
+        focus_y = 0.5
+    # FFmpeg keeps the focal point inside the crop while preserving the requested ratio.
+    crop_x = f"max(0,min(iw-ow,iw*{focus_x:.4f}-ow/2))"
+    crop_y = f"max(0,min(ih-oh,ih*{focus_y:.4f}-oh/2))"
     filters = [
         f"scale={zoom_width}:{zoom_height}:force_original_aspect_ratio=increase",
-        f"crop={width}:{height}",
+        f"crop={width}:{height}:{crop_x}:{crop_y}",
     ]
     if preset["saturation"] != 1.0 or preset["contrast"] != 1.0:
         filters.append(f"eq=saturation={preset['saturation']}:contrast={preset['contrast']}")
@@ -129,6 +141,7 @@ def render_candidate(
     caption_style=None,
     zoom=None,
     fade_seconds=0.0,
+    reframe_plan=None,
 ):
     width, height = RATIOS.get(output_format, RATIOS["9:16"])
     start = max(0.0, float(candidate["start"]))
@@ -151,6 +164,7 @@ def render_candidate(
             caption_style=caption_style,
             zoom=zoom,
             fade_seconds=fade_seconds,
+            reframe_plan=reframe_plan,
         )
         if fade:
             fade = min(float(fade), duration / 3.0)
