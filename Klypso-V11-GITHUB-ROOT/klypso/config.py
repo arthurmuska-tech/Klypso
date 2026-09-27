@@ -15,6 +15,11 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-change-me")
     DATABASE_PATH = os.environ.get("DATABASE_URL") or os.environ.get("DATABASE_PATH", str(BASE_DIR / "data" / "klypso.sqlite3"))
     STORAGE_PATH = os.environ.get("STORAGE_PATH", str(BASE_DIR / "storage"))
+    S3_BUCKET = os.environ.get("S3_BUCKET", "").strip()
+    S3_REGION = os.environ.get("S3_REGION", "auto").strip()
+    S3_ENDPOINT_URL = os.environ.get("S3_ENDPOINT_URL", "").strip()
+    S3_ACCESS_KEY_ID = os.environ.get("S3_ACCESS_KEY_ID", "").strip()
+    S3_SECRET_ACCESS_KEY = os.environ.get("S3_SECRET_ACCESS_KEY", "").strip()
     MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH_MB", "4096")) * 1024 * 1024
 
     FLASK_ENV = os.environ.get("FLASK_ENV", "development")
