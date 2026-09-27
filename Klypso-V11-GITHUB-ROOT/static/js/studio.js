@@ -236,6 +236,34 @@
     markDirty();
   }));
 
+  document.querySelectorAll('[data-studio-action="render"]').forEach(btn => btn.addEventListener('click', async () => {
+    try {
+      await saveProject(false);
+      if (!projectId) throw new Error('Enregistre le projet avant le rendu.');
+      if (!projectState.clips.length) throw new Error('La timeline est vide.');
+      btn.disabled = true;
+      btn.textContent = 'Rendu…';
+      const response = await fetch('/api/studio/projects/' + projectId + '/render', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},
+        body:JSON.stringify({timeline:projectState}),
+        credentials:'same-origin'
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Rendu MP4 impossible.');
+      const resultNode = document.getElementById('ai-result');
+      if (resultNode) {
+        resultNode.innerHTML = '<div class="ai-result-head-v9"><span class="mode-icon-v9 success">✓</span><div><b>MP4 Studio prêt</b><small>' + data.clip_count + ' clip(s) · format ' + data.output_format + '</small></div></div><div class="ai-result-actions-v9"><a class="button" href="' + data.download_url + '">Télécharger le MP4 →</a></div>';
+        resultNode.hidden = false;
+      }
+    } catch (error) {
+      alert(error.message || 'Rendu impossible.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Rendre MP4 <span>▶</span>';
+    }
+  }));
+
   document.querySelectorAll('[data-studio-action="export"]').forEach(btn => btn.addEventListener('click', async () => {
     await saveProject(false);
     const blob = new Blob([JSON.stringify({version:'20.0', project_id:projectId, name:projectName?.value || 'Klypso project', timeline:projectState}, null, 2)], {type:'application/json'});
@@ -369,7 +397,25 @@
       setStep('render');
       result.innerHTML = `<div class="ai-result-head-v9"><span class="mode-icon-v9 success">✓</span><div><b>Première version créée</b><small>${data.duration_label || ''} · ${data.operations?.join(' · ') || 'Traitements appliqués'}</small></div></div><div class="ai-result-actions-v9"><a class="button" href="${data.download_url}">Télécharger le MP4 →</a><button class="button ghost" type="button" data-continue-editor>Continuer dans Studio</button></div>`;
       result.hidden = false;
-      result.querySelector('[data-continue-editor]')?.addEventListener('click', () => document.getElementById('manual-editor')?.scrollIntoView({behavior:'smooth'}));
+      result.querySelector('[data-continue-editor]')?.addEventListener('click', async () => {
+        const nextClip = {
+          media_id: Number(data.media_id),
+          name: file.name,
+          start: 0,
+          source_start: 0,
+          duration: Number(data.duration || 0),
+          focus_x: 0.5,
+          focus_y: 0.5,
+          reframe_mode: 'smart_center'
+        };
+        if (Number.isFinite(nextClip.duration) && nextClip.duration > 0) {
+          snapshot();
+          projectState.clips = [nextClip];
+          applyState(projectState);
+          await saveProject(false);
+        }
+        document.getElementById('manual-editor')?.scrollIntoView({behavior:'smooth'});
+      });
       setProgress(100, 'Montage prêt.');
       setStep('render');
     } catch (error) {
