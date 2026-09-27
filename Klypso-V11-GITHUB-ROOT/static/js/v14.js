@@ -1,4 +1,4 @@
-/* KLYPSO V15.1 — stable personalization + cinematic public home */
+/* KLYPSO V15.3 — workspace polish + cinematic public home */
 (() => {
   'use strict';
 
@@ -110,12 +110,26 @@
     const phase = progress * (slides.length - 1);
     const index = Math.min(slides.length - 1, Math.floor(phase + 0.5));
 
+    /* The track travels exactly one slide-width per step. */
     track.style.transform = 'translate3d(' + (-progress * 75) + '%, 0, 0)';
     slides.forEach((slide, i) => {
       const distance = i - phase;
-      slide.classList.toggle('is-active', Math.abs(distance) < 0.58);
+      const abs = Math.abs(distance);
+      slide.classList.toggle('is-active', abs < 0.62);
       slide.style.setProperty('--slide-distance', distance.toFixed(3));
+      slide.style.setProperty('--slide-abs', Math.min(1.4, abs).toFixed(3));
+      slide.style.setProperty('--slide-opacity', Math.max(.28, 1 - abs * .5).toFixed(3));
+      slide.style.setProperty('--slide-tilt', Math.max(-4.5, Math.min(4.5, -distance * 3.2)).toFixed(2) + 'deg');
     });
+
+    /* A tiny parallax on the hero gives the first screen depth before the rail. */
+    const heroArt = document.querySelector('.landing-v15-hero-art');
+    if (heroArt) {
+      const heroRect = heroArt.parentElement.getBoundingClientRect();
+      const heroProgress = Math.max(-1, Math.min(1, -heroRect.top / Math.max(1, window.innerHeight)));
+      heroArt.style.setProperty('--hero-depth-y', (heroProgress * -24).toFixed(2) + 'px');
+      heroArt.style.setProperty('--hero-depth-r', (heroProgress * 1.8).toFixed(2) + 'deg');
+    }
 
     if (storyCurrent) storyCurrent.textContent = String(index + 1).padStart(2, '0');
     if (storyProgress) storyProgress.style.width = ((progress * 100).toFixed(2)) + '%';
