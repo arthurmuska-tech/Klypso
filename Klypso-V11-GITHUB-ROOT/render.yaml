@@ -21,7 +21,11 @@ services:
       - key: MAX_CONTENT_LENGTH_MB
         value: "4096"
       - key: AI_BACKGROUND_WORKERS
-        value: "2"
+        value: "1"
+      - key: POSTGRES_POOL_MAX_SIZE
+        value: "8"
+      - key: AI_WORKER_MODE
+        value: "in_process"
       - key: SESSION_COOKIE_SECURE
         value: "true"
       - key: STRIPE_SECRET_KEY
