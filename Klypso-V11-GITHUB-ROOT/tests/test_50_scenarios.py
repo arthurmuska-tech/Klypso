@@ -400,10 +400,10 @@ def test_v16_surface_scenarios(client, app, scenario):
         with client.session_transaction() as sess:
             sess["pending_email"] = "x@example.com"; sess["pending_purpose"] = "login"; sess["csrf_token"] = "csrf-ok"
         r = client.get("/verify-email")
-        assert r.status_code == 200 and b"Renvoyer un code" in r.data
+        assert r.status_code == 200 and "Renvoyer un code" in r.get_data(as_text=True)
     elif scenario == "pricing_has_checkout":
         r = client.get("/pricing")
-        assert r.status_code == 200 and b"Créer mon compte" in r.data
+        assert r.status_code == 200 and "Créer mon compte" in r.get_data(as_text=True)
         with app.app_context():
             user = _create_email_user("pricing@example.com")
         with client.session_transaction() as sess:
@@ -416,14 +416,14 @@ def test_v16_surface_scenarios(client, app, scenario):
         with client.session_transaction() as sess:
             sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
         r = client.get("/dashboard")
-        assert r.status_code == 200 and b"COMMAND CENTER" in r.data
+        assert r.status_code == 200 and "COMMAND CENTER" in r.get_data(as_text=True)
     elif scenario == "clip_library_search_exists":
         with app.app_context():
             user = _create_email_user("clips@example.com")
         with client.session_transaction() as sess:
             sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
         r = client.get("/clips")
-        assert r.status_code == 200 and b"data-clips-search-toggle" in r.data
+        assert r.status_code == 200 and "data-clips-search-toggle" in r.get_data(as_text=True)
     elif scenario == "theme_gallery_has_12":
         textv = Path(app.root_path).parent.joinpath("templates", "account.html").read_text(encoding="utf-8")
         for palette in ["paper","linen","clay","ocean","forest","plum","graphite","midnight","sage","sand","lavender","slate"]:
