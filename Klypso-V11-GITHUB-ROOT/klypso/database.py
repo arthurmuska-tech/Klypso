@@ -158,6 +158,33 @@ CREATE TABLE IF NOT EXISTS clip_metrics (
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY(job_id) REFERENCES jobs(id) ON DELETE SET NULL
 );
+CREATE INDEX IF NOT EXISTS idx_clip_metrics_user ON clip_metrics(user_id, recorded_at);
+
+CREATE TABLE IF NOT EXISTS publish_queue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    media_id INTEGER NOT NULL,
+    job_id INTEGER,
+    candidate_id TEXT,
+    platform TEXT NOT NULL CHECK(platform IN ('youtube','tiktok','instagram','x')),
+    scheduled_for TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'scheduled' CHECK(status IN ('scheduled','processing','published','needs_connection','failed','cancelled')),
+    title TEXT NOT NULL DEFAULT '',
+    caption TEXT NOT NULL DEFAULT '',
+    hashtags TEXT NOT NULL DEFAULT '',
+    attempts INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT,
+    published_at TEXT,
+    remote_url TEXT,
+    metadata_json TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(media_id) REFERENCES media_files(id) ON DELETE CASCADE,
+    FOREIGN KEY(job_id) REFERENCES jobs(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_publish_queue_user ON publish_queue(user_id, scheduled_for);
+CREATE INDEX IF NOT EXISTS idx_publish_queue_due ON publish_queue(status, scheduled_for);
 """
 
 
@@ -191,6 +218,7 @@ def init_db(path):
         _add_column_if_missing(conn, "users", "display_name", "TEXT NOT NULL DEFAULT ''")
         _add_column_if_missing(conn, "users", "avatar_url", "TEXT")
         _add_column_if_missing(conn, "users", "last_login_at", "TEXT")
+        _add_column_if_missing(conn, "clip_metrics", "queue_id", "INTEGER")
         conn.execute("UPDATE users SET display_name=substr(email,1,instr(email,'@')-1) WHERE display_name='' AND instr(email,'@')>1")
         conn.commit()
 
