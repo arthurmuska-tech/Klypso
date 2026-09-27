@@ -158,8 +158,8 @@
     if (event.target.closest('[data-refresh-analytics]')) {
       try { await refreshAnalytics(); } catch (error) { alert(error.message); }
     }
+  });
+
   refreshAnalytics().catch(() => {});
   refresh().catch(() => {});
-
-  });
 })();
