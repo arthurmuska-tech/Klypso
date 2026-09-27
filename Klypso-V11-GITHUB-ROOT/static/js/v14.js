@@ -179,12 +179,11 @@
     const rect = story.getBoundingClientRect();
     const travel = Math.max(1, story.offsetHeight - window.innerHeight);
     const progress = clamp01(-rect.top / travel);
-    const segment = 1 / slides.length;
-    const rawStep = Math.min(slides.length - 1, progress / Math.max(segment, 0.0001));
-    const activeIndex = Math.min(slides.length - 1, Math.floor(rawStep));
-    const local = clamp01(rawStep - Math.floor(rawStep));
+    const scaled = progress * slides.length;
+    const activeIndex = Math.min(slides.length - 1, Math.floor(scaled));
+    const local = clamp01(scaled - activeIndex);
     const cameraLocal = storyCameraLocal(local);
-    const phase = Math.min(slides.length - 1, Math.floor(rawStep) + cameraLocal);
+    const phase = Math.min(slides.length - 1, activeIndex + cameraLocal);
 
     track.style.transform = 'translate3d(' + (-phase * (100 / slides.length)).toFixed(3) + '%,0,0)';
     slides.forEach((slide, i) => {
