@@ -65,7 +65,7 @@
   }
 
   /* --- Generic reveal for app pages --- */
-  const reveal = $$('.home-feature,.home-intro,.home-capabilities,.capability-grid > div,.home-library,.dash-hero,.quick-card,.panel-v11,.settings-card-v11,.project-row');
+  const reveal = $('.home-feature,.home-intro,.home-capabilities,.capability-grid > div,.home-library,.dash-hero,.quick-card,.panel-v11,.settings-card-v11,.project-row,.landing-v15-intro,.landing-v15-feature-grid,.landing-v15-details,.landing-v15-free,.landing-v15-faq,.landing-v15-cta,.landing-product-showcase,.landing-proof > div,.landing-v15-hero-copy,.landing-v15-hero-art');
   reveal.forEach((el, index) => {
     el.classList.add('v14-reveal');
     el.style.setProperty('--reveal-delay', Math.min(index * 35, 280) + 'ms');
@@ -83,6 +83,45 @@
     reveal.forEach((el) => observer.observe(el));
   } else {
     reveal.forEach((el) => el.classList.add('v14-visible'));
+  }
+
+  /* --- V20 deterministic public scroll effects --- */
+  const publicObjects = $('.v20-scroll-object');
+  const publicScenes = $('.v20-scroll-reveal');
+  const updatePublicMotion = () => {
+    if (!motionEnabled) return;
+    const viewport = window.innerHeight || 800;
+    publicObjects.forEach((el, index) => {
+      const rect = el.getBoundingClientRect();
+      const center = rect.top + rect.height / 2;
+      const progress = Math.max(-1, Math.min(1, (viewport / 2 - center) / Math.max(1, viewport * 0.85)));
+      const depth = Number(el.dataset.motionDepth || 0);
+      const y = progress * (36 + depth * 10);
+      const scale = 1 + Math.max(-0.035, Math.min(0.025, progress * 0.025));
+      el.style.setProperty('--v20-y', y.toFixed(2) + 'px');
+      el.style.setProperty('--v20-scale', scale.toFixed(4));
+      el.style.setProperty('--v20-delay', Math.min(index * 35, 280) + 'ms');
+      el.classList.toggle('v20-near', Math.abs(progress) < 0.58);
+    });
+    publicScenes.forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, 1 - Math.abs((rect.top + rect.height / 2 - viewport / 2) / Math.max(1, viewport))));
+      el.style.setProperty('--v20-focus', ratio.toFixed(3));
+    });
+  };
+  let publicRaf = 0;
+  const requestPublicMotion = () => {
+    if (!publicRaf) {
+      publicRaf = requestAnimationFrame(() => {
+        publicRaf = 0;
+        updatePublicMotion();
+      });
+    }
+  };
+  if (publicObjects.length || publicScenes.length) {
+    addEventListener('scroll', requestPublicMotion, {passive:true});
+    addEventListener('resize', requestPublicMotion, {passive:true});
+    requestPublicMotion();
   }
 
   /* --- Landing page: smart scroll choreography --- */
