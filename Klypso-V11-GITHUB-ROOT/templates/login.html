@@ -20,18 +20,4 @@
 <button class="button button-lg full" type="submit">Recevoir mon code →</button></form><div class="auth-trust-row"><span>✓ Code à usage unique</span><span>✓ E-mail vérifié</span><span>✓ Aucun mot de passe</span></div>
 <p class="auth-foot">Pas encore de compte ? <a href="{{ url_for('auth.register') }}">Créer mon compte</a> · <a href="{{ url_for('public_demo') }}">Voir la démo</a></p>
 </div></section>
-{% endblock %}{% block scripts %}
-<script>
-(() => {
-  const button = document.querySelector('[data-copy-callback]');
-  button?.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(button.dataset.copyCallback);
-      const original = button.textContent;
-      button.textContent = 'Copié ✓';
-      setTimeout(() => { button.textContent = original; }, 1400);
-    } catch (_) {}
-  });
-})();
-</script>
-{% endblock %}
+{% endblock %}{% block scripts %}<script src="{{ url_for('static', filename='js/auth-ui.js') }}?v=20.0" defer></script>{% endblock %}
