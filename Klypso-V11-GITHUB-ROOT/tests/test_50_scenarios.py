@@ -235,10 +235,6 @@ def test_data_security_scenarios(client, app, scenario):
             "SESSION_COOKIE_SECURE": True,
             "GOOGLE_CLIENT_ID": "",
             "GOOGLE_CLIENT_SECRET": "",
-            "APPLE_CLIENT_ID": "",
-            "APPLE_TEAM_ID": "",
-            "APPLE_KEY_ID": "",
-            "APPLE_PRIVATE_KEY": "",
         })
         r = prod.test_client().get("/healthz")
         assert r.headers["Strict-Transport-Security"].startswith("max-age=")
@@ -327,7 +323,8 @@ def test_plan_and_product_scenarios(client, app, scenario):
         started = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
         assert trial_active(started)
     elif scenario == "trial_expiry":
-        started = (datetime.now(timezone.utc) - timedelta(days=10, seconds=1)).isoformat()
+        from klypso.plans import TRIAL_DAYS
+        started = (datetime.now(timezone.utc) - timedelta(days=TRIAL_DAYS, seconds=1)).isoformat()
         assert not trial_active(started)
         assert trial_ends_at(started) is not None
     elif scenario == "promo_invalid_range":
