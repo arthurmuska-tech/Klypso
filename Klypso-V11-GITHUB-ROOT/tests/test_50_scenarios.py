@@ -25,10 +25,6 @@ def app(tmp_path, monkeypatch):
         "EMAIL_OTP_MAX_PER_HOUR": 100,
         "GOOGLE_CLIENT_ID": "",
         "GOOGLE_CLIENT_SECRET": "",
-        "APPLE_CLIENT_ID": "",
-        "APPLE_TEAM_ID": "",
-        "APPLE_KEY_ID": "",
-        "APPLE_PRIVATE_KEY": "",
     })
     app.config["TESTING"] = True
     yield app
@@ -136,7 +132,6 @@ OAUTH_SCENARIOS = [
     "google_avatar",
     "google_idempotent",
     "same_email_cross_provider",
-    "apple_identity",
     "account_displays_profile",
     "login_session_metadata",
     "google_callback",
@@ -174,17 +169,11 @@ def test_oauth_and_account_scenarios(client, app, scenario, monkeypatch):
     elif scenario == "same_email_cross_provider":
         with app.app_context():
             first = _oauth_user("google", profile["sub"], profile["email"], profile)
-            second = _oauth_user("apple", "apple-sub-001", profile["email"], {"name": "Apple Creator"})
+            second = _oauth_user("google", "google-sub-002", profile["email"], {"name": "Google Creator 2"})
             with get_db(app.config["DATABASE_PATH"]) as db:
                 count = db.execute("SELECT COUNT(*) AS n FROM oauth_identities WHERE user_id=?", (first["id"],)).fetchone()["n"]
         assert second["id"] == first["id"]
         assert count == 2
-    elif scenario == "apple_identity":
-        with app.app_context():
-            user = _oauth_user("apple", "apple-sub-123", "apple@example.com", {"name": "Apple Creator"})
-            row = get_db(app.config["DATABASE_PATH"]).__enter__()
-            row.close()
-        assert user["auth_provider"] == "apple"
     elif scenario == "account_displays_profile":
         with app.app_context():
             user = _oauth_user("google", profile["sub"], profile["email"], profile)
@@ -346,7 +335,7 @@ def test_plan_and_product_scenarios(client, app, scenario):
             promo_ends_at(datetime.now(timezone.utc).isoformat(), 0)
     elif scenario == "health_version":
         body = client.get("/healthz").get_json()
-        assert body["version"] == "20.0.0"
+        assert body["version"] == "22.0.0"
     elif scenario == "no_github_login":
         text = Path(app.root_path).parent.joinpath("templates", "login.html").read_text(encoding="utf-8").lower()
         assert "github" not in text
