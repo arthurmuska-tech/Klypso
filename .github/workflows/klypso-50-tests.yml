@@ -1,0 +1,24 @@
+name: KLYPSO — 50 scenario tests
+on:
+  push:
+    paths:
+      - "Klypso-V11-GITHUB-ROOT/**"
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Klypso-V11-GITHUB-ROOT
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run 50 scenarios
+        run: pytest -q tests/test_50_scenarios.py
