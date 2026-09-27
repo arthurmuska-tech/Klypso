@@ -161,7 +161,12 @@ def _feedback_summary(db, user_id, limit=12):
 
 
 def build_creator_memory(db, user_id, limit=8):
-    """Read prior AI projects + feedback into a compact creator DNA snapshot."""
+    """Read prior AI projects + feedback + persisted profile into creator DNA."""
+    profile_row = db.execute(
+        "SELECT profile_json FROM creator_ai_profiles WHERE user_id=?",
+        (user_id,),
+    ).fetchone()
+    persisted = _safe_json(profile_row["profile_json"]) if profile_row else {}
     rows = db.execute(
         "SELECT id, payload_json, result_json, created_at FROM jobs "
         "WHERE user_id=? AND status='completed' AND result_json IS NOT NULL "
@@ -198,16 +203,26 @@ def build_creator_memory(db, user_id, limit=8):
                     }
                 )
 
-    examples = sorted(examples, key=lambda item: item["score"], reverse=True)[:6]
+    persisted_examples = persisted.get("recent_winners") or []
+    examples.extend(persisted_examples[-6:])
+    examples = sorted(examples, key=lambda item: item.get("score", 0), reverse=True)[:6]
     feedback = _feedback_summary(db, user_id)
     kept = sum(item["decision"] == "keep" for item in feedback)
     rejected = sum(item["decision"] == "reject" for item in feedback)
 
     return {
         "projects_analyzed": len(rows),
-        "preferred_clip_duration_seconds": round(mean(durations), 1) if durations else 31.0,
-        "preferred_formats": [item[0] for item in formats.most_common(3)],
-        "preferred_archetypes": [item[0] for item in archetypes.most_common(5)],
+        "preferred_clip_duration_seconds": (
+            float(persisted.get("preferred_clip_duration_seconds"))
+            if persisted.get("preferred_clip_duration_seconds")
+            else round(mean(durations), 1) if durations else 31.0
+        ),
+        "preferred_formats": list(dict.fromkeys(
+            (persisted.get("preferred_formats") or []) + [item[0] for item in formats.most_common(3)]
+        ))[:4],
+        "preferred_archetypes": list(dict.fromkeys(
+            (persisted.get("preferred_archetypes") or []) + [item[0] for item in archetypes.most_common(5)]
+        ))[:6],
         "winning_examples": examples,
         "feedback": feedback,
         "feedback_kept": kept,
@@ -254,6 +269,9 @@ def enrich_ai_result(result, candidates, memory):
             continue
         start = max(candidate["start"] - 2.0, _number(raw.get("start"), candidate["start"]))
         end = min(candidate["end"] + 2.0, _number(raw.get("end"), candidate["end"]))
+        start = min(start, candidate["end"] - 1.0)
+        end = max(end, start + 8.0)
+        end = min(end, candidate["end"] + 2.0)
         if end - start < 8:
             start, end = candidate["start"], candidate["end"]
         scores = {key: max(0, min(100, int(_number(raw.get(key), 60 if key != "base_score" else candidate["base_score"])))) for key in weights}
@@ -332,11 +350,11 @@ def enrich_ai_result(result, candidates, memory):
 
 def update_creator_memory(db, user_id, result, output_format):
     """Persist the latest successful selection without storing raw media."""
-    existing = _safe_json(
-        db.execute("SELECT profile_json FROM creator_ai_profiles WHERE user_id=?", (user_id,)).fetchone()["profile_json"]
-        if db.execute("SELECT profile_json FROM creator_ai_profiles WHERE user_id=?", (user_id,)).fetchone()
-        else "{}"
-    )
+    row = db.execute(
+        "SELECT profile_json FROM creator_ai_profiles WHERE user_id=?",
+        (user_id,),
+    ).fetchone()
+    existing = _safe_json(row["profile_json"]) if row else {}
     recent = existing.get("recent_winners", [])
     for clip in (result.get("clips") or [])[:5]:
         recent.append(
