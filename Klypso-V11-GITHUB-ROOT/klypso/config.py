@@ -28,7 +28,8 @@ class Config:
     # Render terminates TLS before Flask. Default to secure cookies whenever the public URL is HTTPS.
     SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", FLASK_ENV == "production" or os.environ.get("PUBLIC_BASE_URL", "").startswith("https://"))
     SESSION_COOKIE_NAME = "klypso_session"
-    PERMANENT_SESSION_LIFETIME = 60 * 60 * 24 * 30
+    PERMANENT_SESSION_LIFETIME = 60 * 60 * 24 * 90
+    SESSION_REFRESH_EACH_REQUEST = True
 
     STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
     STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
