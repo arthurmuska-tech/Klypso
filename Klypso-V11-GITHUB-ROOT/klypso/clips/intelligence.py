@@ -393,19 +393,21 @@ def enrich_ai_result(result, candidates, memory, transcript_segments=None):
     raw_clips = result.get("clips") or []
     normalized = []
 
+    # Normalized V20 score: weights sum to exactly 1.0.
     weights = {
-        "hook_score": 0.16,
-        "payoff_score": 0.14,
-        "emotion_score": 0.11,
-        "novelty_score": 0.10,
-        "context_score": 0.10,
-        "shareability_score": 0.10,
-        "creator_fit_score": 0.11,
-        "replay_score": 0.07,
-        "base_score": 0.08,
-        "media_signal_score": 0.07,
+        "hook_score": 0.14,
+        "payoff_score": 0.12,
+        "emotion_score": 0.10,
+        "novelty_score": 0.09,
+        "context_score": 0.09,
+        "shareability_score": 0.09,
+        "creator_fit_score": 0.10,
+        "replay_score": 0.06,
+        "base_score": 0.07,
+        "media_signal_score": 0.06,
         "chat_signal_score": 0.03,
-        "audio_quality_score": 0.05,
+        "audio_quality_score": 0.03,
+        "gameplay_signal_score": 0.02,
     }
 
     for raw in raw_clips[:8]:
@@ -427,6 +429,8 @@ def enrich_ai_result(result, candidates, memory, transcript_segments=None):
                 value = _number(candidate.get(key), 0.0)
             elif key == "audio_quality_score":
                 value = _number(candidate.get(key), 72.0)
+            elif key == "gameplay_signal_score":
+                value = _number(candidate.get("gameplay_signal"), 0.0) * 100.0
             else:
                 fallback = 60 if key != "base_score" else candidate["base_score"]
                 value = _number(raw.get(key), fallback)
