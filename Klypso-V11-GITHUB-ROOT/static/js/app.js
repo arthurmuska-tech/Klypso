@@ -13,16 +13,34 @@
   root.dataset.radius = get('klypso.radius', 'round');
 
   function applyAccent(accent) {
-    root.style.setProperty('--accent', accent);
-    set('klypso.accent', accent);
-    document.querySelectorAll('[data-accent]').forEach((el) => el.classList.toggle('selected', el.dataset.accent === accent));
+    const safe = /^#[0-9a-fA-F]{6}$/.test(accent) ? accent : '#9b7bff';
+    root.style.setProperty('--accent', safe);
+    root.style.setProperty('--k-accent', safe);
+    const accentMap = {
+      '#9b7bff':'#c5b7ff',
+      '#63a4ff':'#9dc6ff',
+      '#59e6df':'#8af4ed',
+      '#ff76c8':'#ff9edb',
+      '#d59a62':'#efbdad'
+    };
+    root.style.setProperty('--k-accent-2', accentMap[safe] || safe);
+    root.style.setProperty('--k-accent-soft', 'color-mix(in srgb, ' + safe + ' 14%, transparent)');
+    set('klypso.accent', safe);
+    document.querySelectorAll('[data-accent]').forEach((el) => el.classList.toggle('selected', el.dataset.accent === safe));
   }
   applyAccent(get('klypso.accent', '#9b7bff'));
 
   document.querySelectorAll('[data-accent]').forEach((button) => button.addEventListener('click', () => applyAccent(button.dataset.accent)));
+  document.querySelectorAll('[data-setting-group="accent"] [data-accent]').forEach((button) => {
+    button.addEventListener('click', () => applyAccent(button.dataset.accent));
+  });
   document.querySelectorAll('[data-setting-group="density"] button').forEach((button) => button.addEventListener('click', () => {
     root.dataset.density = button.dataset.value; set('klypso.density', button.dataset.value);
     document.querySelectorAll('[data-setting-group="density"] button').forEach((b) => b.classList.toggle('selected', b === button));
+  }));
+  document.querySelectorAll('[data-setting-group="radius"] button').forEach((button) => button.addEventListener('click', () => {
+    root.dataset.radius = button.dataset.value; set('klypso.radius', button.dataset.value);
+    document.querySelectorAll('[data-setting-group="radius"] button').forEach((b) => b.classList.toggle('selected', b === button));
   }));
   document.querySelectorAll('[data-setting-group="radius"] button').forEach((button) => button.addEventListener('click', () => {
     root.dataset.radius = button.dataset.value; set('klypso.radius', button.dataset.value);
