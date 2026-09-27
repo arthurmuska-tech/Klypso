@@ -9,7 +9,7 @@
     {% if user['promo_plan'] and user['promo_started_at'] and user['promo_duration_weeks'] %}
       <p>Accès promotionnel {{ user['promo_plan']|upper }} actif pendant {{ user['promo_duration_weeks'] }} semaine(s) à compter de son activation, sous réserve de la validité du code.</p>
     {% elif user['trial_started_at'] %}
-      <p>Essai commercial Pro : 10 jours à compter de la création du compte. Cet essai est distinct du droit légal de rétractation applicable selon la situation.</p>
+      <p>Essai Pro actif : 10 jours à compter de son activation via la souscription. {% if trial_end %}Fin prévue le {{ trial_end.strftime('%d/%m/%Y à %H:%M UTC') }}.{% endif %}</p>
     {% endif %}
     {% if user['stripe_customer_id'] and config.STRIPE_SECRET_KEY %}
       <form method="post" action="{{ url_for('billing.portal') }}">
