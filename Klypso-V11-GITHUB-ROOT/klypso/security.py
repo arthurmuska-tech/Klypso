@@ -54,7 +54,7 @@ def enforce_rate_limit():
     if not rule:
         return
     limit, window = rule
-    actor = session.get("user_id") or request.headers.get("X-Forwarded-For", request.remote_addr or "unknown").split(",")[0].strip()
+    actor = session.get("user_id") or (request.remote_addr or "unknown")
     key = f"{path}:{actor}"
     now = int(time.time())
     from .database import get_db
