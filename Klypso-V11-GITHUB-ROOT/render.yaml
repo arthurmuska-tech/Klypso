@@ -92,6 +92,8 @@ services:
         sync: false
       - key: OPENROUTER_API_KEY_2
         sync: false
+      - key: KLYPSO_CRON_SECRET
+        sync: false
       - key: AI_PROVIDER_ORDER
         value: gemini,groq,openrouter
       - key: GEMINI_MODEL
@@ -104,3 +106,17 @@ services:
         value: ""
       - key: ULTRA_ANNUAL_PRICE_EUR
         value: ""
+
+  - type: cron
+    name: klypso-publisher-cron
+    runtime: python
+    schedule: "*/10 * * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m klypso.publisher_cron
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.14
+      - key: PUBLIC_BASE_URL
+        value: https://klypso-2pjf.onrender.com
+      - key: KLYPSO_CRON_SECRET
+        sync: false
