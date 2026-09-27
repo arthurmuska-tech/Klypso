@@ -1319,3 +1319,228 @@ body.v14-no-motion .showcase-card{transform:none!important}
 .oauth-status-copy{border:1px solid var(--k-line);background:var(--k-surface);color:var(--k-muted);padding:7px 9px;border-radius:9px;cursor:pointer;font:700 9px 'DM Sans'}
 .oauth-status-copy:hover{color:var(--k-ink);border-color:color-mix(in srgb,var(--k-accent) 38%,var(--k-line))}
 .oauth-button-disabled{opacity:.55;cursor:not-allowed}
+
+
+/* ================= V20.5 — PREMIUM DENSITY + INTERACTION LAYER ================= */
+:root{
+  --v20-ease:cubic-bezier(.16,1,.3,1);
+  --v20-glass:color-mix(in srgb,var(--k-surface-strong) 82%,transparent);
+}
+body{position:relative}
+body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:9990;opacity:.32;
+  background:
+    radial-gradient(360px 240px at var(--halo-x,50%) var(--halo-y,35%),color-mix(in srgb,var(--k-accent) 7%,transparent),transparent 70%);
+  mix-blend-mode:soft-light;
+}
+.v20-cursor-halo{
+  position:fixed;left:0;top:0;width:240px;height:240px;border-radius:50%;
+  pointer-events:none;z-index:9989;
+  background:radial-gradient(circle,color-mix(in srgb,var(--k-accent) 11%,transparent),transparent 68%);
+  filter:blur(16px);opacity:.42;mix-blend-mode:multiply;will-change:transform;
+}
+html[data-wood="walnut"] .v20-cursor-halo,
+html[data-wood="ebony"] .v20-cursor-halo{mix-blend-mode:screen;opacity:.34}
+
+/* Tighten large empty bands while keeping the layouts airy. */
+.landing-v15{padding-top:18px}
+.landing-v15-hero{min-height:690px;gap:38px}
+.landing-v15-hero-art{min-height:560px}
+.landing-product-showcase{margin:34px 0 76px;padding:42px 0}
+.landing-v15-intro{padding:88px 20px 38px}
+.landing-v15-feature-grid{gap:14px}
+.landing-v15-feature-grid article{min-height:350px;padding:28px}
+.landing-feature-icon{margin:34px 0 16px}
+.landing-story{margin-top:88px;margin-bottom:76px}
+.landing-v15-details{padding-top:42px}
+.landing-v15-free{margin-top:58px}
+.landing-v15-faq{padding-top:62px}
+.landing-v15-cta{margin-top:72px;padding:78px 30px 84px}
+
+/* Continuous section rhythm: subtle rails connect the page instead of dead space. */
+.landing-v15-intro,
+.landing-v15-details,
+.landing-v15-free,
+.landing-v15-faq,
+.landing-v15-cta,
+.workspace-start-grid,
+.workspace-flow,
+.workspace-projects{
+  position:relative;
+}
+.landing-v15-intro::before,
+.landing-v15-details::before,
+.landing-v15-free::before,
+.landing-v15-faq::before,
+.landing-v15-cta::before,
+.workspace-start-grid::before,
+.workspace-flow::before,
+.workspace-projects::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--k-line) 10%,color-mix(in srgb,var(--k-accent) 25%,var(--k-line)) 50%,var(--k-line) 90%,transparent);
+  transform:scaleX(calc(.66 + var(--stage-focus,0) * .34));
+  transform-origin:center;
+  transition:transform .8s var(--v20-ease),opacity .8s ease;
+  opacity:.72;
+}
+
+/* Surface system. */
+.v20-surface{
+  --mx:50%;--my:50%;--rx:0deg;--ry:0deg;
+  position:relative;isolation:isolate;
+  background:
+    radial-gradient(240px 180px at var(--mx) var(--my),color-mix(in srgb,var(--k-accent) 10%,transparent),transparent 72%),
+    linear-gradient(145deg,color-mix(in srgb,var(--k-surface-strong) 96%,transparent),color-mix(in srgb,var(--k-surface) 88%,transparent));
+  border-color:color-mix(in srgb,var(--k-line) 88%,transparent)!important;
+  transition:
+    transform .55s var(--v20-ease),
+    box-shadow .55s var(--v20-ease),
+    border-color .35s ease,
+    background .45s ease;
+  transform:translate3d(0,0,0) perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
+  transform-style:preserve-3d;
+}
+.v20-surface::before{
+  content:"";position:absolute;inset:1px;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.16),transparent 28%,transparent 72%,rgba(255,255,255,.04));
+  opacity:.7;z-index:0;
+}
+.v20-surface>*{position:relative;z-index:1}
+.v20-surface.v20-hovering{
+  border-color:color-mix(in srgb,var(--k-accent) 32%,var(--k-line))!important;
+  box-shadow:0 28px 90px color-mix(in srgb,var(--k-accent) 11%,transparent),0 6px 22px rgba(32,24,16,.08);
+}
+
+/* Preserve public scroll translation on showcase cards while adding pointer depth. */
+.showcase-card.v20-surface{
+  transform:
+    translate3d(0,var(--v20-y,0),0)
+    perspective(1100px)
+    rotateX(var(--rx))
+    rotateY(var(--ry))
+    scale(var(--v20-scale,1));
+}
+.showcase-card.v20-surface.v20-hovering{box-shadow:0 34px 96px color-mix(in srgb,var(--k-accent) 13%,transparent)}
+.workspace-start-card.v20-surface:hover,
+.landing-v15-feature-grid article.v20-surface:hover,
+.landing-detail-grid article.v20-surface:hover,
+.publisher-card.v20-surface:hover,
+.publisher-platform.v20-surface:hover{transform:translateY(-7px) perspective(900px) rotateX(var(--rx)) rotateY(var(--ry))}
+
+/* Cards react to their viewport position instead of sitting flat. */
+.v20-stage{
+  transform:translateY(calc((1 - var(--stage-focus,0)) * 4px));
+  transition:transform .9s var(--v20-ease);
+}
+.v20-stage::after{
+  content:"";position:absolute;left:6%;right:6%;bottom:-16px;height:32px;
+  background:radial-gradient(ellipse,color-mix(in srgb,var(--k-accent) 8%,transparent),transparent 72%);
+  filter:blur(10px);opacity:calc(.12 + var(--stage-focus,0) * .2);
+  pointer-events:none;
+}
+
+/* Touch feedback: an actual wave instead of only changing the color. */
+.v20-ripple{
+  position:absolute;width:12px;height:12px;border-radius:999px;
+  background:color-mix(in srgb,#fff 55%,var(--k-accent));
+  pointer-events:none;transform:translate(-50%,-50%) scale(0);
+  opacity:.42;animation:v20Ripple .65s var(--v20-ease) forwards;z-index:20;
+  mix-blend-mode:screen;
+}
+@keyframes v20Ripple{
+  0%{transform:translate(-50%,-50%) scale(0);opacity:.46}
+  70%{opacity:.16}
+  100%{transform:translate(-50%,-50%) scale(18);opacity:0}
+}
+.v20-pressed{transform:translateY(1px) scale(.985)!important}
+
+/* More deliberate nav + toolbar feedback. */
+.sidebar-nav a,.public-nav a,.filter-btn,.tab-btn,.canvas-tab,.editor-tool,.small-icon,.zoom-chip{
+  position:relative;overflow:hidden;
+}
+.sidebar-nav a::after,.public-nav a::after,.filter-btn::after,.tab-btn::after,.canvas-tab::after,.editor-tool::after,.small-icon::after,.zoom-chip::after{
+  content:"";position:absolute;left:10%;right:10%;bottom:5px;height:2px;border-radius:99px;
+  background:linear-gradient(90deg,transparent,var(--k-accent),transparent);
+  transform:scaleX(0);transition:transform .35s var(--v20-ease);
+  pointer-events:none;
+}
+.sidebar-nav a:hover::after,.public-nav a:hover::after,.filter-btn:hover::after,.tab-btn:hover::after,.canvas-tab:hover::after,.editor-tool:hover::after,.small-icon:hover::after,.zoom-chip:hover::after,
+.sidebar-nav a.active::after,.tab-btn.active::after,.canvas-tab.active::after,.editor-tool.active::after{
+  transform:scaleX(1);
+}
+
+/* Hero feels like a real product surface instead of an oversized blank block. */
+.landing-v15-hero-copy{max-width:780px}
+.landing-v15-hero-art::before{
+  content:"LIVE WORKSPACE";position:absolute;top:8%;right:4%;padding:8px 10px;border:1px solid var(--k-line);
+  border-radius:999px;background:var(--v20-glass);backdrop-filter:blur(14px);
+  color:var(--k-accent);font:800 8px 'Space Grotesk';letter-spacing:.14em;
+  box-shadow:0 12px 32px rgba(37,28,20,.08);
+  animation:v20BadgeFloat 5s ease-in-out infinite;
+}
+@keyframes v20BadgeFloat{50%{transform:translateY(-5px)}}
+
+/* Workspace home: make the first screen useful immediately. */
+.workspace-v15{padding-top:24px}
+.workspace-hero{min-height:400px;padding:48px}
+.workspace-metrics{margin-top:10px}
+.workspace-start-grid{margin-top:38px}
+.workspace-flow{margin:70px 0 56px;padding:38px 4px}
+.workspace-projects{margin-top:10px}
+.workspace-note{margin-top:46px}
+
+/* Clip cards get motion and a clear visual hierarchy. */
+.clip-project-grid{gap:16px!important}
+.clip-project-card{
+  transition:transform .45s var(--v20-ease),box-shadow .45s var(--v20-ease),border-color .35s ease!important;
+}
+.clip-project-card:hover{transform:translateY(-8px);box-shadow:0 28px 74px rgba(37,28,20,.12);border-color:color-mix(in srgb,var(--k-accent) 34%,var(--k-line))!important}
+.clip-project-visual{transition:transform .5s var(--v20-ease),filter .45s ease}
+.clip-project-card:hover .clip-project-visual{transform:scale(1.025);filter:saturate(1.08)}
+
+/* Studio: stronger hierarchy and glow around the actual canvas. */
+.studio-v11-page{padding-top:14px}
+.editor-app{box-shadow:0 28px 100px rgba(0,0,0,.20)}
+.canvas-stage{position:relative}
+.stage-glow{opacity:.9!important;filter:blur(26px)!important;transition:opacity .6s ease,transform .8s var(--v20-ease)!important}
+.canvas-stage:hover .stage-glow{transform:scale(1.06);opacity:1!important}
+.video-frame{box-shadow:0 36px 100px rgba(0,0,0,.28),0 0 0 1px color-mix(in srgb,var(--k-accent) 14%,transparent)!important}
+
+/* Public demo should feel clickable, not like a screenshot. */
+.demo-tabs{box-shadow:0 18px 60px rgba(38,29,21,.10)!important}
+.demo-tab{transition:transform .35s var(--v20-ease),background .35s ease,box-shadow .35s ease!important}
+.demo-tab:hover{transform:translateY(-2px)}
+.demo-workspace{box-shadow:0 34px 100px rgba(38,29,21,.13)!important}
+.demo-panel{transition:opacity .35s ease,transform .55s var(--v20-ease),filter .4s ease!important}
+.demo-panel.active{transform:none!important}
+
+/* Keep motion elegant on mobile and respect accessibility. */
+@media(max-width:1100px){
+  .landing-v15-hero{min-height:620px}
+  .workspace-hero{grid-template-columns:1fr;min-height:350px}
+}
+@media(max-width:900px){
+  .landing-v15-hero{min-height:auto}
+  .landing-v15-hero-art{min-height:500px}
+  .landing-product-showcase{margin-top:20px;padding-top:30px}
+  .landing-v15-intro{padding-top:68px}
+  .workspace-start-grid{margin-top:26px}
+  .workspace-flow{margin:50px 0 42px}
+}
+@media(max-width:620px){
+  .landing-v15{width:min(100% - 24px,760px)}
+  .landing-v15-hero-art{min-height:390px}
+  .landing-v15-hero-art::before{right:0;top:2%}
+  .workspace-v15{padding-top:12px}
+  .workspace-hero{padding:28px}
+  .workspace-metrics{grid-template-columns:1fr 1fr}
+  .landing-v15-feature-grid article{min-height:330px}
+}
+@media(prefers-reduced-motion:reduce){
+  body::after,.v20-cursor-halo{display:none!important}
+  .v20-surface,.showcase-card.v20-surface,.workspace-start-card.v20-surface,
+  .landing-v15-feature-grid article.v20-surface,.landing-detail-grid article.v20-surface,
+  .clip-project-card,.landing-v15-hero-art::before{transition:none!important;animation:none!important;transform:none!important}
+}
+body.v14-no-motion::after,.v14-no-motion .v20-cursor-halo{display:none!important}
+body.v14-no-motion .v20-surface{transform:none!important}
