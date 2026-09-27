@@ -372,7 +372,7 @@ def _seed_creator_promo_codes(conn):
             continue
         conn.execute(
             "INSERT INTO promo_codes(code,plan,duration_weeks,max_redemptions,expires_at) VALUES(?,?,?,?,?)",
-            (code, "pro", 4, 1, None),
+            (code, "pro", 2, 1, None),
         )
 
 
