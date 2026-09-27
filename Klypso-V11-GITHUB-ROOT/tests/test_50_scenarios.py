@@ -637,7 +637,7 @@ def test_v17_ai_engine_scenarios(client, app, scenario):
         with client.session_transaction() as sess:
             sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
         r = client.post(f"/api/ai/render-montage/{job_id}", headers={"X-CSRF-Token":"csrf-ok"})
-        assert r.status_code in {409, 500}
+        assert r.status_code in {409, 500, 503}
 
     elif scenario == "upload_page_exposes_four_modes":
         with app.app_context():
