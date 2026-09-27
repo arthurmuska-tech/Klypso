@@ -281,7 +281,33 @@ def creator_memory_for_prompt(memory):
     return "\n".join(lines)
 
 
-def enrich_ai_result(result, candidates, memory):
+def tighten_clip_boundaries(clip, segments, pad_before=1.8, pad_after=3.0, min_duration=8.0):
+    """Remove dead-air lead-in/out when timestamped speech is available."""
+    if not segments:
+        return clip
+    start = _number(clip.get("start"))
+    end = _number(clip.get("end"))
+    overlapping = [
+        segment for segment in segments
+        if _number(segment.get("end")) > start and _number(segment.get("start")) < end
+    ]
+    if not overlapping:
+        return clip
+    speech_start = min(_number(segment.get("start")) for segment in overlapping)
+    speech_end = max(_number(segment.get("end")) for segment in overlapping)
+    new_start = max(start, speech_start - pad_before)
+    new_end = min(end, speech_end + pad_after)
+    if new_end - new_start < min_duration:
+        return clip
+    return {
+        **clip,
+        "start": round(new_start, 3),
+        "end": round(new_end, 3),
+        "duration": round(new_end - new_start, 3),
+    }
+
+
+def enrich_ai_result(result, candidates, memory, transcript_segments=None):
     """Validate model output and turn raw AI scores into an explainable ranking."""
     result = result if isinstance(result, dict) else {}
     by_id = {str(candidate["id"]): candidate for candidate in candidates}
@@ -313,8 +339,7 @@ def enrich_ai_result(result, candidates, memory):
             start, end = candidate["start"], candidate["end"]
         scores = {key: max(0, min(100, int(_number(raw.get(key), 60 if key != "base_score" else candidate["base_score"])))) for key in weights}
         weighted = sum(scores[key] * weight for key, weight in weights.items())
-        normalized.append(
-            {
+        item = {
                 "id": candidate["id"],
                 "start": round(start, 3),
                 "end": round(end, 3),
@@ -328,7 +353,9 @@ def enrich_ai_result(result, candidates, memory):
                 "scores": scores,
                 "context": candidate.get("context", ""),
             }
-        )
+        if transcript_segments:
+            item = tighten_clip_boundaries(item, transcript_segments)
+        normalized.append(item)
 
     # Diversity gate: avoid producing five clips that are basically the same scene.
     normalized.sort(key=lambda item: (item["opportunity_score"], item["score"]), reverse=True)
@@ -368,6 +395,15 @@ def enrich_ai_result(result, candidates, memory):
             )
             if len(selected) == 5:
                 break
+
+    kept_bias = memory.get("kept_archetypes", {}) if memory else {}
+    rejected_bias = memory.get("rejected_archetypes", {}) if memory else {}
+    for clip in selected:
+        bonus = min(8, int(kept_bias.get(clip["archetype"], 0)) * 2)
+        penalty = min(8, int(rejected_bias.get(clip["archetype"], 0)) * 2)
+        clip["opportunity_score"] = max(0, min(100, clip["opportunity_score"] + bonus - penalty))
+        clip["score"] = clip["opportunity_score"]
+        clip["creator_fit_adjustment"] = bonus - penalty
 
     selected.sort(key=lambda item: item["opportunity_score"], reverse=True)
     montage_ids = [clip["id"] for clip in selected[:5]]
