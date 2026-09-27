@@ -28,7 +28,7 @@
       '<div class="ai-result-title"><div><span class="eyebrow-v11">KLYPSO VIRAL ENGINE · 15 AGENTS</span><h3>Sélection éditoriale prête.</h3><p>' +
       escapeHtml(ai.summary || data.message || 'Scènes classées.') +
       '</p></div><div class="ai-memory-chip">DNA · ' + escapeHtml(memory.projects_analyzed || 0) + ' projets appris</div></div>' +
-      '<div class="ai-result-actions"><button class="button" type="button" data-render-clips="' + jobId + '">Rendre les clips avec ce preset →</button><button class="button ghost" type="button" data-render-montage="' + jobId + '">Créer le montage IA →</button></div>' +
+      '<div class="ai-result-actions"><button class="button" type="button" data-render-clips="' + jobId + '">Rendre les clips avec ce preset →</button><button class="button ghost" type="button" data-render-social="' + jobId + '">Créer les 4 formats sociaux →</button><button class="button ghost" type="button" data-render-montage="' + jobId + '">Créer le montage IA →</button></div>' +
       '<div class="ai-clip-list">' +
       clips.map((clip, index) =>
         '<article class="ai-clip-row"><div class="ai-clip-rank">0' + (index + 1) + '</div><div class="ai-clip-main"><div class="ai-clip-head"><span class="ai-archetype">' + escapeHtml(clip.archetype || 'moment fort') + '</span><b>' + escapeHtml(clip.title) + '</b><strong>' + escapeHtml(clip.opportunity_score) + '/100</strong></div>' +
@@ -205,6 +205,34 @@
       } catch (error) {
         renderClips.disabled = false;
         renderClips.textContent = 'Rendre les 5 meilleurs clips →';
+        alert(error.message);
+      }
+      return;
+    }
+
+    const renderSocial = event.target.closest('[data-render-social]');
+    if (renderSocial) {
+      renderSocial.disabled = true;
+      renderSocial.textContent = 'Création des formats…';
+      const box = resultBox(renderSocial.dataset.renderSocial);
+      const output = box?.querySelector('[data-ai-render-output]');
+      try {
+        const response = await fetch('/api/ai/render-social/' + renderSocial.dataset.renderSocial, {
+          method:'POST',
+          headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},
+          body:JSON.stringify({platforms:['youtube','tiktok','instagram','x']}),
+          credentials:'same-origin'
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Rendu social impossible.');
+        if (output) output.innerHTML = '<div class="ai-download-grid">' + (data.variants || []).map(variant =>
+          '<a class="ai-download-card" href="' + variant.download_url + '"><span>' + escapeHtml((variant.platform || '').toUpperCase()) + '</span><b>' +
+          escapeHtml(variant.title) + '</b><small>' + escapeHtml(variant.output_format || '') + ' · Télécharger →</small></a>'
+        ).join('') + '</div>';
+        renderSocial.textContent = 'Formats sociaux prêts ✓';
+      } catch (error) {
+        renderSocial.disabled = false;
+        renderSocial.textContent = 'Créer les 4 formats sociaux →';
         alert(error.message);
       }
       return;
