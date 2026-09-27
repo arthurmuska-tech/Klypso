@@ -288,6 +288,19 @@ def youtube_upload(video_path, access_token, title, description, privacy="privat
     }
 
 
+def tiktok_publish_status(publish_id, access_token):
+    response = requests.post(
+        "https://open.tiktokapis.com/v2/post/publish/status/fetch/",
+        headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json; charset=UTF-8"},
+        json={"publish_id": publish_id},
+        timeout=45,
+    )
+    response.raise_for_status()
+    data = response.json().get("data") or {}
+    state = str(data.get("status") or "PROCESSING").upper()
+    return state, data
+
+
 def tiktok_publish(media_url, access_token, title, is_aigc=False):
     init = requests.post(
         "https://open.tiktokapis.com/v2/post/publish/video/init/",
