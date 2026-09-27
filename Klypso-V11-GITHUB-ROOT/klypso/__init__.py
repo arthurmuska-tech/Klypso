@@ -100,6 +100,7 @@ def create_app(test_config=None):
         return render_template("dashboard.html", user=user, plan=get_plan(plan_key), plan_key=plan_key, jobs=jobs, credits=credits)
 
     @app.route("/upload", methods=["GET", "POST"])
+    @login_required
     def upload():
         from .clips import handle_upload
         return handle_upload()
