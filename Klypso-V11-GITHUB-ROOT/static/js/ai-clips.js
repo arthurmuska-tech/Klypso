@@ -89,6 +89,30 @@
   });
 
   document.addEventListener('click', async (event) => {
+    const compose = event.target.closest('[data-compose-assets]');
+    if (compose) {
+      const [jobId, clipId] = compose.dataset.composeAssets.split(':');
+      compose.disabled = true;
+      compose.textContent = 'Composition…';
+      try {
+        const response = await fetch('/api/ai/compose-assets/' + jobId, {
+          method:'POST',
+          headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},
+          body:JSON.stringify({clip_id:clipId}),
+          credentials:'same-origin'
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Composition IA impossible.');
+        compose.textContent = 'MP4 enrichi prêt ✓';
+        window.open(data.download_url, '_blank');
+      } catch (error) {
+        compose.disabled = false;
+        compose.textContent = '⚡ B-roll + Voiceover';
+        alert(error.message);
+      }
+      return;
+    }
+
     const broll = event.target.closest('[data-broll]');
     if (broll) {
       const [jobId, clipId] = broll.dataset.broll.split(':');
