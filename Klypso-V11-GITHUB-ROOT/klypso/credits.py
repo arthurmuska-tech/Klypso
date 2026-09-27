@@ -79,8 +79,8 @@ def _sync_balance(db, user_id, plan_key, now):
         )
     elif last is None:
         db.execute(
-            "UPDATE users SET credit_last_granted_at=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
-            (now.isoformat(), user_id),
+            "UPDATE users SET credit_balance=?, credit_last_granted_at=?, credit_month=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            (balance, now.isoformat(), current_month, user_id),
         )
 
     count = db.execute("SELECT monthly_clip_count FROM users WHERE id=?", (user_id,)).fetchone()["monthly_clip_count"]
