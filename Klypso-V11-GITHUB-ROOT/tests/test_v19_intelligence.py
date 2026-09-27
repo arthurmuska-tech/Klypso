@@ -6,6 +6,8 @@ from klypso.clips.agents import run_agent_suite
 from klypso.clips.chat_intelligence import build_chat_signals, enrich_candidates_with_chat_signals
 from klypso.clips.intelligence import enrich_ai_result
 from klypso.clips.media_intelligence import enrich_candidates_with_media_signals
+from klypso.clips.vision_tracking import enrich_candidates_with_face_tracking
+from klypso.social_profiles import clamp_candidate_to_profile, get_social_profile
 from klypso.clips.renderer import _video_filter
 
 
@@ -123,3 +125,47 @@ def test_v19_health_version(tmp_path):
     app = make_app(tmp_path)
     response = app.test_client().get("/healthz")
     assert response.get_json()["version"] == "19.0.0"
+
+
+def test_v19_face_tracking_focus_is_applied_when_present():
+    candidates = [{"id": "c1", "start": 10, "end": 30, "duration": 20}]
+    tracking = {
+        "engine": "opencv-face-v1",
+        "available": True,
+        "tracks": [{"time": 20, "focus_x": 0.2, "focus_y": 0.7, "area": 0.02}],
+    }
+    enriched = enrich_candidates_with_face_tracking(candidates, tracking)
+    assert enriched[0]["focus_x"] == 0.2
+    assert enriched[0]["focus_y"] == 0.7
+    assert enriched[0]["reframe_mode"] == "smart_face"
+
+
+def test_v19_social_profiles_are_clamped():
+    candidate = {"id": "c1", "start": 0, "end": 180, "duration": 180}
+    profile = get_social_profile("youtube")
+    clipped = clamp_candidate_to_profile(candidate, profile)
+    assert clipped["duration"] <= profile["recommended_max_seconds"]
+    assert profile["output_format"] == "9:16"
+
+
+def test_v19_local_fallback_is_keyless(monkeypatch):
+    from klypso.ai_api import _local_signal_result
+    result = _local_signal_result([
+        {
+            "id": "signal-1",
+            "start": 5,
+            "end": 25,
+            "duration": 20,
+            "base_score": 80,
+            "media_signal_score": 0.9,
+            "chat_signal_score": 70,
+            "speech_density": 2.0,
+            "source": "chat_spike",
+            "context": "le chat explose",
+            "focus_x": 0.3,
+            "focus_y": 0.6,
+            "reframe_mode": "smart_face",
+        }
+    ])
+    assert result["engine"] == "KLYPSO LOCAL VIRAL ENGINE v1"
+    assert result["clips"][0]["id"] == "signal-1"
