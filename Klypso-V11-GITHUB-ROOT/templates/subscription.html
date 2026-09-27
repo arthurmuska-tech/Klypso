@@ -1,24 +1,33 @@
 {% extends 'base.html' %}
-{% block title %}Abonnement — Klypso{% endblock %}
+{% block title %}Abonnement — KLYPSO{% endblock %}
+{% block crumb %}Abonnement{% endblock %}
 {% block content %}
-<section class="form-page" aria-labelledby="subscription-title">
-  <div class="panel">
-    <span class="eyebrow">ABONNEMENT</span>
-    <h1 id="subscription-title">{{ plan.name }}</h1>
-    <p>Statut technique : <strong>{{ user['subscription_status'] }}</strong>.</p>
-    {% if user['promo_plan'] and user['promo_started_at'] and user['promo_duration_weeks'] %}
-      <p>Accès promotionnel {{ user['promo_plan']|upper }} actif pendant {{ user['promo_duration_weeks'] }} semaine(s) à compter de son activation, sous réserve de la validité du code.</p>
-    {% elif user['trial_started_at'] %}
-      <p>Essai Pro actif : 10 jours à compter de son activation via la souscription. {% if trial_end %}Fin prévue le {{ trial_end.strftime('%d/%m/%Y à %H:%M UTC') }}.{% endif %}</p>
-    {% endif %}
-    {% if user['stripe_customer_id'] and config.STRIPE_SECRET_KEY %}
-      <form method="post" action="{{ url_for('billing.portal') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="button" type="submit">Gérer la facturation</button>
-      </form>
-    {% else %}
-      <p class="notice">Le portail de facturation sera disponible lorsqu’un abonnement Stripe réel sera relié à ce compte.</p>
-    {% endif %}
+<section class="subscription-v16">
+  <div class="page-title-row"><div><span class="eyebrow-v11">ABONNEMENT</span><h1>Ton plan, ton rythme.</h1><p>Retrouve ici l'état de ton accès, ton essai éventuel et la gestion Stripe.</p></div></div>
+  <div class="subscription-grid-v16">
+    <section class="panel-v11 subscription-hero-v16">
+      <div><div class="workspace-kicker">PLAN ACTUEL</div><h2>{{ plan.name }}</h2><p>Statut : <strong>{{ user['subscription_status'] }}</strong></p></div>
+      <div class="subscription-status-v16"><span></span><strong>{{ user['subscription_status']|upper }}</strong><small>{{ 'Actif' if user['subscription_status'] in ['active','trialing'] else 'Aucun abonnement payant actif' }}</small></div>
+    </section>
+    <section class="panel-v11 subscription-info-v16">
+      <span class="eyebrow-v11">ACCÈS</span>
+      <div class="subscription-stat-v16"><b>{{ plan.clips_per_month }}</b><span>clips / mois</span></div>
+      <div class="subscription-stat-v16"><b>{{ plan.daily_credits }}</b><span>crédits / jour</span></div>
+      <div class="subscription-stat-v16"><b>{{ plan.max_upload_mb }} MB</b><span>upload maximum</span></div>
+    </section>
   </div>
+  {% if user['promo_plan'] and user['promo_started_at'] and user['promo_duration_weeks'] %}
+  <section class="subscription-banner-v16"><span class="workspace-kicker">PROMOTION</span><strong>Accès {{ user['promo_plan']|upper }} actif pendant {{ user['promo_duration_weeks'] }} semaine(s).</strong><small>Activé depuis {{ user['promo_started_at'] }}.</small></section>
+  {% elif user['trial_started_at'] %}
+  <section class="subscription-banner-v16"><span class="workspace-kicker">ESSAI PRO</span><strong>Essai actif pendant 10 jours à compter de son activation.</strong><small>{% if trial_end %}Fin prévue le {{ trial_end.strftime('%d/%m/%Y à %H:%M UTC') }}.{% endif %}</small></section>
+  {% endif %}
+  <section class="panel-v11 subscription-manage-v16">
+    <div><span class="eyebrow-v11">GESTION</span><h2>Facturation et abonnement</h2><p>Les informations de paiement et les factures sont gérées dans Stripe.</p></div>
+    {% if user['stripe_customer_id'] and config.STRIPE_SECRET_KEY %}
+      <form method="post" action="{{ url_for('billing.portal') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button-lg" type="submit">Ouvrir la gestion Stripe →</button></form>
+    {% else %}
+      <a class="button button-lg" href="{{ url_for('billing.pricing') }}">Voir les plans →</a>
+    {% endif %}
+  </section>
 </section>
 {% endblock %}
