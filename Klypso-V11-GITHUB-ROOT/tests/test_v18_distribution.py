@@ -161,7 +161,7 @@ def test_v18_publisher_schema_links_metrics():
 def test_v18_health_version(tmp_path):
     app = make_app(tmp_path)
     response = app.test_client().get("/healthz")
-    assert response.get_json()["version"] == "19.0.0"
+    assert response.get_json()["version"] == "20.0.0"
 
 
 def test_v18_creator_memory_can_keep_published_feedback(tmp_path):
