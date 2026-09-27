@@ -163,6 +163,8 @@ def run_agent_suite(duration, analysis=None, segments=None, candidates=None, mem
     audio_peak_count = int(media_signals.get("audio_peak_count", 0) or 0)
     chat_message_count = int(chat_signals.get("message_count", 0) or 0)
     chat_spike_count = len(chat_signals.get("spikes") or [])
+    gameplay_signal = mean([_num(c.get("gameplay_signal")) for c in candidates if _num(c.get("gameplay_signal")) > 0]) if any(_num(c.get("gameplay_signal")) > 0 for c in candidates) else 0.0
+    gameplay_genre = next((c.get("gameplay_genre") for c in candidates if c.get("gameplay_genre") and c.get("gameplay_genre") != "unknown"), "unknown")
     streams = analysis.get("streams") or []
     video_stream = next((s for s in streams if s.get("codec_type") == "video"), {})
     width = _num(video_stream.get("width"), 0)
@@ -196,8 +198,8 @@ def run_agent_suite(duration, analysis=None, segments=None, candidates=None, mem
             "Couverture visuelle sans dépendre du dialogue.",
         ),
         "gameplay_context": (
-            min(100, 32 + reaction_hits * 3 + min(30, int(media_signals.get("audio_peak_count", 0) or 0) * 1.5) + (18 if "gameplay" == preferences.get("scene_priority") else 0)),
-            {"reaction_markers": reaction_hits, "audio_peaks": audio_peak_count, "priority": preferences.get("scene_priority", "balanced")},
+            min(100, 30 + reaction_hits * 3 + min(26, int(media_signals.get("audio_peak_count", 0) or 0) * 1.4) + min(24, gameplay_signal * 24) + (18 if "gameplay" == preferences.get("scene_priority") else 0)),
+            {"reaction_markers": reaction_hits, "audio_peaks": audio_peak_count, "gameplay_signal": round(gameplay_signal, 3), "gameplay_genre": gameplay_genre, "priority": preferences.get("scene_priority", "balanced")},
             "Détecte les passages compatibles avec gameplay/action/réaction.",
         ),
         "reaction_detector": (
@@ -277,5 +279,7 @@ def run_agent_suite(duration, analysis=None, segments=None, candidates=None, mem
             "audio_peaks": audio_peak_count,
             "chat_messages": chat_message_count,
             "chat_spikes": chat_spike_count,
+            "gameplay_signal": round(gameplay_signal, 3),
+            "gameplay_genre": gameplay_genre,
         },
     }
