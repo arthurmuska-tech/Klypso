@@ -19,6 +19,7 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from .auth import login_required
 from .database import get_db
 from .clips.intelligence import update_creator_memory
+from .social_profiles import get_social_profile
 
 
 publisher_bp = Blueprint("publisher", __name__)
@@ -102,7 +103,10 @@ def _post_package(db, item):
         "hashtags": hashtags,
         "scheduled_for": item["scheduled_for"],
         "media_url": signed_media_url(item["user_id"], item["media_id"]),
-        "metadata": json.loads(item["metadata_json"] or "{}"),
+        "metadata": {
+            **json.loads(item["metadata_json"] or "{}"),
+            "social_profile": get_social_profile(item["platform"]),
+        },
     }
     return payload
 
@@ -251,7 +255,7 @@ def _social_copy(job, candidate_id, platform):
                     break
         except (TypeError, ValueError, json.JSONDecodeError):
             pass
-    profile = SOCIAL_PROFILES.get(platform, {"ratio": "9:16", "recommended_max_seconds": 60, "hashtags": ["#gaming"]})
+    profile = get_social_profile(platform)
     tags = ["#KLYPSO", f"#{archetype}", *profile["hashtags"]]
     tags = list(dict.fromkeys(tags))
     return {
@@ -260,8 +264,10 @@ def _social_copy(job, candidate_id, platform):
         "hashtags": " ".join(tags),
         "render_profile": {
             "platform": platform,
-            "ratio": profile["ratio"],
+            "ratio": profile["output_format"],
             "recommended_max_seconds": profile["recommended_max_seconds"],
+            "preset": profile["preset"],
+            "caption_style": profile["caption_style"],
         },
     }
 
