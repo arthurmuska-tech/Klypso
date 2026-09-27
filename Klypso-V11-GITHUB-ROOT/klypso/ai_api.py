@@ -25,7 +25,7 @@ from .clips.renderer import concat_videos, render_candidate
 from .clips.vision_tracking import analyze_face_tracking, enrich_candidates_with_face_tracking
 from .clips.gameplay_intelligence import classify_game_context, enrich_gameplay_candidates
 from .social_profiles import clamp_candidate_to_profile, get_social_profile
-from .ai_assets import asset_status, generate_broll_image, generate_voiceover
+from .ai_assets import asset_status, compose_assets, generate_broll_image, generate_voiceover
 
 
 ai_bp = Blueprint("ai_api", __name__)
@@ -386,6 +386,81 @@ def _saved_job_clip(job_id, clip_id):
     if not clip:
         raise LookupError("Clip introuvable.")
     return job, saved, clip
+
+
+
+@ai_bp.post("/api/ai/compose-assets/<int:job_id>")
+@login_required
+def compose_clip_assets(job_id):
+    body = request.get_json(silent=True) or {}
+    clip_id = str(body.get("clip_id") or "")
+    if not clip_id:
+        return jsonify({"error": "clip_id est requis."}), 400
+    try:
+        job, saved, clip = _saved_job_clip(job_id, clip_id)
+        folder = Path(current_app.config["STORAGE_PATH"]) / "users" / str(session["user_id"]) / "ai-assets"
+        folder.mkdir(parents=True, exist_ok=True)
+
+        broll_prompt = " ".join(str(body.get("broll_prompt") or "").split())[:1200]
+        if not broll_prompt:
+            broll_prompt = (
+                "Vertical social B-roll for a gaming creator. Illustrate the emotion or concept of this clip "
+                "without showing the real creator and without inventing specific game events: "
+                + str(clip.get("context") or clip.get("hook") or clip.get("title") or "")
+            )[:1200]
+        broll_path = folder / f"klypso-{job_id}-compose-{clip_id}.png"
+        generate_broll_image(broll_prompt, broll_path, aspect_ratio="9:16")
+
+        voice_text = " ".join(str(body.get("voice_text") or clip.get("hook") or clip.get("title") or "").split())[:5000]
+        voice_path = folder / f"klypso-{job_id}-compose-{clip_id}.mp3"
+        generate_voiceover(voice_text, voice_path, voice_id=body.get("voice_id"))
+
+        rendered = _render_ai_clips(job, saved, requested_ids=[clip_id])
+        if not rendered:
+            raise RuntimeError("Impossible de rendre le clip de base.")
+        base_media_id = rendered[0]["media_id"]
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            base_row = db.execute(
+                "SELECT stored_path FROM media_files WHERE id=? AND user_id=?",
+                (base_media_id, session["user_id"]),
+            ).fetchone()
+        if not base_row:
+            raise RuntimeError("Clip de base introuvable.")
+
+        output = folder / f"klypso-{job_id}-clip-{clip_id}-ai-assets.mp4"
+        compose_assets(base_row["stored_path"], output, broll_image=broll_path, voiceover_audio=voice_path, broll_start=1.5, broll_duration=4.5)
+
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            cur = db.execute(
+                "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
+                (session["user_id"], f"{clip.get('title','Clip')} · AI assets.mp4", str(output), "video/mp4", output.stat().st_size),
+            )
+            media_id = cur.lastrowid
+            db.commit()
+        saved.setdefault("ai_assets", {}).setdefault("composed", []).append({
+            "clip_id": clip_id,
+            "media_id": media_id,
+            "broll_prompt": broll_prompt,
+            "voice_text": voice_text,
+        })
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            db.execute(
+                "UPDATE jobs SET result_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                (json.dumps(saved, ensure_ascii=False), job_id),
+            )
+            db.commit()
+        return jsonify({
+            "ok": True,
+            "clip_id": clip_id,
+            "media_id": media_id,
+            "download_url": f"/studio/ai-download/{media_id}",
+            "message": "B-roll + voiceover générés et composés dans un MP4.",
+        }), 201
+    except LookupError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except Exception:
+        current_app.logger.exception("AI asset composition failed")
+        return jsonify({"error": "La composition B-roll + voiceover a échoué. Vérifie Gemini, ElevenLabs et FFmpeg."}), 503
 
 
 @ai_bp.get("/api/ai/assets/status")
