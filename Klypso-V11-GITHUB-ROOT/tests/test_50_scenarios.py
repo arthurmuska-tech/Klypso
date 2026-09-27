@@ -733,6 +733,26 @@ def test_v17_extra_scenarios(client, app, scenario):
         assert trimmed["duration"] < 35
 
 
+V17_SEMANTIC_SCENARIOS = [
+    "semantic_duplicate_gate",
+]
+
+@pytest.mark.parametrize("scenario", V17_SEMANTIC_SCENARIOS, ids=V17_SEMANTIC_SCENARIOS)
+def test_v17_semantic_scenarios(client, app, scenario):
+    from klypso.clips.intelligence import enrich_ai_result
+    if scenario == "semantic_duplicate_gate":
+        candidates = [
+            {"id":"a","start":10,"end":30,"duration":20,"base_score":90,"speech_density":3,"context":"regarde ce clutch incroyable maintenant"},
+            {"id":"b","start":80,"end":105,"duration":25,"base_score":89,"speech_density":3,"context":"regarde ce clutch incroyable maintenant encore"},
+            {"id":"c","start":140,"end":165,"duration":25,"base_score":88,"speech_density":3,"context":"réaction totalement différente sur un nouveau sujet"},
+        ]
+        def raw(candidate, archetype):
+            return {"id":candidate["id"],"start":candidate["start"],"end":candidate["end"],"title":candidate["id"],"hook":"hook","reason":"reason","archetype":archetype,
+                    "hook_score":90,"payoff_score":90,"emotion_score":85,"novelty_score":80,"context_score":90,"shareability_score":85,"creator_fit_score":85,"replay_score":80}
+        result = enrich_ai_result({"clips":[raw(candidates[0],"clutch"),raw(candidates[1],"clutch"),raw(candidates[2],"reaction")]}, candidates, {})
+        assert len(result["clips"]) == 2
+        assert {clip["id"] for clip in result["clips"]} == {"a","c"}
+
 V17_PERFORMANCE_SCENARIOS = [
     "performance_memory_reads_real_results",
     "performance_endpoint_accepts_valid_clip",
