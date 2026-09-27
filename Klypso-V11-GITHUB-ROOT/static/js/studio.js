@@ -56,7 +56,12 @@
   const applyState = next => {
     projectState = clone(next);
     refreshClipPicker();
-    clipPicker?.addEventListener('change', () => {
+    document.querySelectorAll('[data-ratio]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.ratio === (projectState.settings.ratio || '9:16'));
+    });
+  };
+
+  clipPicker?.addEventListener('change', () => {
     selectedClipIndex = Number(clipPicker.value || 0);
   });
 
@@ -121,11 +126,6 @@
       alert(error.message || 'Modification impossible.');
     }
   });
-
-  document.querySelectorAll('[data-ratio]').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.ratio === (projectState.settings.ratio || '9:16'));
-    });
-  };
 
   const saveProject = async (showFeedback = true) => {
     if (saveState) saveState.textContent = 'Enregistrement…';
