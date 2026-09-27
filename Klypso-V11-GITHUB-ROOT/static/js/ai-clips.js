@@ -33,7 +33,8 @@
       clips.map((clip, index) =>
         '<article class="ai-clip-row"><div class="ai-clip-rank">0' + (index + 1) + '</div><div class="ai-clip-main"><div class="ai-clip-head"><span class="ai-archetype">' + escapeHtml(clip.archetype || 'moment fort') + '</span><b>' + escapeHtml(clip.title) + '</b><strong>' + escapeHtml(clip.opportunity_score) + '/100</strong></div>' +
         '<p class="ai-clip-hook">“' + escapeHtml(clip.hook) + '”</p><p class="ai-clip-reason">' + escapeHtml(clip.reason) + '</p><div class="ai-score-grid">' + scoreBars(clip) + '</div>' +
-        '<div class="ai-clip-feedback"><button type="button" class="filter-btn" data-feedback="keep" data-job-id="' + jobId + '" data-candidate-id="' + escapeHtml(clip.id) + '">✓ Je garde</button><button type="button" class="filter-btn" data-feedback="reject" data-job-id="' + jobId + '" data-candidate-id="' + escapeHtml(clip.id) + '">× Je rejette</button><span>' + Number(clip.start || 0).toFixed(1) + 's → ' + Number(clip.end || 0).toFixed(1) + 's</span></div></div></article>'
+        '<div class="ai-clip-feedback"><button type="button" class="filter-btn" data-feedback="keep" data-job-id="' + jobId + '" data-candidate-id="' + escapeHtml(clip.id) + '">✓ Je garde</button><button type="button" class="filter-btn" data-feedback="reject" data-job-id="' + jobId + '" data-candidate-id="' + escapeHtml(clip.id) + '">× Je rejette</button><button type="button" class="filter-btn" data-performance-open="' + jobId + ':' + escapeHtml(clip.id) + '">↗ Performance</button><span>' + Number(clip.start || 0).toFixed(1) + 's → ' + Number(clip.end || 0).toFixed(1) + 's</span></div>' +
+        '<div class="performance-panel" data-performance-panel="' + jobId + ':' + escapeHtml(clip.id) + '" hidden><div><span>APRÈS PUBLICATION</span><strong>Apprends à KLYPSO ce qui a vraiment marché.</strong></div><label>Plateforme<select data-performance-platform><option value="youtube">YouTube</option><option value="tiktok">TikTok</option><option value="instagram">Instagram</option><option value="x">X</option><option value="other">Autre</option></select></label><label>Vues<input type="number" min="0" value="0" data-performance-views></label><label>Likes<input type="number" min="0" value="0" data-performance-likes></label><label>Commentaires<input type="number" min="0" value="0" data-performance-comments></label><label>Partages<input type="number" min="0" value="0" data-performance-shares></label><label>Complétion %<input type="number" min="0" max="100" step="0.1" value="0" data-performance-completion></label><button class="button small" type="button" data-performance-save="' + jobId + ':' + escapeHtml(clip.id) + '">Enregistrer la performance</button><span data-performance-status></span></div></div></div></article>'
       ).join('') +
       '</div><div class="ai-render-output" data-ai-render-output="' + jobId + '"></div>';
     box.hidden = false;
@@ -41,6 +42,44 @@
   };
 
   document.addEventListener('click', async (event) => {
+    const performanceOpen = event.target.closest('[data-performance-open]');
+    if (performanceOpen) {
+      document.querySelector('[data-performance-panel="' + performanceOpen.dataset.performanceOpen + '"]')?.toggleAttribute('hidden');
+      return;
+    }
+
+    const performanceSave = event.target.closest('[data-performance-save]');
+    if (performanceSave) {
+      const panel = document.querySelector('[data-performance-panel="' + performanceSave.dataset.performanceSave + '"]');
+      if (!panel) return;
+      const [jobId, candidateId] = performanceSave.dataset.performanceSave.split(':');
+      const payload = {
+        job_id: jobId,
+        candidate_id: candidateId,
+        platform: panel.querySelector('[data-performance-platform]')?.value || 'unknown',
+        views: Number(panel.querySelector('[data-performance-views]')?.value || 0),
+        likes: Number(panel.querySelector('[data-performance-likes]')?.value || 0),
+        comments: Number(panel.querySelector('[data-performance-comments]')?.value || 0),
+        shares: Number(panel.querySelector('[data-performance-shares]')?.value || 0),
+        completion_rate: Number(panel.querySelector('[data-performance-completion]')?.value || 0)
+      };
+      performanceSave.disabled = true;
+      performanceSave.textContent = 'Enregistrement…';
+      try {
+        const response = await fetch('/clips/performance', {method:'POST', headers:{'Content-Type':'application/json','X-CSRF-Token':csrf}, body:JSON.stringify(payload), credentials:'same-origin'});
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Performance non enregistrée.');
+        const status = panel.querySelector('[data-performance-status]');
+        if (status) status.textContent = '✓ Performance mémorisée';
+        performanceSave.textContent = 'Mémorisée ✓';
+      } catch(error) {
+        performanceSave.disabled = false;
+        performanceSave.textContent = 'Enregistrer la performance';
+        alert(error.message);
+      }
+      return;
+    }
+
     const standardOpen = event.target.closest('[data-standard-open]');
     if (standardOpen) {
       document.querySelector('[data-standard-panel="' + standardOpen.dataset.standardOpen + '"]')?.toggleAttribute('hidden');
