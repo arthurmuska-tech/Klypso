@@ -25,6 +25,13 @@ publisher_bp = Blueprint("publisher", __name__)
 
 PLATFORMS = ("youtube", "tiktok", "instagram", "x")
 FREQUENCIES = ("daily", "weekly", "monthly")
+
+SOCIAL_PROFILES = {
+    "youtube": {"name": "YouTube Shorts", "ratio": "9:16", "recommended_max_seconds": 60, "hashtags": ["#shorts", "#gaming"]},
+    "tiktok": {"name": "TikTok", "ratio": "9:16", "recommended_max_seconds": 90, "hashtags": ["#tiktok", "#gaming"]},
+    "instagram": {"name": "Instagram Reels", "ratio": "9:16", "recommended_max_seconds": 90, "hashtags": ["#reels", "#gaming"]},
+    "x": {"name": "X", "ratio": "16:9", "recommended_max_seconds": 140, "hashtags": ["#gaming"]},
+}
 STATUS_LABELS = {
     "scheduled": "Programmé",
     "processing": "Publication…",
@@ -244,17 +251,18 @@ def _social_copy(job, candidate_id, platform):
                     break
         except (TypeError, ValueError, json.JSONDecodeError):
             pass
-    tags = ["#KLYPSO", "#gaming", f"#{archetype}"]
-    if platform == "youtube":
-        tags.append("#shorts")
-    elif platform == "instagram":
-        tags.append("#reels")
-    elif platform == "tiktok":
-        tags.append("#tiktok")
+    profile = SOCIAL_PROFILES.get(platform, {"ratio": "9:16", "recommended_max_seconds": 60, "hashtags": ["#gaming"]})
+    tags = ["#KLYPSO", f"#{archetype}", *profile["hashtags"]]
+    tags = list(dict.fromkeys(tags))
     return {
         "title": title,
         "caption": hook,
         "hashtags": " ".join(tags),
+        "render_profile": {
+            "platform": platform,
+            "ratio": profile["ratio"],
+            "recommended_max_seconds": profile["recommended_max_seconds"],
+        },
     }
 
 
@@ -323,6 +331,51 @@ def publisher_page():
         stats=stats,
         status_labels=STATUS_LABELS,
     )
+
+@publisher_bp.get("/api/publisher/analytics")
+@login_required
+def analytics_api():
+    user_id = session["user_id"]
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        rows = db.execute(
+            "SELECT platform,views,likes,comments,shares,completion_rate,candidate_id,job_id "
+            "FROM clip_metrics WHERE user_id=? ORDER BY id DESC LIMIT 500",
+            (user_id,),
+        ).fetchall()
+        published = db.execute(
+            "SELECT COUNT(*) AS n FROM publish_queue WHERE user_id=? AND status='published'",
+            (user_id,),
+        ).fetchone()["n"]
+    totals = {"views": 0, "likes": 0, "comments": 0, "shares": 0, "completion_rate": 0.0}
+    by_platform = {}
+    for row in rows:
+        platform = row["platform"] or "unknown"
+        bucket = by_platform.setdefault(platform, {"views": 0, "likes": 0, "comments": 0, "shares": 0, "posts": 0, "completion_rates": []})
+        for key in ("views", "likes", "comments", "shares"):
+            value = max(0, int(row[key] or 0))
+            totals[key] += value
+            bucket[key] += value
+        completion = max(0.0, min(100.0, float(row["completion_rate"] or 0)))
+        totals["completion_rate"] += completion
+        bucket["completion_rates"].append(completion)
+        bucket["posts"] += 1
+    count = len(rows)
+    if count:
+        totals["completion_rate"] = round(totals["completion_rate"] / count, 1)
+    for bucket in by_platform.values():
+        rates = bucket.pop("completion_rates")
+        bucket["completion_rate"] = round(sum(rates) / len(rates), 1) if rates else 0.0
+        bucket["engagement_rate"] = round(
+            (bucket["likes"] + bucket["comments"] + bucket["shares"]) / max(1, bucket["views"]) * 100,
+            2,
+        )
+    return jsonify({
+        "ok": True,
+        "published_posts": int(published),
+        "tracked_metrics": count,
+        "totals": totals,
+        "by_platform": by_platform,
+    })
 
 
 @publisher_bp.get("/api/publisher/queue")
