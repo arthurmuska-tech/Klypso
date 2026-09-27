@@ -71,6 +71,11 @@ def create_app(test_config=None):
             return redirect(url_for("dashboard"))
         return render_template("index.html")
 
+    @app.get("/google5ac38975c108f180.html")
+    def google_site_verification():
+        from flask import Response
+        return Response("google-site-verification: google5ac38975c108f180.html", mimetype="text/html")
+
     @app.get("/robots.txt")
     def robots_txt():
         from flask import Response
