@@ -16,6 +16,7 @@ from .security import register_security, csrf_token
 from .promo import effective_plan_key
 from .plans import get_plan
 from .credits import get_credit_state
+from .media.object_storage import enabled as object_storage_enabled
 
 
 def create_app(test_config=None):
@@ -75,10 +76,11 @@ def create_app(test_config=None):
         version_file = Path(app.root_path).parent / "VERSION"
         version = version_file.read_text(encoding="utf-8").strip() if version_file.exists() else "unknown"
         database = "postgresql" if str(app.config["DATABASE_PATH"]).startswith(("postgresql://", "postgres://")) else "sqlite"
+        storage = "s3" if object_storage_enabled() else "local"
+        db_status = "ok"
         try:
             with get_db(app.config["DATABASE_PATH"]) as db:
                 db.execute("SELECT 1").fetchone()
-            db_status = "ok"
         except Exception:
             app.logger.exception("Health check database failure")
             db_status = "error"
@@ -89,17 +91,41 @@ def create_app(test_config=None):
             "version": version,
             "database": database,
             "database_status": db_status,
+            "storage": storage,
+            "storage_required": bool(app.config.get("REQUIRE_OBJECT_STORAGE")),
+            "worker_mode": app.config.get("AI_WORKER_MODE", "in_process"),
         }, 200 if status == "ok" else 503
 
     @app.route("/readyz")
     def readyz():
+        database = str(app.config["DATABASE_PATH"])
+        database_is_postgres = database.startswith(("postgresql://", "postgres://"))
+        storage_ready = object_storage_enabled() if app.config.get("REQUIRE_OBJECT_STORAGE") else True
+        database_ready = not app.config.get("REQUIRE_POSTGRES") or database_is_postgres
         try:
             with get_db(app.config["DATABASE_PATH"]) as db:
                 db.execute("SELECT 1").fetchone()
-            return {"status": "ready"}, 200
         except Exception:
-            app.logger.exception("Readiness check failed")
-            return {"status": "not_ready"}, 503
+            app.logger.exception("Readiness check database failure")
+            return {
+                "status": "not_ready",
+                "database": "postgresql" if database_is_postgres else "sqlite",
+                "database_required": bool(app.config.get("REQUIRE_POSTGRES")),
+                "storage_ready": storage_ready,
+            }, 503
+        if not database_ready or not storage_ready:
+            return {
+                "status": "not_ready",
+                "database": "postgresql" if database_is_postgres else "sqlite",
+                "database_required": bool(app.config.get("REQUIRE_POSTGRES")),
+                "storage": "s3" if storage_ready else "local_unavailable",
+                "storage_required": bool(app.config.get("REQUIRE_OBJECT_STORAGE")),
+            }, 503
+        return {
+            "status": "ready",
+            "database": "postgresql" if database_is_postgres else "sqlite",
+            "storage": "s3" if object_storage_enabled() else "local",
+        }, 200
 
     @app.route("/demo")
     def public_demo():
