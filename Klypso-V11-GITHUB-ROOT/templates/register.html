@@ -5,7 +5,11 @@
 <span class="eyebrow-v11">CRÉATION DE COMPTE</span><h1>Crée ton espace KLYPSO.</h1>
 <p class="auth-lead">Google ou e-mail vérifié par code. Aucun mot de passe à retenir.</p>
 {% if config.GOOGLE_CLIENT_ID and config.GOOGLE_CLIENT_SECRET %}<a class="oauth-button" href="{{ url_for('auth.google_login') }}"><b class="google-mark">G</b> S'inscrire avec Google</a>{% endif %}
-{% if config.APPLE_CLIENT_ID and config.APPLE_TEAM_ID and config.APPLE_KEY_ID and config.APPLE_PRIVATE_KEY %}<a class="oauth-button" href="{{ url_for('auth.apple_login') }}"><b class="apple-mark"></b> S'inscrire avec Apple</a>{% endif %}
+{% if config.APPLE_CLIENT_ID and config.APPLE_TEAM_ID and config.APPLE_KEY_ID and config.APPLE_PRIVATE_KEY %}
+<a class="oauth-button" href="{{ url_for('auth.apple_login') }}"><b class="apple-mark"></b> S'inscrire avec Apple</a>
+{% else %}
+<div class="oauth-button oauth-button-disabled"><b class="apple-mark"></b> S'inscrire avec Apple <small>configuration requise</small></div>
+{% endif %}
 <div class="auth-divider"><span>OU PAR E-MAIL</span></div>
 <form method="post" class="auth-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <label>Adresse e-mail<input name="email" type="email" required autocomplete="email" placeholder="toi@exemple.com"></label>
