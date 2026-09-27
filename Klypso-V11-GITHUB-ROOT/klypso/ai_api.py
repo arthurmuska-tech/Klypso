@@ -1210,6 +1210,13 @@ def render_montage(job_id):
         social_preset = director.get("social_preset") or (result.get("preferences") or {}).get("social_preset") or "story"
         caption_style = director.get("caption_style") or (result.get("preferences") or {}).get("caption_style") or "classic"
 
+        quota_units = 1
+        consume_monthly_clip_units(
+            session["user_id"],
+            effective_plan_key(user),
+            quota_units,
+            {"operation": "render_montage_quota", "job_id": job_id},
+        )
         charged = max(1, (len(montage_ids) + 1) // 2)
         consume_processing_credits(
             session["user_id"],
@@ -1259,6 +1266,14 @@ def render_montage(job_id):
                 "caption_style": caption_style,
             },
         })
+    except CreditError as exc:
+        if "quota_units" in locals() and quota_units:
+            refund_monthly_clip_units(session["user_id"], quota_units, {"operation": "render_montage_quota_failed", "job_id": job_id})
+        return jsonify({"error": str(exc)}), 402
     except Exception:
+        if "charged" in locals() and charged:
+            refund_processing_credits(session["user_id"], charged, {"operation": "render_montage_failed", "job_id": job_id})
+        if "quota_units" in locals() and quota_units:
+            refund_monthly_clip_units(session["user_id"], quota_units, {"operation": "render_montage_quota_failed", "job_id": job_id})
         current_app.logger.exception("AI montage render failed")
         return jsonify({"error": "Le montage IA n'a pas pu être exporté."}), 500
