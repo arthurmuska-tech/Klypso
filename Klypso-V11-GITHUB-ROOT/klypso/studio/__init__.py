@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 from flask import Blueprint, current_app, jsonify, render_template, request, send_file, session
 from ..auth import login_required
 from ..database import get_db
@@ -14,7 +15,133 @@ studio_bp = Blueprint("studio", __name__)
 @studio_bp.get("/studio")
 @login_required
 def studio():
-    return render_template("studio.html")
+    project = None
+    project_id = request.args.get("project_id")
+    job_id = request.args.get("job_id")
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        if project_id:
+            project = db.execute(
+                "SELECT * FROM projects WHERE id=? AND user_id=?",
+                (project_id, session["user_id"]),
+            ).fetchone()
+        elif job_id:
+            job = db.execute(
+                "SELECT * FROM jobs WHERE id=? AND user_id=?",
+                (job_id, session["user_id"]),
+            ).fetchone()
+            if job:
+                payload = json.loads(job["payload_json"] or "{}")
+                project_id = payload.get("project_id")
+                if project_id:
+                    project = db.execute(
+                        "SELECT * FROM projects WHERE id=? AND user_id=?",
+                        (project_id, session["user_id"]),
+                    ).fetchone()
+    project_payload = None
+    if project:
+        try:
+            project_payload = json.loads(project["timeline_json"] or "{}")
+        except (TypeError, ValueError, json.JSONDecodeError):
+            project_payload = {}
+    return render_template(
+        "studio.html",
+        current_project=project,
+        project_payload=project_payload or {"clips": [], "audio_tracks": [], "markers": []},
+    )
+
+
+
+@studio_bp.post("/api/studio/projects")
+@login_required
+def create_studio_project():
+    body = request.get_json(silent=True) or {}
+    name = " ".join(str(body.get("name") or "Projet Klypso").split())[:120] or "Projet Klypso"
+    timeline = body.get("timeline") if isinstance(body.get("timeline"), dict) else {"clips": [], "audio_tracks": [], "markers": []}
+    from .timeline import validate_timeline
+    try:
+        validate_timeline(timeline)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        cur = db.execute(
+            "INSERT INTO projects(user_id,name,timeline_json) VALUES(?,?,?)",
+            (session["user_id"], name, json.dumps(timeline, ensure_ascii=False)),
+        )
+        db.commit()
+    return jsonify({"ok": True, "project_id": cur.lastrowid, "name": name, "timeline": timeline}), 201
+
+
+@studio_bp.get("/api/studio/projects/<int:project_id>")
+@login_required
+def get_studio_project(project_id):
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        row = db.execute(
+            "SELECT id,name,timeline_json,updated_at FROM projects WHERE id=? AND user_id=?",
+            (project_id, session["user_id"]),
+        ).fetchone()
+    if not row:
+        return jsonify({"error": "Projet introuvable."}), 404
+    try:
+        timeline = json.loads(row["timeline_json"] or "{}")
+    except (TypeError, ValueError, json.JSONDecodeError):
+        timeline = {"clips": [], "audio_tracks": [], "markers": []}
+    return jsonify({"ok": True, "project_id": row["id"], "name": row["name"], "timeline": timeline, "updated_at": row["updated_at"]})
+
+
+@studio_bp.post("/api/studio/projects/<int:project_id>/save")
+@login_required
+def save_studio_project(project_id):
+    body = request.get_json(silent=True) or {}
+    timeline = body.get("timeline")
+    if not isinstance(timeline, dict):
+        return jsonify({"error": "Timeline invalide."}), 400
+    from .timeline import validate_timeline
+    try:
+        validate_timeline(timeline)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    name = " ".join(str(body.get("name") or "Projet Klypso").split())[:120] or "Projet Klypso"
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        owned = db.execute("SELECT id FROM projects WHERE id=? AND user_id=?", (project_id, session["user_id"])).fetchone()
+        if not owned:
+            return jsonify({"error": "Projet introuvable."}), 404
+        db.execute(
+            "UPDATE projects SET name=?, timeline_json=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?",
+            (name, json.dumps(timeline, ensure_ascii=False), project_id, session["user_id"]),
+        )
+        db.commit()
+    return jsonify({"ok": True, "project_id": project_id, "name": name, "timeline": timeline})
+
+
+@studio_bp.post("/api/studio/projects/<int:project_id>/edit")
+@login_required
+def edit_studio_project(project_id):
+    body = request.get_json(silent=True) or {}
+    operation = body.get("operation")
+    if not isinstance(operation, dict):
+        return jsonify({"error": "Opération Studio invalide."}), 400
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        row = db.execute("SELECT timeline_json FROM projects WHERE id=? AND user_id=?", (project_id, session["user_id"])).fetchone()
+    if not row:
+        return jsonify({"error": "Projet introuvable."}), 404
+    try:
+        timeline = json.loads(row["timeline_json"] or "{}")
+    except (TypeError, ValueError, json.JSONDecodeError):
+        timeline = {"clips": [], "audio_tracks": [], "markers": []}
+    try:
+        from .editor import apply_edit
+        updated = apply_edit(timeline, operation)
+        from .timeline import validate_timeline
+        validate_timeline(updated)
+    except (ValueError, IndexError, KeyError) as exc:
+        return jsonify({"error": str(exc)}), 400
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        db.execute(
+            "UPDATE projects SET timeline_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?",
+            (json.dumps(updated, ensure_ascii=False), project_id, session["user_id"]),
+        )
+        db.commit()
+    return jsonify({"ok": True, "project_id": project_id, "timeline": updated})
 
 
 @studio_bp.post("/studio/ai-edit")
