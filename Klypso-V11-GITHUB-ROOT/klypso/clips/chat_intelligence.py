@@ -106,6 +106,35 @@ def build_chat_signals(messages, bin_seconds=5.0):
     }
 
 
+def generate_chat_candidates(duration, chat_signals, limit=24):
+    duration = max(0.0, float(duration or 0))
+    if duration <= 0:
+        return []
+    candidates = []
+    for spike in (chat_signals or {}).get("spikes") or []:
+        start = max(0.0, float(spike.get("start", 0)) - 7.0)
+        end = min(duration, float(spike.get("end", start)) + 10.0)
+        if end - start < 8.0:
+            continue
+        candidates.append({
+            "id": f"chat-{len(candidates)+1}",
+            "start": round(start, 3),
+            "end": round(end, 3),
+            "duration": round(end - start, 3),
+            "speech_words": 0,
+            "speech_density": 0.0,
+            "context": " ".join(
+                str(item.get("text", ""))
+                for item in (chat_signals or {}).get("hot_messages", [])[:8]
+            )[:260],
+            "source": "chat_spike",
+            "base_score": 64,
+        })
+        if len(candidates) >= limit:
+            break
+    return candidates
+
+
 def enrich_candidates_with_chat_signals(candidates, chat_signals):
     signals = chat_signals or {}
     events = signals.get("events") or []
