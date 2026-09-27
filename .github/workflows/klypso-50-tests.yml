@@ -1,4 +1,4 @@
-name: KLYPSO — V22 production tests
+name: KLYPSO — V23 production tests
 concurrency:
   group: klypso-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -43,5 +43,5 @@ jobs:
       - name: CSS structure check
         run: python -c "from pathlib import Path; css=Path('static/css/v14.css').read_text(encoding='utf-8'); assert css.count('{')==css.count('}'), 'Unbalanced CSS braces'; assert css.count('(')==css.count(')'), 'Unbalanced CSS parentheses'; print('CSS structure OK')"
 
-      - name: Run full V20 test suite
+      - name: Run full V23 test suite
         run: pytest -q tests
