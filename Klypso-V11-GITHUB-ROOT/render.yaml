@@ -3,7 +3,7 @@ services:
     name: klypso
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn --workers 2 --threads 4 --timeout 120 web_app:app
+    startCommand: gunicorn --workers 2 --threads 4 --timeout 900 --graceful-timeout 60 web_app:app
     healthCheckPath: /healthz
     envVars:
       - key: PYTHON_VERSION
@@ -12,12 +12,16 @@ services:
         value: production
       - key: SECRET_KEY
         generateValue: true
+      - key: DATABASE_URL
+        sync: false
       - key: DATABASE_PATH
         value: /opt/render/project/src/data/klypso.sqlite3
       - key: STORAGE_PATH
         value: /opt/render/project/src/storage
       - key: MAX_CONTENT_LENGTH_MB
-        value: "512"
+        value: "4096"
+      - key: AI_BACKGROUND_WORKERS
+        value: "2"
       - key: SESSION_COOKIE_SECURE
         value: "true"
       - key: STRIPE_SECRET_KEY
