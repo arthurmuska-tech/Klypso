@@ -68,6 +68,25 @@ def handle_upload():
             raise ValueError("Compte introuvable.")
 
         plan_key = effective_plan_key(user)
+        plan = get_plan(plan_key)
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            project_count = db.execute(
+                "SELECT COUNT(*) AS n FROM projects WHERE user_id=?",
+                (user_id,),
+            ).fetchone()["n"]
+        if int(project_count) >= plan.max_projects:
+            raise CreditError(
+                f"Limite de {plan.max_projects} projets atteinte pour le plan {plan.name}."
+            )
+        content_length = request.content_length or 0
+        if content_length and content_length > min(
+            current_app.config["MAX_CONTENT_LENGTH"],
+            plan.max_upload_mb * 1024 * 1024,
+        ):
+            raise ValueError(
+                f"Cette vidéo dépasse la limite de {plan.max_upload_mb} MB de ton plan."
+            )
+
         # A clip is metered by its requested characteristics before expensive
         # video processing starts.
         consume_clip_credits(
