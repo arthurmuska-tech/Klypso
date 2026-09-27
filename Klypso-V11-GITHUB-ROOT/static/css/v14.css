@@ -1771,3 +1771,90 @@ html,body{scroll-snap-type:none!important;overscroll-behavior-y:auto!important}
   .landing-story-slide,.story-slide-card{transition:none!important;transform:none!important;filter:none!important;opacity:1!important}
 }
 body.v14-no-motion .landing-story-slide,body.v14-no-motion .story-slide-card{transition:none!important;transform:none!important;filter:none!important;opacity:1!important}
+
+
+/* ================= V20.9 — VISIBLE SCROLL MOTION =================
+   Native wheel/trackpad scrolling, but every story panel visibly responds
+   to its distance from the viewport focus line. */
+.landing-story-track{
+  perspective:1400px!important;
+}
+.landing-story-slide{
+  opacity:var(--story-opacity,.72)!important;
+  transform:
+    translate3d(0,var(--story-drift,0px),0)
+    rotateY(var(--story-rotate,0deg))
+    scale(var(--story-scale,.96))!important;
+  filter:blur(calc((1 - var(--story-focus,0)) * 2.8px)) saturate(calc(.86 + (var(--story-focus,0) * .14)))!important;
+  transition:
+    transform .12s linear,
+    opacity .12s linear,
+    filter .12s linear,
+    border-color .25s ease,
+    box-shadow .25s ease!important;
+  transform-origin:50% 50%;
+  will-change:transform,opacity,filter;
+}
+.landing-story-slide.is-focused{
+  opacity:1!important;
+}
+.story-slide-copy{
+  transform:translate3d(calc(var(--story-distance,0) * -28px),calc((1 - var(--story-focus,0)) * 12px),0)!important;
+  opacity:calc(.72 + (var(--story-focus,0) * .28))!important;
+  transition:transform .14s linear,opacity .14s linear!important;
+  will-change:transform,opacity;
+}
+.story-slide-copy h3{
+  transform:translate3d(0,calc((1 - var(--story-focus,0)) * 10px),0)!important;
+  transition:transform .14s linear!important;
+}
+.story-slide-copy p{
+  transform:translate3d(0,calc((1 - var(--story-focus,0)) * 18px),0)!important;
+  opacity:calc(.48 + (var(--story-focus,0) * .52))!important;
+  transition:transform .16s linear,opacity .16s linear!important;
+}
+.story-slide-card{
+  transform:
+    perspective(1200px)
+    translate3d(calc(var(--story-distance,0) * 42px),calc((1 - var(--story-focus,0)) * 28px),0)
+    rotateY(calc(var(--story-distance,0) * -6deg))
+    rotateZ(calc(var(--story-distance,0) * -1deg))
+    scale(calc(.91 + (var(--story-focus,0) * .09)))!important;
+  transition:transform .14s linear,box-shadow .2s ease!important;
+  will-change:transform;
+}
+.landing-story-slide.is-focused .story-slide-card{
+  box-shadow:
+    0 42px 110px color-mix(in srgb,var(--k-wood-2) 16%,transparent),
+    0 0 0 1px color-mix(in srgb,var(--k-accent) 16%,transparent)!important;
+}
+.landing-story.is-live .landing-story-header{
+  transform:translate3d(0,calc(var(--story-focus,0) * -7px),0)!important;
+  transition:transform .16s linear!important;
+}
+.landing-story.is-live .landing-story-header h2{
+  text-shadow:0 14px 46px color-mix(in srgb,var(--k-accent) 12%,transparent)!important;
+}
+.story-word{
+  opacity:max(.12,var(--word-progress,.1))!important;
+}
+.landing-story-scroll-guide{opacity:.9!important}
+@media(max-width:900px){
+  .landing-story-slide{
+    transform:translate3d(0,var(--story-drift,0px),0) scale(var(--story-scale,.97))!important;
+  }
+  .story-slide-copy{
+    transform:translate3d(0,calc((1 - var(--story-focus,0)) * 10px),0)!important;
+  }
+  .story-slide-card{
+    transform:translate3d(0,calc((1 - var(--story-focus,0)) * 18px),0) scale(calc(.94 + (var(--story-focus,0) * .06)))!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .landing-story-slide,.story-slide-copy,.story-slide-copy h3,.story-slide-copy p,.story-slide-card,.landing-story.is-live .landing-story-header{
+    transform:none!important;transition:none!important;filter:none!important;opacity:1!important;
+  }
+}
+body.v14-no-motion .landing-story-slide,body.v14-no-motion .story-slide-copy,body.v14-no-motion .story-slide-card{
+  transform:none!important;transition:none!important;filter:none!important;opacity:1!important;
+}
