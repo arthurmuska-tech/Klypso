@@ -231,6 +231,14 @@ def build_creator_memory(db, user_id, limit=8):
     feedback = _feedback_summary(db, user_id)
     kept = sum(item["decision"] == "keep" for item in feedback)
     rejected = sum(item["decision"] == "reject" for item in feedback)
+    kept_archetypes = Counter(
+        item.get("archetype") for item in feedback
+        if item["decision"] == "keep" and item.get("archetype")
+    )
+    rejected_archetypes = Counter(
+        item.get("archetype") for item in feedback
+        if item["decision"] == "reject" and item.get("archetype")
+    )
 
     return {
         "projects_analyzed": len(rows),
@@ -249,6 +257,8 @@ def build_creator_memory(db, user_id, limit=8):
         "feedback": feedback,
         "feedback_kept": kept,
         "feedback_rejected": rejected,
+        "kept_archetypes": dict(kept_archetypes),
+        "rejected_archetypes": dict(rejected_archetypes),
     }
 
 
@@ -260,9 +270,14 @@ def creator_memory_for_prompt(memory):
         f"- formats souvent utilisés: {', '.join(memory.get('preferred_formats') or ['9:16'])}",
         f"- scènes déjà appréciées: {', '.join(memory.get('preferred_archetypes') or ['reaction', 'punchline', 'surprise'])}",
         f"- feedback manuel: {memory.get('feedback_kept', 0)} conservés / {memory.get('feedback_rejected', 0)} rejetés",
+        f"- archetypes explicitement gardés: {', '.join(memory.get('kept_archetypes', {}).keys()) or 'aucun encore'}",
+        f"- archetypes explicitement rejetés: {', '.join(memory.get('rejected_archetypes', {}).keys()) or 'aucun encore'}",
     ]
     for example in memory.get("winning_examples", [])[:5]:
-        lines.append(f"- exemple: [{example['archetype']}] {example['title']} — {example['hook']}")
+        lines.append(f"- gagnant historique: [{example['archetype']}] {example['title']} — {example['hook']}")
+    for example in (memory.get("feedback") or [])[:4]:
+        if example.get("title"):
+            lines.append(f"- feedback {example['decision']}: [{example.get('archetype','unknown')}] {example.get('title')} — {example.get('hook','')}")
     return "\n".join(lines)
 
 
