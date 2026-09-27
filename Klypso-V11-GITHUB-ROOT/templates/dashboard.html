@@ -93,6 +93,23 @@
     {% endif %}
   </section>
 
+  <section class="creator-dna-card">
+    <div class="creator-dna-head">
+      <div><span class="workspace-kicker">KLYPSO CREATOR DNA</span><h2>Ton prochain montage apprend du précédent.</h2><p>Le moteur mémorise les tendances éditoriales de tes projets IA sans stocker la vidéo brute comme « mémoire ».</p></div>
+      <a class="workspace-note-button" href="{{ url_for('clips.create_clips') }}">Créer avec cette mémoire →</a>
+    </div>
+    {% if creator_dna %}
+    <div class="creator-dna-grid">
+      <div><span>Durée préférée</span><strong>{{ creator_dna.preferred_clip_duration_seconds|default(31)|round|int }}s</strong></div>
+      <div><span>Formats</span><strong>{{ (creator_dna.preferred_formats or ['9:16'])|join(' · ') }}</strong></div>
+      <div><span>Scènes</span><strong>{{ (creator_dna.preferred_archetypes or ['reaction','surprise'])|join(' · ') }}</strong></div>
+      <div><span>Exemples mémorisés</span><strong>{{ (creator_dna.recent_winners or [])|length }}/12</strong></div>
+    </div>
+    {% else %}
+    <div class="creator-dna-empty"><span>✦</span><div><strong>Pas encore de DNA.</strong><p>Lance une première analyse IA : KLYPSO créera la base de ton profil éditorial.</p></div></div>
+    {% endif %}
+  </section>
+
   <section class="workspace-note">
     <div><span class="workspace-kicker">FREE, SANS BLOCAGE</span><h2>Le cœur du produit reste accessible sans abonnement.</h2><p>Le plan Free fournit déjà un quota de crédits et de clips. Les fonctions avancées d'IA restent séparées pour protéger les coûts d'infrastructure.</p></div>
     <a class="workspace-note-button" href="{{ url_for('billing.pricing') }}">Comparer les plans →</a>
