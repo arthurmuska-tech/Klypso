@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Démo — KLYPSO{% endblock %}
+{% block meta_description %}Explore KLYPSO sans créer de compte : clips IA, Studio, Brand Kit et publication sociale.{% endblock %}
+{% block content %}
+<div class="public-demo-v20">
+  <section class="demo-hero v20-scroll-reveal">
+    <span class="landing-kicker">DÉMO PUBLIQUE · SANS COMPTE</span>
+    <h1>Voici à quoi ressemble <em>ton workspace.</em></h1>
+    <p>Parcours les principales zones de KLYPSO avant de créer ton espace. Les données affichées ici sont une démonstration, pas un compte réel.</p>
+    <div class="landing-actions">
+      <a class="button button-lg" href="{{ url_for('auth.register') }}">Créer mon espace gratuitement →</a>
+      <a class="landing-secondary" href="{{ url_for('billing.pricing') }}">Voir les tarifs</a>
+    </div>
+  </section>
+
+  <section class="demo-tabs" aria-label="Démo KLYPSO">
+    <button class="demo-tab active" type="button" data-demo-tab="dashboard">Accueil</button>
+    <button class="demo-tab" type="button" data-demo-tab="clips">Clips IA</button>
+    <button class="demo-tab" type="button" data-demo-tab="studio">Studio</button>
+    <button class="demo-tab" type="button" data-demo-tab="publish">Publication</button>
+  </section>
+
+  <section class="demo-panel active v20-scroll-reveal" data-demo-panel="dashboard">
+    <div class="demo-shell">
+      <aside class="demo-sidebar"><b>K</b><span class="active">⌂</span><span>✦</span><span>◫</span><span>↗</span><span>◈</span></aside>
+      <div class="demo-main">
+        <div class="demo-top"><div><small>WORKSPACE</small><strong>Bonjour, créateur.</strong></div><span>FREE</span></div>
+        <div class="demo-grid">
+          <article class="demo-stat v20-scroll-object"><small>PROJETS</small><strong>08</strong><span>2 en cours</span></article>
+          <article class="demo-stat v20-scroll-object"><small>CLIPS PRÊTS</small><strong>24</strong><span>Cette semaine</span></article>
+          <article class="demo-stat v20-scroll-object"><small>DNA</small><strong>ACTIF</strong><span>Apprentissage continu</span></article>
+        </div>
+        <article class="demo-large-card v20-scroll-object"><div class="demo-card-head"><div><span>DERNIER PROJET</span><h3>Stream highlight</h3></div><b>READY</b></div><div class="demo-video-mock"><i>▶</i><span>00:34 · 9:16 · 1080p</span></div><div class="demo-bars"><i></i><i></i><i></i></div></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="demo-panel v20-scroll-reveal" data-demo-panel="clips">
+    <div class="demo-feature-header"><span class="landing-kicker">CLIPS IA</span><h2>Le flux de sélection avant le rendu.</h2><p>Les cartes ci-dessous montrent le type de matière disponible dans un projet KLYPSO.</p></div>
+    <div class="demo-clip-grid">
+      <article class="demo-clip v20-scroll-object"><div class="demo-clip-thumb">▶</div><div><span>REACTION</span><h3>« Mais c'est quoi ça ?! »</h3><p>Hook rapide · payoff clair · réaction forte</p></div><strong>92</strong></article>
+      <article class="demo-clip v20-scroll-object"><div class="demo-clip-thumb">✦</div><div><span>CLUTCH</span><h3>Le dernier mouvement.</h3><p>Contexte court · rythme élevé · replay</p></div><strong>88</strong></article>
+      <article class="demo-clip v20-scroll-object"><div class="demo-clip-thumb">◈</div><div><span>SURPRISE</span><h3>Personne ne s'y attendait.</h3><p>Rupture visuelle · audio · chat</p></div><strong>84</strong></article>
+    </div>
+  </section>
+
+  <section class="demo-panel v20-scroll-reveal" data-demo-panel="studio">
+    <div class="demo-feature-header"><span class="landing-kicker">KLYPSO STUDIO</span><h2>Un vrai espace de montage.</h2><p>Canvas, timeline, propriétés et sortie MP4 dans la même vue.</p></div>
+    <div class="demo-studio v20-scroll-object">
+      <aside><span>TOOLS</span><b>⌁</b><b>T</b><b>♫</b><b>▤</b><b>Aa</b><b>✦</b></aside>
+      <div class="demo-studio-center"><div class="demo-canvas"><span>PREVIEW</span><b>▶</b><small>9:16 · 1080p</small></div><div class="demo-timeline"><div><span>V1</span><i></i><i></i><i></i></div><div><span>V2</span><i></i><i></i></div><div><span>A1</span><i></i></div><div><span>T1</span><i></i></div></div></div>
+      <aside class="demo-inspector"><span>PROPRIÉTÉS</span><label>X <i></i></label><label>Y <i></i></label><label>ZOOM <i></i></label><label>AUDIO <i></i></label></aside>
+    </div>
+  </section>
+
+  <section class="demo-panel v20-scroll-reveal" data-demo-panel="publish">
+    <div class="demo-feature-header"><span class="landing-kicker">PUBLICATION</span><h2>Créer → publier → mesurer.</h2><p>Calendrier, réseaux, métriques et boucle d'apprentissage réunis dans la même logique.</p></div>
+    <div class="demo-publish-grid">
+      <article class="demo-publish-card v20-scroll-object"><div class="demo-publish-icons"><span>YT</span><span>TT</span><span>IG</span><span>𝕏</span></div><strong>4 formats sociaux</strong><small>Une base de contenu, plusieurs sorties.</small></article>
+      <article class="demo-publish-card v20-scroll-object"><div class="demo-calendar"><b>18:00</b><span>Créneau recommandé</span></div><strong>Calendrier</strong><small>Cadences quotidiennes, hebdomadaires ou mensuelles.</small></article>
+      <article class="demo-publish-card v20-scroll-object"><div class="demo-score">↑ 24%</div><strong>Performance</strong><small>Vues, engagement et complétion alimentent le Creator DNA.</small></article>
+    </div>
+  </section>
+
+  <section class="demo-cta">
+    <span class="landing-kicker">TU AS VU L'ESSENTIEL</span>
+    <h2>Maintenant, donne-lui une vraie VOD.</h2>
+    <a class="button button-lg" href="{{ url_for('auth.register') }}">Créer KLYPSO gratuitement →</a>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const buttons = Array.from(document.querySelectorAll('[data-demo-tab]'));
+  const panels = Array.from(document.querySelectorAll('[data-demo-panel]'));
+  buttons.forEach(button => button.addEventListener('click', () => {
+    const name = button.dataset.demoTab;
+    buttons.forEach(item => item.classList.toggle('active', item === button));
+    panels.forEach(panel => panel.classList.toggle('active', panel.dataset.demoPanel === name));
+  }));
+})();
+</script>
+{% endblock %}
