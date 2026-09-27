@@ -269,12 +269,12 @@
 
   storyDots.forEach((dot) => {
     dot.addEventListener('click', () => {
-      if (!story) return;
+      if (!slides.length) return;
       const targetStep = Math.max(0, Math.min(slides.length - 1, Number(dot.dataset.storyJump || 0)));
-      const travel = Math.max(1, story.offsetHeight - window.innerHeight);
-      const ratio = targetStep / Math.max(1, slides.length);
-      const target = story.getBoundingClientRect().top + window.scrollY + (travel * ratio);
-      window.scrollTo({ top: target, behavior: motionEnabled ? 'smooth' : 'auto' });
+      const targetSlide = slides[targetStep];
+      if (targetSlide) {
+        targetSlide.scrollIntoView({ behavior: motionEnabled ? 'smooth' : 'auto', block: 'center' });
+      }
     });
   });
 
