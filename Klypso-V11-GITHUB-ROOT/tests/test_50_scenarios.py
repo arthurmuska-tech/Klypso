@@ -389,6 +389,8 @@ def test_v16_surface_scenarios(client, app, scenario):
             row = db.execute("SELECT display_name FROM users WHERE id=?", (user["id"],)).fetchone()
         assert row["display_name"] == "New Name"
     elif scenario == "resend_without_pending":
+        with client.session_transaction() as sess:
+            sess["csrf_token"] = "csrf-ok"
         r = client.post("/resend-code", data={"csrf_token": "csrf-ok"})
         assert r.status_code == 302 and "/login" in r.headers["Location"]
     elif scenario == "verify_page_has_resend":
