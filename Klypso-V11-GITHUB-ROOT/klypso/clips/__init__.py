@@ -113,9 +113,15 @@ def handle_upload():
         folder = user_storage(current_app.config["STORAGE_PATH"], user_id)
         destination = folder / stored_name
         file.save(destination)
-        if destination.stat().st_size > current_app.config["MAX_CONTENT_LENGTH"]:
+        max_upload_bytes = min(
+            current_app.config["MAX_CONTENT_LENGTH"],
+            plan.max_upload_mb * 1024 * 1024,
+        )
+        if destination.stat().st_size > max_upload_bytes:
             destination.unlink(missing_ok=True)
-            raise ValueError("Fichier trop volumineux.")
+            raise ValueError(
+                f"Cette vidéo dépasse la limite de {plan.max_upload_mb} MB de ton plan."
+            )
 
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
