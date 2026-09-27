@@ -116,3 +116,47 @@ def test_v24_healthz_exposes_safe_dependency_status(tmp_path):
     assert "google_configured" in payload
     assert "email_configured" in payload
     assert set(payload["media_tools"]) == {"ffmpeg", "ffprobe"}
+
+
+def test_v24_email_normalization_and_duplicate_registration(tmp_path):
+    app = make_app(tmp_path)
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["csrf_token"] = "normalize-csrf"
+    payload = {
+        "email": "  Creator@Example.COM  ",
+        "password": "secure-pass-123",
+        "cgu": "on",
+        "privacy": "on",
+        "csrf_token": "normalize-csrf",
+    }
+    response = client.post("/register", data=payload)
+    assert response.status_code == 302
+    with app.app_context():
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            row = db.execute("SELECT email FROM users WHERE email=?", ("creator@example.com",)).fetchone()
+            assert row["email"] == "creator@example.com"
+
+    with client.session_transaction() as sess:
+        sess["csrf_token"] = "normalize-csrf-2"
+    duplicate = dict(payload)
+    duplicate["email"] = "CREATOR@example.com"
+    duplicate["csrf_token"] = "normalize-csrf-2"
+    response = client.post("/register", data=duplicate)
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/login")
+
+
+def test_v24_free_plan_cannot_start_advanced_ai_mode(tmp_path):
+    app = make_app(tmp_path)
+    with app.app_context():
+        user = _create_email_user("free@example.com")
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["user_id"] = user["id"]
+        sess["user_email"] = user["email"]
+        sess["csrf_token"] = "free-mode-csrf"
+
+    response = client.post("/upload", data={"mode": "ai_clips"}, content_type="multipart/form-data")
+    assert response.status_code == 403
+    assert "Pro" in response.get_data(as_text=True)
