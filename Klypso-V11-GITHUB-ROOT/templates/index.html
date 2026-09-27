@@ -1,28 +1,101 @@
 {% extends 'base.html' %}
 {% block title %}KLYPSO — Le workspace vidéo des créateurs{% endblock %}
-{% block meta_description %}KLYPSO réunit clips, montage vidéo et montage assisté par IA dans un workspace pensé pour les créateurs.{% endblock %}
+{% block meta_description %}KLYPSO transforme tes VOD et streams en clips, montages et contenus prêts à publier dans un workspace vidéo conçu pour les créateurs.{% endblock %}
 {% block content %}
-<div class="v10-shell">
-<section class="v10-hero">
-  <div class="v10-hero-copy">
-    <div class="v10-eyebrow"><span class="pulse-dot"></span>KLYPSO V10 · PRODUCTION WORKSPACE</div>
-    <h1>De ta vidéo brute à une <span>vidéo prête.</span></h1>
-    <p>Découvre les meilleurs moments, monte une vidéo entière, applique ton identité et prépare tes exports depuis un seul espace.</p>
-    <div class="v10-actions"><a class="button button-lg" href="{{ url_for('auth.register') }}">Créer mon espace gratuitement <span>→</span></a><a class="button ghost button-lg" href="{{ url_for('billing.pricing') }}">Découvrir les offres</a></div>
-    <div class="v10-proof"><div><strong>10 jours</strong><span>d'essai Pro</span></div><div><strong>4 formats</strong><span>16:9 · 9:16 · 4:5 · 1:1</span></div><div><strong>3 workflows</strong><span>Clips · Studio · IA</span></div></div>
-  </div>
-  <div class="v10-dashboard-preview">
-    <div class="preview-top"><span class="preview-dots">● ● ●</span><span>KLYPSO / WORKSPACE</span><span class="preview-live">● LIVE UI</span></div>
-    <div class="preview-body">
-      <aside><img src="{{ url_for('static', filename='img/klypso-logo.png') }}" alt="KLYPSO"><span class="active">⌂</span><span>✦</span><span>✂</span><span>◈</span><span>↗</span></aside>
-      <div class="preview-main"><div class="preview-head"><div><small>AI EDITOR</small><b>Projet — Stream highlight</b></div><span class="ready">READY</span></div><div class="preview-video"><div class="scan-line"></div><span class="preview-play">▶</span><strong>LE MOMENT CLÉ</strong><small>9:16 · 00:34</small></div><div class="preview-stats"><div><small>POTENTIEL</small><b>89</b></div><div><small>AUDIO</small><b>OPTIMISÉ</b></div><div><small>FORMAT</small><b>1080P</b></div></div><div class="preview-timeline"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+<div class="landing-v15">
+  <section class="landing-v15-hero">
+    <div class="landing-v15-hero-copy">
+      <span class="landing-kicker">KLYPSO · WORKSPACE VIDÉO</span>
+      <h1>Ta VOD entre.<br><em>Ta vidéo sort.</em></h1>
+      <p>KLYPSO réunit détection de moments forts, clips courts, montage Studio et identité visuelle dans un seul workspace. Commence sans abonnement, teste le flux complet et garde la main sur chaque étape.</p>
+      <div class="landing-actions">
+        <a class="button button-lg" href="{{ url_for('auth.register') }}">Créer mon espace gratuitement <span>→</span></a>
+        <a class="landing-secondary" href="#fonctionnalites">Voir comment ça marche <span>↓</span></a>
+      </div>
+      <div class="landing-proof">
+        <div><strong>15</strong><span>clips / mois en Free</span></div>
+        <div><strong>3</strong><span>crédits / jour</span></div>
+        <div><strong>2</strong><span>projets actifs</span></div>
+        <div><strong>512 MB</strong><span>par upload Free</span></div>
+      </div>
     </div>
-  </div>
-</section>
-<section class="v10-section"><div class="v10-section-head"><div><span class="v10-kicker">LE WORKSPACE</span><h2>Trois façons de créer. Un seul projet.</h2></div><p>Commence automatiquement, construis toi-même ton montage ou combine les deux.</p></div>
-<div class="v10-product-grid"><article class="v10-product"><span>01</span><div class="v10-product-icon">✦</div><h3>KLYPSO CLIPS</h3><p>Analyse une VOD et transforme les moments intéressants en candidats de clips avec scoring explicable et formats sociaux.</p><a href="{{ url_for('auth.register') }}">Créer des clips →</a></article><article class="v10-product featured"><span>02</span><div class="v10-product-icon">✂</div><h3>KLYPSO STUDIO</h3><p>Un espace de montage pour reprendre les coupes, pistes, textes, audio, cadrage et export au même endroit.</p><a href="{{ url_for('auth.register') }}">Ouvrir Studio →</a></article><article class="v10-product"><span>03</span><div class="v10-product-icon">⌁</div><h3>AI EDITOR</h3><p>Une première version automatisée à partir des opérations réellement disponibles sur le serveur, sans promesse artificielle.</p><a href="{{ url_for('auth.register') }}">Essayer l'IA →</a></article></div></section>
-<section class="v10-section v10-dark-band"><div class="v10-section-head"><div><span class="v10-kicker">PIPELINE</span><h2>Un workflow qui reste lisible.</h2></div></div><div class="v10-pipeline"><div><b>01</b><strong>Importer</strong><span>Vidéo ou VOD</span></div><div><b>02</b><strong>Analyser</strong><span>Durée, média, signaux</span></div><div><b>03</b><strong>Construire</strong><span>Clips ou première version</span></div><div><b>04</b><strong>Affiner</strong><span>Studio + identité</span></div><div><b>05</b><strong>Exporter</strong><span>Fichier final</span></div></div></section>
-<section class="v10-section"><div class="v10-section-head"><div><span class="v10-kicker">POUR PRODUIRE</span><h2>Tout ce qui doit rester à portée de main.</h2></div></div><div class="v10-capabilities"><div><b>🎯</b><strong>Moments intéressants</strong><span>Scoring multi-signaux et sélection structurée.</span></div><div><b>📐</b><strong>Formats sociaux</strong><span>Vertical, horizontal, carré et 4:5.</span></div><div><b>💬</b><strong>Sous-titres</strong><span>Styles et mise en avant des mots importants.</span></div><div><b>🎨</b><strong>Brand Kit</strong><span>Logo, couleurs et identité réutilisables.</span></div><div><b>🔊</b><strong>Audio</strong><span>Normalisation et nettoyage lorsque le média le permet.</span></div><div><b>🧩</b><strong>Non destructif</strong><span>L'original reste séparé des sorties générées.</span></div></div></section>
-<section class="v10-cta"><div><span class="v10-kicker">KLYPSO V10</span><h2>Construis ta prochaine vidéo dans un vrai workspace.</h2><p>Commence gratuitement et découvre ensuite les niveaux Pro et Ultra.</p></div><a class="button button-lg" href="{{ url_for('auth.register') }}">Commencer →</a></section>
+    <div class="landing-v15-hero-art" aria-label="Aperçu du workspace KLYPSO">
+      <div class="landing-window-shadow"></div>
+      <div class="landing-window">
+        <div class="landing-window-bar"><span></span><span></span><span></span><b>KLYPSO / WORKSPACE</b><i>FREE</i></div>
+        <div class="landing-window-grid">
+          <aside class="landing-window-side">
+            <strong>K</strong>
+            <span class="active">⌂</span><span>✦</span><span>◫</span><span>◈</span><span>↗</span>
+          </aside>
+          <div class="landing-window-main">
+            <div class="landing-window-head"><div><small>PROJET</small><b>Stream highlight</b></div><span>READY</span></div>
+            <div class="landing-video">
+              <div class="landing-video-label">MOMENT FORT</div>
+              <div class="landing-video-play">▶</div>
+              <div class="landing-video-time">00:34 · 9:16</div>
+              <div class="landing-scan"></div>
+            </div>
+            <div class="landing-mini-stats"><span><small>POTENTIEL</small><b>89</b></span><span><small>AUDIO</small><b>NET</b></span><span><small>FORMAT</small><b>1080P</b></span></div>
+            <div class="landing-timeline"><i style="width:22%"></i><i style="width:13%"></i><i style="width:31%"></i><i style="width:18%"></i><i style="width:10%"></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="landing-float landing-float-one"><span>✦</span><div><small>CLIPS IA</small><b>Moments détectés</b></div><strong>+12</strong></div>
+      <div class="landing-float landing-float-two"><span>◈</span><div><small>BRAND KIT</small><b>Identité appliquée</b></div><strong>✓</strong></div>
+    </div>
+  </section>
+
+  <section class="landing-v15-intro" id="fonctionnalites">
+    <div><span class="landing-kicker">UN WORKSPACE, PAS UN OUTIL DE PLUS</span><h2>Tout le chemin entre la VOD et la publication.</h2></div>
+    <p>Tu peux commencer par l'automatique, reprendre le montage dans Studio, appliquer ton identité et revenir sur chaque choix. KLYPSO est pensé pour garder le contexte du projet au même endroit.</p>
+  </section>
+
+  <section class="landing-v15-feature-grid">
+    <article><span>01</span><div class="landing-feature-icon">✦</div><small>CLIPS</small><h3>Repère les moments qui méritent une vidéo.</h3><p>Importe une VOD, laisse l'analyse préparer les candidats, puis conserve ou rejette les passages qui t'intéressent.</p></article>
+    <article class="featured"><span>02</span><div class="landing-feature-icon">◫</div><small>STUDIO</small><h3>Passe du candidat au vrai montage.</h3><p>Timeline, canvas, audio, texte, cadrage et export sont regroupés pour pouvoir reprendre la main sans changer d'outil.</p></article>
+    <article><span>03</span><div class="landing-feature-icon">◈</div><small>BRAND KIT</small><h3>Garde ton style sur chaque création.</h3><p>Couleurs, logo, captions et réglages visuels peuvent servir de base pour les prochains projets.</p></article>
+  </section>
+
+  <section class="landing-story" data-landing-story aria-label="Présentation du workflow KLYPSO">
+    <div class="landing-story-sticky">
+      <div class="landing-story-header">
+        <div><span class="landing-kicker">FAIS DÉFILER</span><h2>Une descente.<br><em>Quatre étapes.</em></h2><p>Le scroll fait avancer la présentation. La page reste naturelle, mais le contenu se déplace horizontalement quand tu arrives dans cette section.</p></div>
+        <div class="landing-story-counter"><b data-story-current>01</b><span>/ 04</span></div>
+      </div>
+      <div class="landing-story-viewport">
+        <div class="landing-story-track" data-story-track>
+          <article class="landing-story-slide is-active"><div class="story-slide-copy"><span>01 · IMPORT</span><h3>Tu poses ta VOD.</h3><p>Un projet commence avec une source claire. La vidéo originale reste séparée du reste du workflow.</p></div><div class="story-slide-card"><div class="story-card-top"><span>SOURCE VIDEO</span><b>01</b></div><div class="story-card-video"><span>VIDEO</span><strong>VOD</strong><small>Import terminée</small></div><div class="story-card-bottom"><span>MP4 · 1080p</span><b>OK</b></div></div></article>
+          <article class="landing-story-slide"><div class="story-slide-copy"><span>02 · ANALYSE</span><h3>KLYPSO trie le signal.</h3><p>Durée, audio et signaux de la vidéo alimentent la préparation des moments à travailler.</p></div><div class="story-slide-card"><div class="story-card-top"><span>ANALYSE</span><b>02</b></div><div class="story-card-analysis"><div class="analysis-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><strong>Moments détectés</strong><small>12 candidats préparés</small></div><div class="story-card-bottom"><span>SCORING · SIGNALS</span><b>12</b></div></div></article>
+          <article class="landing-story-slide"><div class="story-slide-copy"><span>03 · MONTE</span><h3>Tu reprends la main.</h3><p>Quand un moment devient un vrai projet, Studio te donne un espace pour régler la coupe, le format, le texte et l'audio.</p></div><div class="story-slide-card"><div class="story-card-top"><span>STUDIO</span><b>03</b></div><div class="story-card-editor"><div></div><div></div><div></div><div></div></div><div class="story-editor-line"><span>V1</span><i></i><i></i><i></i></div><div class="story-card-bottom"><span>TIMELINE · CANVAS</span><b>EDIT</b></div></div></article>
+          <article class="landing-story-slide"><div class="story-slide-copy"><span>04 · PUBLIE</span><h3>Tu sors une version prête.</h3><p>Choisis le format, applique ton identité et prépare l'export depuis le même workspace.</p></div><div class="story-slide-card ready"><div class="story-card-top"><span>EXPORT</span><b>04</b></div><div class="story-card-ready"><strong>READY</strong><span>9:16 · 1080p</span><small>Brand Kit appliqué</small></div><div class="story-card-bottom"><span>FINAL OUTPUT</span><b>↗</b></div></div></article>
+        </div>
+      </div>
+      <div class="landing-story-progress"><i data-story-progress></i></div>
+    </div>
+  </section>
+
+  <section class="landing-v15-details">
+    <div class="landing-detail-heading"><span class="landing-kicker">CE QUE TU PEUX FAIRE</span><h2>Assez de matière pour travailler pour de vrai.</h2></div>
+    <div class="landing-detail-grid">
+      <article><b>🎯</b><h3>Sélection structurée</h3><p>Un projet garde ses étapes : analyse, candidats, feedback et reprise du montage.</p></article>
+      <article><b>📐</b><h3>Formats sociaux</h3><p>Vertical, carré, 4:5 et horizontal pour partir du même contenu sans le refaire.</p></article>
+      <article><b>💬</b><h3>Sous-titres</h3><p>Des styles de captions et une présentation pensée pour les formats courts.</p></article>
+      <article><b>🎨</b><h3>Identité visuelle</h3><p>Brand Kit et personnalisation du workspace pour ne pas repartir de zéro.</p></article>
+      <article><b>🔊</b><h3>Audio</h3><p>Normalisation et nettoyage lorsqu'ils sont disponibles dans le workflow choisi.</p></article>
+      <article><b>↗</b><h3>Export</h3><p>Le fichier final sort depuis le même projet au lieu de multiplier les outils.</p></article>
+    </div>
+  </section>
+
+  <section class="landing-v15-free">
+    <div><span class="landing-kicker">FREE POUR COMMENCER</span><h2>Pas besoin d'un abonnement pour essayer KLYPSO.</h2><p>Crée ton compte, ouvre ton workspace et commence avec le niveau Free. Les fonctions avancées peuvent rester réservées aux plans payants sans bloquer le cœur du produit.</p></div>
+    <div class="landing-free-grid"><span><strong>15</strong><small>clips / mois</small></span><span><strong>3</strong><small>crédits / jour</small></span><span><strong>2</strong><small>projets</small></span><span><strong>512 MB</strong><small>upload max</small></span></div>
+  </section>
+
+  <section class="landing-v15-cta">
+    <span class="landing-kicker">PRÊT À TESTER ?</span>
+    <h2>Commence par une VOD.<br><em>Tu verras le reste en avançant.</em></h2>
+    <div class="landing-actions"><a class="button button-lg" href="{{ url_for('auth.register') }}">Créer mon espace gratuitement <span>→</span></a><a class="landing-secondary dark" href="{{ url_for('auth.login') }}">J'ai déjà un compte</a></div>
+  </section>
 </div>
 {% endblock %}
