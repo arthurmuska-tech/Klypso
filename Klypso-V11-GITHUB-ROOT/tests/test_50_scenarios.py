@@ -597,6 +597,8 @@ def test_v17_ai_engine_scenarios(client, app, scenario):
         with app.app_context():
             user = _create_email_user("free-ai@example.com")
             with get_db(app.config["DATABASE_PATH"]) as db:
+                # New accounts start with the configured Pro trial; expire it for this Free-gate scenario.
+                db.execute("UPDATE users SET trial_started_at='2000-01-01T00:00:00+00:00' WHERE id=?", (user["id"],))
                 cur = db.execute("INSERT INTO jobs(user_id,job_type,status,payload_json) VALUES(?,?,?,?)", (user["id"],"ai_clip_analysis","queued",'{"path":"/tmp/nope.mp4","mode":"ai_clips"}'))
                 db.commit()
                 job_id = cur.lastrowid
