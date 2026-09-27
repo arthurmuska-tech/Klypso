@@ -1,7 +1,7 @@
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 from .auth import login_required
 from .database import get_db
-from .plans import get_plan, trial_ends_at
+from .plans import get_plan, trial_ends_at, trial_days_remaining
 from .promo import effective_plan_key
 
 billing_bp = Blueprint("billing", __name__)
@@ -58,13 +58,26 @@ def checkout():
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             user = db.execute("SELECT email,stripe_customer_id FROM users WHERE id=?", (session["user_id"],)).fetchone()
 
+        subscription_data = {
+            "metadata": {
+                "user_id": str(session["user_id"]),
+                "plan": plan_key,
+                "billing_interval": billing_interval,
+            }
+        }
+        remaining_trial = trial_days_remaining(user["trial_started_at"])
+        if remaining_trial > 0:
+            subscription_data["trial_period_days"] = min(
+                current_app.config["STRIPE_TRIAL_DAYS"],
+                remaining_trial,
+            )
         kwargs = dict(
             mode="subscription",
             line_items=[{"price": price_id, "quantity": 1}],
             success_url=current_app.config["STRIPE_SUCCESS_URL"],
             cancel_url=current_app.config["STRIPE_CANCEL_URL"],
             metadata={"user_id": str(session["user_id"]), "plan": plan_key, "billing_interval": billing_interval},
-            subscription_data={"metadata": {"user_id": str(session["user_id"]), "plan": plan_key, "billing_interval": billing_interval}, "trial_period_days": current_app.config["STRIPE_TRIAL_DAYS"]},
+            subscription_data=subscription_data,
             payment_method_collection="always",
             client_reference_id=str(session["user_id"]),
             customer_email=user["email"] if not user["stripe_customer_id"] else None,
