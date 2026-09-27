@@ -346,7 +346,7 @@ def test_plan_and_product_scenarios(client, app, scenario):
             promo_ends_at(datetime.now(timezone.utc).isoformat(), 0)
     elif scenario == "health_version":
         body = client.get("/healthz").get_json()
-        assert body["version"] == "16.0.0"
+        assert body["version"] == "17.0.0"
     elif scenario == "no_github_login":
         text = Path(app.root_path).parent.joinpath("templates", "login.html").read_text(encoding="utf-8").lower()
         assert "github" not in text
@@ -678,3 +678,54 @@ def test_v17_ai_engine_scenarios(client, app, scenario):
         assert RATIOS["1:1"] == (1080, 1080)
         assert RATIOS["4:5"] == (1080, 1350)
         assert RATIOS["16:9"] == (1920, 1080)
+
+
+V17_EXTRA_SCENARIOS = [
+    "preferences_saved_in_project",
+    "standard_render_missing_source_is_safe",
+    "feedback_bias_changes_score",
+    "speech_boundary_optimizer_trims_air",
+]
+
+@pytest.mark.parametrize("scenario", V17_EXTRA_SCENARIOS, ids=V17_EXTRA_SCENARIOS)
+def test_v17_extra_scenarios(client, app, scenario):
+    from klypso.clips.intelligence import enrich_ai_result, tighten_clip_boundaries
+
+    if scenario == "preferences_saved_in_project":
+        with app.app_context():
+            user = _create_email_user("prefs@example.com")
+            with get_db(app.config["DATABASE_PATH"]) as db:
+                db.execute(
+                    "INSERT INTO projects(user_id,name,timeline_json) VALUES(?,?,?)",
+                    (user["id"], "AI prefs", '{"mode":"ai_clips","preferences":{"ai_style":"punchy","scene_priority":"reaction","pace":"fast"}}'),
+                )
+                db.commit()
+                row = db.execute("SELECT timeline_json FROM projects WHERE user_id=?", (user["id"],)).fetchone()
+        assert "punchy" in row["timeline_json"]
+        assert "reaction" in row["timeline_json"]
+
+    elif scenario == "standard_render_missing_source_is_safe":
+        with app.app_context():
+            user = _create_email_user("standard-safe@example.com")
+            job_id = create_analysis_job(user["id"], 1, "/tmp/not-there.mp4", app.config["DATABASE_PATH"], {"mode": "clip_only"})
+        with client.session_transaction() as sess:
+            sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
+        r = client.post(f"/api/clips/render-standard/{job_id}", json={"start":0,"end":30}, headers={"X-CSRF-Token":"csrf-ok"})
+        assert r.status_code == 404
+
+    elif scenario == "feedback_bias_changes_score":
+        candidates = [{"id":"a","start":10,"end":35,"duration":25,"base_score":80,"speech_density":3,"context":"moment"}]
+        raw = {"clips":[{"id":"a","start":10,"end":35,"title":"Réaction","hook":"Wow","reason":"R","archetype":"reaction","hook_score":80,"payoff_score":80,"emotion_score":80,"novelty_score":70,"context_score":80,"shareability_score":80,"creator_fit_score":70,"replay_score":75}]}
+        base = enrich_ai_result(raw, candidates, {"kept_archetypes":{},"rejected_archetypes":{}})
+        boosted = enrich_ai_result(raw, candidates, {"kept_archetypes":{"reaction":2},"rejected_archetypes":{}})
+        penalized = enrich_ai_result(raw, candidates, {"kept_archetypes":{},"rejected_archetypes":{"reaction":2}})
+        assert boosted["clips"][0]["score"] > base["clips"][0]["score"]
+        assert penalized["clips"][0]["score"] < base["clips"][0]["score"]
+
+    elif scenario == "speech_boundary_optimizer_trims_air":
+        clip = {"start":10,"end":45,"duration":35}
+        segments = [{"start":18,"end":23,"text":"Voici le moment"},{"start":24,"end":29,"text":"regarde ça"}]
+        trimmed = tighten_clip_boundaries(clip, segments)
+        assert trimmed["start"] == 16.2
+        assert trimmed["end"] == 32.0
+        assert trimmed["duration"] < 35
