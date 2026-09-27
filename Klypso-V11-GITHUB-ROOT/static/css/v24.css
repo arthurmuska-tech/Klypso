@@ -251,8 +251,9 @@ body:has(.v24-auth-page)::before{opacity:.18!important}
 .public-footer nav a{font-size:12px}
 .public-footer{display:flex!important;justify-content:space-between!important;align-items:center!important;gap:20px!important}
 
-.v24-reveal{opacity:0;transform:translate3d(0,38px,0);transition:opacity .8s cubic-bezier(.19,1,.22,1),transform .9s cubic-bezier(.19,1,.22,1)}
+.v24-reveal{opacity:1;transform:none;transition:opacity .8s cubic-bezier(.19,1,.22,1),transform .9s cubic-bezier(.19,1,.22,1)}
 .v24-reveal.v24-visible{opacity:1;transform:none}
+html.v24-motion-ready .v24-reveal{opacity:0;transform:translate3d(0,38px,0)}html.v24-motion-ready .v24-reveal.v24-visible{opacity:1;transform:none}
 
 .v24-auth-page{
   width:min(1180px,calc(100% - 40px));margin:0 auto;padding:35px 0 80px;
