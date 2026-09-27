@@ -1,120 +1,207 @@
-/* KLYPSO V15.0 — stable workspace + cinematic home */
+/* KLYPSO V15.1 — stable personalization + cinematic public home */
 (() => {
   'use strict';
-  const root=document.documentElement, body=document.body;
-  const $$=(s,p=document)=>[...p.querySelectorAll(s)];
-  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const storage={get(k,f){try{const v=localStorage.getItem(k);return v===null?f:v}catch{return f}},set(k,v){try{localStorage.setItem(k,v)}catch{}}};
 
-  /* Material personalization */
-  const woods=['oak','walnut','birch','cherry','ebony'];
-  function applyWood(value){
-    if(!woods.includes(value)) value='oak';
-    root.dataset.wood=value; storage.set('klypso.wood',value);
-    const savedAccent=storage.get('klypso.accent','');
-    if(/^#[0-9a-fA-F]{6}$/.test(savedAccent)){
-      root.style.setProperty('--accent',savedAccent);
-      root.style.setProperty('--k-accent',savedAccent);
-      const a2={ '#9b7bff':'#c5b7ff','#63a4ff':'#9dc6ff','#59e6df':'#8af4ed','#ff76c8':'#ff9edb','#d59a62':'#efbdad' }[savedAccent] || savedAccent;
-      root.style.setProperty('--k-accent-2',a2);
-      root.style.setProperty('--k-accent-soft','color-mix(in srgb, '+savedAccent+' 14%, transparent)');
-    } else {
-      root.style.removeProperty('--k-accent');
-      root.style.removeProperty('--k-accent-2');
-      root.style.removeProperty('--k-accent-soft');
+  const root = document.documentElement;
+  const body = document.body;
+  const $$ = (selector, parent = document) => Array.from(parent.querySelectorAll(selector));
+  const getStore = (key, fallback) => {
+    try {
+      const value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (_) {
+      return fallback;
     }
-    $$('[data-wood]').forEach(el=>{const on=el.dataset.wood===value;el.classList.toggle('selected',on);el.setAttribute('aria-pressed',String(on));});
-    const meta=document.querySelector('meta[name="theme-color"]');
-    if(meta) meta.content={oak:'#f3efe8',walnut:'#241c18',birch:'#f7f5ef',cherry:'#f5e8e2',ebony:'#111315'}[value];
-  }
-  applyWood(storage.get('klypso.wood','oak'));
-  $$('[data-wood]').forEach(el=>el.addEventListener('click',()=>applyWood(el.dataset.wood)));
+  };
+  const setStore = (key, value) => {
+    try { localStorage.setItem(key, value); } catch (_) {}
+  };
 
-  /* Never hijack wheel/scroll. The page must always keep native scrolling. */
-  root.style.scrollBehavior='auto';
-  body.style.overscrollBehaviorY='auto';
-  body.style.overflowY='visible';
+  /* --- Material personalization --- */
+  const woods = ['oak', 'walnut', 'birch', 'cherry', 'ebony'];
+  const woodTheme = {
+    oak: '#f3efe8',
+    walnut: '#241c18',
+    birch: '#f7f5ef',
+    cherry: '#f5e8e2',
+    ebony: '#111315'
+  };
 
-  /* Generic reveal: IntersectionObserver is the fallback-safe animation layer. */
-  const reveal=$$('.home-feature,.home-intro,.home-capabilities,.capability-grid > div,.home-library,.dash-hero,.quick-card,.panel-v11,.settings-card-v11,.project-row');
-  reveal.forEach((el,i)=>{el.classList.add('v14-reveal');el.style.setProperty('--reveal-delay',Math.min(i*35,280)+'ms');});
-  if(!reduced && 'IntersectionObserver' in window){
-    const io=new IntersectionObserver(entries=>{
-      entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('v14-visible');io.unobserve(e.target);}});
-    },{threshold:.12,rootMargin:'0px 0px -8% 0px'});
-    reveal.forEach(el=>io.observe(el));
-  }else reveal.forEach(el=>el.classList.add('v14-visible'));
-
-  /* Cinematic sticky story: scroll remains completely native. */
-  const story=document.querySelector('.home-story');
-  const steps=$$('.story-step');
-  const visuals=$$('.story-visual');
-  function updateStory(){
-    if(!story||!steps.length) return;
-    const r=story.getBoundingClientRect(), travel=Math.max(1,story.offsetHeight-window.innerHeight);
-    const p=Math.max(0,Math.min(0.999,(window.innerHeight-r.top)/Math.max(1,window.innerHeight+travel)));
-    const index=Math.min(steps.length-1,Math.floor(p*steps.length));
-    steps.forEach((el,i)=>el.classList.toggle('is-active',i===index));
-    visuals.forEach((el,i)=>{
-      const active=i===index;
-      el.classList.toggle('is-active',active);
-      const local=Math.max(0,Math.min(1,(p*steps.length)-i));
-      const phase=p*(steps.length-1);
-      const distance=(i-phase)*128;
-      const scale=active?1:0.9;
-      const opacity=Math.max(.06,1-Math.abs(i-phase)*.72);
-      const tilt=i<phase?-5:i>phase?5:0;
-      el.style.transform='translate3d('+distance+'%, '+((1-local)*22)+'px, 0) rotate('+tilt+'deg) scale('+scale+')';
-      el.style.opacity=opacity;
+  function applyWood(value) {
+    const safe = woods.includes(value) ? value : 'oak';
+    root.dataset.wood = safe;
+    setStore('klypso.wood', safe);
+    $$('[data-wood]').forEach((el) => {
+      const selected = el.dataset.wood === safe;
+      el.classList.toggle('selected', selected);
+      el.setAttribute('aria-pressed', String(selected));
     });
-    story.style.setProperty('--story-progress',(p*100).toFixed(2)+'%');
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = woodTheme[safe];
   }
-  let storyRaf=0;
-  function onScroll(){
-    if(!storyRaf) storyRaf=requestAnimationFrame(()=>{storyRaf=0;updateStory();updateChrome();});
-  }
-  addEventListener('scroll',onScroll,{passive:true});
-  addEventListener('resize',onScroll,{passive:true});
-  updateStory();
 
-  /* Fast tactile feedback without pretending to change the monitor refresh rate. */
-  $$('.button,.icon-button,.topbar-plan,.topbar-avatar,.v14-wood-option,.choice-card,.seg-btn,.sidebar-nav a').forEach(el=>{
-    el.addEventListener('pointerdown',e=>{
-      if(e.pointerType==='mouse'&&e.button!==0)return;
-      const r=el.getBoundingClientRect();
-      el.style.setProperty('--ripple-x',((e.clientX-r.left)/Math.max(1,r.width)*100)+'%');
-      el.style.setProperty('--ripple-y',((e.clientY-r.top)/Math.max(1,r.height)*100)+'%');
-      el.classList.remove('v14-ripple-active'); void el.offsetWidth; el.classList.add('v14-ripple-active');
-    },{passive:true});
+  applyWood(getStore('klypso.wood', 'oak'));
+  $$('[data-wood]').forEach((el) => {
+    el.addEventListener('click', () => applyWood(el.dataset.wood));
   });
 
-  const progressBar=document.createElement('div');progressBar.className='v14-progress';body.appendChild(progressBar);
-  const backTop=document.createElement('button');backTop.className='v14-scroll-top';backTop.type='button';backTop.textContent='↑';backTop.setAttribute('aria-label','Retour en haut');body.appendChild(backTop);
-  let lastY=window.scrollY,chromeRaf=0;
-  function updateChrome(){
-    const max=Math.max(1,document.documentElement.scrollHeight-innerHeight);
-    progressBar.style.width=Math.min(100,window.scrollY/max*100)+'%';
-    backTop.classList.toggle('show',window.scrollY>600);
-    const header=document.querySelector('.app-topbar');
-    if(header && window.scrollY>110) header.style.transform=window.scrollY>lastY+4?'translateY(-100%)':'translateY(0)';
-    lastY=window.scrollY;chromeRaf=0;
+  /* --- Native scrolling only. No wheel hijacking. --- */
+  root.style.scrollBehavior = 'auto';
+  body.style.overscrollBehaviorY = 'auto';
+  body.style.overflowY = 'visible';
+
+  /* --- Motion preference --- */
+  const motionInput = document.querySelector('[data-setting="motion"]');
+  const motionSaved = getStore('klypso.motion', '1');
+  const motionEnabled = motionSaved !== '0' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  body.classList.toggle('v14-no-motion', !motionEnabled);
+  if (motionInput) motionInput.checked = motionSaved !== '0';
+  if (motionInput) {
+    motionInput.addEventListener('change', () => {
+      const enabled = motionInput.checked;
+      setStore('klypso.motion', enabled ? '1' : '0');
+      body.classList.toggle('v14-no-motion', !enabled);
+    });
   }
-  function requestChrome(){if(!chromeRaf)chromeRaf=requestAnimationFrame(updateChrome)}
-  addEventListener('scroll',requestChrome,{passive:true});updateChrome();
-  backTop.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
 
-  /* Motion preference */
-  /* V14.5: animations are enabled by default. Only an explicit user choice can disable them. */
-  const saved=storage.get('klypso.motion','1');
-  function setMotion(enabled){body.classList.toggle('v14-no-motion',!enabled);storage.set('klypso.motion',enabled?'1':'0');}
-  setMotion(saved!=='0');
-  $$('[data-setting="motion"]').forEach(input=>input.addEventListener('change',()=>setMotion(input.checked)));
+  /* --- Generic reveal for app pages --- */
+  const reveal = $$('.home-feature,.home-intro,.home-capabilities,.capability-grid > div,.home-library,.dash-hero,.quick-card,.panel-v11,.settings-card-v11,.project-row');
+  reveal.forEach((el, index) => {
+    el.classList.add('v14-reveal');
+    el.style.setProperty('--reveal-delay', Math.min(index * 35, 280) + 'ms');
+  });
 
-  $$('.choice-card').forEach(card=>card.addEventListener('click',()=>{
-    const parent=card.closest('.option-cards')||card.parentElement;
-    $$('.choice-card',parent).forEach(x=>x.classList.remove('selected'));card.classList.add('selected');
-  }));
-  $$('.seg-row').forEach(group=>$$('label',group).forEach(btn=>btn.addEventListener('click',()=>{
-    $$('label',group).forEach(x=>x.classList.remove('active'));btn.classList.add('active');
-  }));
+  if (!body.classList.contains('v14-no-motion') && 'IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('v14-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+    reveal.forEach((el) => observer.observe(el));
+  } else {
+    reveal.forEach((el) => el.classList.add('v14-visible'));
+  }
+
+  /* --- Landing page: vertical scroll drives a horizontal presentation rail --- */
+  const story = document.querySelector('[data-landing-story]');
+  const track = document.querySelector('[data-story-track]');
+  const slides = track ? $$('.landing-story-slide', track) : [];
+  const storyCurrent = document.querySelector('[data-story-current]');
+  const storyProgress = document.querySelector('[data-story-progress]');
+  let storyRaf = 0;
+
+  function updateLandingStory() {
+    if (!story || !track || !slides.length) return;
+    const isMobile = window.matchMedia('(max-width: 900px)').matches;
+    if (isMobile) {
+      track.style.transform = 'none';
+      slides.forEach((slide, index) => slide.classList.toggle('is-active', index === 0));
+      if (storyCurrent) storyCurrent.textContent = '01';
+      if (storyProgress) storyProgress.style.width = '25%';
+      return;
+    }
+
+    const rect = story.getBoundingClientRect();
+    const travel = Math.max(1, story.offsetHeight - window.innerHeight);
+    const progress = Math.max(0, Math.min(1, -rect.top / travel));
+    const phase = progress * (slides.length - 1);
+    const index = Math.min(slides.length - 1, Math.floor(phase + 0.5));
+
+    track.style.transform = 'translate3d(' + (-progress * 75) + '%, 0, 0)';
+    slides.forEach((slide, i) => {
+      const distance = i - phase;
+      slide.classList.toggle('is-active', Math.abs(distance) < 0.58);
+      slide.style.setProperty('--slide-distance', distance.toFixed(3));
+    });
+
+    if (storyCurrent) storyCurrent.textContent = String(index + 1).padStart(2, '0');
+    if (storyProgress) storyProgress.style.width = ((progress * 100).toFixed(2)) + '%';
+  }
+
+  function requestLandingStoryUpdate() {
+    if (!storyRaf) {
+      storyRaf = requestAnimationFrame(() => {
+        storyRaf = 0;
+        updateLandingStory();
+      });
+    }
+  }
+
+  addEventListener('scroll', requestLandingStoryUpdate, { passive: true });
+  addEventListener('resize', requestLandingStoryUpdate, { passive: true });
+  updateLandingStory();
+
+  /* --- Tactile controls --- */
+  $$('.button,.icon-button,.topbar-plan,.topbar-avatar,.v14-wood-option,.choice-card,.seg-btn,.sidebar-nav a,.landing-secondary').forEach((el) => {
+    el.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      const rect = el.getBoundingClientRect();
+      el.style.setProperty('--ripple-x', ((event.clientX - rect.left) / Math.max(1, rect.width) * 100) + '%');
+      el.style.setProperty('--ripple-y', ((event.clientY - rect.top) / Math.max(1, rect.height) * 100) + '%');
+      el.classList.remove('v14-ripple-active');
+      void el.offsetWidth;
+      el.classList.add('v14-ripple-active');
+    }, { passive: true });
+  });
+
+  /* --- Scroll progress, top button and smart topbar --- */
+  const progressBar = document.createElement('div');
+  progressBar.className = 'v14-progress';
+  body.appendChild(progressBar);
+
+  const backTop = document.createElement('button');
+  backTop.className = 'v14-scroll-top';
+  backTop.type = 'button';
+  backTop.textContent = '↑';
+  backTop.setAttribute('aria-label', 'Retour en haut');
+  body.appendChild(backTop);
+
+  let lastY = window.scrollY;
+  let chromeRaf = 0;
+
+  function updateChrome() {
+    const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    progressBar.style.width = Math.min(100, (window.scrollY / max) * 100) + '%';
+    backTop.classList.toggle('show', window.scrollY > 600);
+    const header = document.querySelector('.app-topbar');
+    if (header && window.scrollY > 110) {
+      header.style.transform = window.scrollY > lastY + 4 ? 'translateY(-100%)' : 'translateY(0)';
+    }
+    lastY = window.scrollY;
+  }
+
+  function requestChromeUpdate() {
+    if (!chromeRaf) {
+      chromeRaf = requestAnimationFrame(() => {
+        chromeRaf = 0;
+        updateChrome();
+      });
+    }
+  }
+
+  addEventListener('scroll', requestChromeUpdate, { passive: true });
+  updateChrome();
+  backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  /* --- App choice controls --- */
+  $$('.choice-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const parent = card.closest('.option-cards') || card.parentElement;
+      $$('.choice-card', parent).forEach((item) => item.classList.remove('selected'));
+      card.classList.add('selected');
+    });
+  });
+
+  /* --- Reset / segmented controls from the existing account UI --- */
+  $$('.seg-row').forEach((group) => {
+    $$('label', group).forEach((button) => {
+      button.addEventListener('click', () => {
+        $$('label', group).forEach((item) => item.classList.remove('active'));
+        button.classList.add('active');
+      });
+    });
+  });
 })();
