@@ -80,6 +80,8 @@ class Config:
     APPLE_KEY_ID = os.environ.get("APPLE_KEY_ID", "")
     APPLE_PRIVATE_KEY = os.environ.get("APPLE_PRIVATE_KEY", "").replace("\\n", "\n")
 
+    EMAIL_FROM = os.environ.get("EMAIL_FROM", "")
+    RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
     EMAIL_SMTP_HOST = os.environ.get("EMAIL_SMTP_HOST", "")
     EMAIL_SMTP_PORT = int(os.environ.get("EMAIL_SMTP_PORT", "587"))
     EMAIL_SMTP_USER = os.environ.get("EMAIL_SMTP_USER", "")
