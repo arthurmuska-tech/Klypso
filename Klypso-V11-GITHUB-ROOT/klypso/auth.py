@@ -212,7 +212,7 @@ def _create_email_user(email, password=None):
     with get_db(current_app.config["DATABASE_PATH"]) as db:
         cur = db.execute(
             "INSERT INTO users(email,password_hash,auth_provider,email_verified_at,trial_started_at,display_name) VALUES(?,?,?,?,?,?)",
-            (email, password_hash, "email", now, now, display_name),
+            (email, password_hash, "email", now, None, display_name),
         )
         uid = cur.lastrowid
         db.execute(
@@ -250,7 +250,7 @@ def _oauth_user(provider, subject, email, profile=None):
         if not user:
             cur = db.execute(
                 "INSERT INTO users(email,password_hash,auth_provider,email_verified_at,trial_started_at,display_name,avatar_url) VALUES(?,?,?,?,?,?,?)",
-                (email, generate_password_hash(secrets.token_urlsafe(32)), provider, now, None, display_name, avatar_url),
+                (email, generate_password_hash(secrets.token_urlsafe(32)), provider, now, now, display_name, avatar_url),
             )
             uid = cur.lastrowid
             db.execute(
