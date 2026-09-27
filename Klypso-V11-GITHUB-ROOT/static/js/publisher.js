@@ -175,8 +175,39 @@
     if (event.target.closest('[data-refresh-analytics]')) {
       try { await refreshAnalytics(); } catch (error) { alert(error.message); }
     }
+    if (event.target.closest('[data-refresh-strategy]')) {
+      try { await refreshStrategy(); } catch (error) { alert(error.message); }
+    }
   });
 
+  const refreshStrategy = async () => {
+    const response = await api('/api/publisher/strategy');
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Stratégie indisponible.');
+    const strategy = data.strategy || {};
+    const confidence = Math.round(Number(strategy.confidence || 0) * 100);
+    document.querySelector('[data-strategy-confidence]')?.replaceChildren(document.createTextNode(confidence + '%'));
+    document.querySelector('[data-strategy-samples]')?.replaceChildren(document.createTextNode((strategy.samples || 0) + ' publication(s) analysée(s)'));
+    const cadence = strategy.suggested_cadence === 'collect_more_data' ? 'Données insuffisantes' : (strategy.suggested_cadence || '—');
+    document.querySelector('[data-strategy-cadence]')?.replaceChildren(document.createTextNode(cadence));
+    const hours = (strategy.best_hours || []).slice(0,3).map(item => String(item.hour).padStart(2,'0') + 'h').join(' · ') || '—';
+    const days = (strategy.best_days || []).slice(0,3).map(item => item.day).join(' · ') || '—';
+    document.querySelector('[data-strategy-hours]')?.replaceChildren(document.createTextNode(hours));
+    document.querySelector('[data-strategy-days]')?.replaceChildren(document.createTextNode(days));
+    const hoursMeta = document.querySelector('[data-strategy-hours-meta]');
+    if (hoursMeta) hoursMeta.textContent = (strategy.best_hours || []).length ? 'Créneaux classés par performance' : 'Pas encore de signal temporel';
+    const daysMeta = document.querySelector('[data-strategy-days-meta]');
+    if (daysMeta) daysMeta.textContent = (strategy.best_days || []).length ? 'Jours classés par performance' : 'Pas encore de signal temporel';
+    const platforms = document.querySelector('[data-strategy-platforms]');
+    if (platforms) {
+      platforms.innerHTML = (strategy.platforms || []).map(item =>
+        '<div class="publisher-platform"><div class="publisher-platform-mark">↗</div><div><strong>' +
+        escapeHtml(item.platform || 'Réseau') + '</strong><small>' + item.samples + ' mesure(s) · score ' + item.score + '</small></div><span class="publisher-connection is-on">DNA</span></div>'
+      ).join('');
+    }
+  };
+
   refreshAnalytics().catch(() => {});
+  refreshStrategy().catch(() => {});
   refresh().catch(() => {});
 })();
