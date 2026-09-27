@@ -4,13 +4,10 @@
 <section class="form-page auth-v12"><div class="auth-card">
 <span class="eyebrow-v11">CONNEXION</span><h1>Reviens dans ton workspace.</h1>
 <p class="auth-lead">Google ou ton adresse e-mail. Le mot de passe permet de te connecter même sans service e-mail.</p>
-<div class="oauth-status-card {{ 'is-ready' if config.GOOGLE_CLIENT_ID and config.GOOGLE_CLIENT_SECRET else 'is-missing' }}">
+<div class="oauth-status-card {{ 'is-ready' if config.GOOGLE_CLIENT_ID else 'is-missing' }}">
   <div><span class="oauth-status-dot"></span><strong>Google</strong><small>
-    {% if config.GOOGLE_CLIENT_ID and config.GOOGLE_CLIENT_SECRET %}Connexion configurée · callback HTTPS{% else %}Configuration Google à compléter côté serveur{% endif %}
+    {% if config.GOOGLE_CLIENT_ID %}Connexion Google configurée{% else %}Configuration Google à compléter côté serveur{% endif %}
   </small></div>
-  {% if config.GOOGLE_CLIENT_ID and config.GOOGLE_CLIENT_SECRET %}
-  <button type="button" class="oauth-status-copy" data-copy-callback="{{ public_base_url }}/oauth/google/callback">Copier le callback</button>
-  {% endif %}
 </div>
 {% if config.GOOGLE_CLIENT_ID %}
 <div class="oauth-google-wrap" data-google-signin>
@@ -26,10 +23,10 @@
 <button class="button button-lg full" type="submit">Se connecter →</button></form><div class="auth-trust-row"><span>✓ Connexion sans e-mail sortant</span><span>✓ Mot de passe chiffré</span><span>✓ Google disponible</span></div>
 <p class="auth-foot">Pas encore de compte ? <a href="{{ url_for('auth.register') }}">Créer mon compte</a> · <a href="{{ url_for('public_demo') }}">Voir la démo</a></p>
 </div></section>
-{% endblock %}{% block scripts %}<script src="{{ url_for('static', filename='js/auth-ui.js') }}?v=21.0" defer></script>{% endblock %}
+{% endblock %}{% block scripts %}<script src="{{ url_for('static', filename='js/auth-ui.js') }}?v=23.0" defer></script>{% endblock %}
 
 {% block head_extra %}
-{% if config.GOOGLE_CLIENT_ID and config.GOOGLE_CLIENT_SECRET %}
+{% if config.GOOGLE_CLIENT_ID %}
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 {% endif %}
 {% endblock %}
