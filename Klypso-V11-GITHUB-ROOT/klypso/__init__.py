@@ -74,6 +74,10 @@ def create_app(test_config=None):
         version = version_file.read_text(encoding="utf-8").strip() if version_file.exists() else "unknown"
         return {"status": "ok", "service": "klypso", "version": version}, 200
 
+    @app.route("/demo")
+    def public_demo():
+        return render_template("demo.html")
+
     @app.route("/dashboard")
     @login_required
     def dashboard():
