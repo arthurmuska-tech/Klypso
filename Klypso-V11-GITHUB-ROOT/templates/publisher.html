@@ -12,6 +12,7 @@
     </div>
   </div>
 
+  {% if request.args.get('connection_error') %}<div class="flash v11-flash error" role="alert"><span>!</span>{{ request.args.get('connection_error') }}</div>{% endif %}
   <section class="publisher-hero">
     <div class="publisher-hero-main">
       <span class="publisher-orb">↗</span>
@@ -31,12 +32,30 @@
         {% for key, status in platforms.items() %}
         <article class="publisher-platform">
           <div class="publisher-platform-mark">{{ {'youtube':'▶','tiktok':'♪','instagram':'◎','x':'𝕏'}[key] }}</div>
-          <div><strong>{{ key|title }}</strong><small>{{ 'Connecté via adapter' if status.connected else 'Connexion à configurer' }}</small></div>
+          <div style="min-width:0;flex:1">
+            <strong>{{ key|title }}</strong>
+            <small>
+              {% if status.connected and status.adapter == 'oauth' %}
+                {{ status.account_name or 'Compte connecté' }} · OAuth natif
+              {% elif status.connected %}
+                Adapter serveur connecté
+              {% elif status.native_supported %}
+                Connexion native disponible
+              {% else %}
+                Connexion à configurer
+              {% endif %}
+            </small>
+          </div>
           <span class="publisher-connection {{ 'is-on' if status.connected else '' }}">{{ 'ON' if status.connected else 'OFF' }}</span>
+          {% if status.connected and status.adapter == 'oauth' %}
+            <button class="filter-btn" type="button" data-disconnect-platform="{{ key }}">Déconnecter</button>
+          {% elif status.connect_url %}
+            <a class="filter-btn" href="{{ status.connect_url }}">Connecter</a>
+          {% endif %}
         </article>
         {% endfor %}
       </div>
-      <p class="publisher-note">Les identifiants sociaux ne sont pas stockés dans KLYPSO. La publication native passe par un adapter sécurisé configuré côté serveur.</p>
+      <p class="publisher-note">YouTube et TikTok utilisent OAuth + API première partie quand les identifiants développeur sont configurés. Instagram et X restent compatibles avec les adapters/webhooks jusqu’à leur configuration native.</p>
     </section>
 
     <section class="publisher-card">
