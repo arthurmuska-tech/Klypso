@@ -2,7 +2,7 @@ import os
 import secrets
 import time
 from functools import wraps
-from flask import request, session
+from flask import current_app, request, session
 from werkzeug.exceptions import BadRequest
 
 
@@ -58,7 +58,7 @@ def enforce_rate_limit():
     key = f"{path}:{actor}"
     now = int(time.time())
     from .database import get_db
-    with get_db(request.app.config["DATABASE_PATH"] if hasattr(request, "app") else __import__("flask").current_app.config["DATABASE_PATH"]) as db:
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
         db.execute("BEGIN IMMEDIATE")
         row = db.execute("SELECT window_start,hit_count FROM rate_limit_buckets WHERE rate_key=?", (key,)).fetchone()
         if not row or now - int(row["window_start"]) >= window:
