@@ -93,7 +93,7 @@ class CompatConnection:
         return None
 
     def executemany(self, sql, seq_of_params):
-        return self._conn.executemany(str(sql).strip(), seq_of_params)
+        return self._conn.executemany(_pg_sql(sql).strip(), seq_of_params)
 
     def commit(self):
         return self._conn.commit()
@@ -375,6 +375,9 @@ def init_db(path):
         _add_column_if_missing(conn, "users", "avatar_url", "TEXT")
         _add_column_if_missing(conn, "users", "last_login_at", "TEXT")
         _add_column_if_missing(conn, "clip_metrics", "queue_id", "INTEGER")
+        _add_column_if_missing(conn, "jobs", "attempts", "INTEGER NOT NULL DEFAULT 0")
+        _add_column_if_missing(conn, "jobs", "locked_at", "TEXT")
+        _add_column_if_missing(conn, "jobs", "heartbeat_at", "TEXT")
         conn.execute("UPDATE users SET display_name=substr(email,1,instr(email,'@')-1) WHERE display_name='' AND instr(email,'@')>1")
         conn.commit()
 
