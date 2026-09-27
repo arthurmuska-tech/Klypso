@@ -136,6 +136,11 @@ def test_v20_distribution_strategy_learns_time_and_platform(tmp_path):
                 ("strategy-v20@example.com", "hash", "Strategy"),
             )
             user_id = cur.lastrowid
+            db.execute(
+                "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
+                (user_id, "strategy.mp4", "/tmp/strategy.mp4", "video/mp4", 1),
+            )
+            media_id = db.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
             for idx, scheduled, platform, views, completion in [
                 (1, "2026-09-21T18:00:00Z", "youtube", 10000, 90),
                 (2, "2026-09-22T18:00:00Z", "youtube", 9000, 85),
@@ -143,7 +148,7 @@ def test_v20_distribution_strategy_learns_time_and_platform(tmp_path):
             ]:
                 cur = db.execute(
                     "INSERT INTO publish_queue(user_id,media_id,platform,scheduled_for,status) VALUES(?,?,?,?,'published')",
-                    (user_id, None, platform, scheduled),
+                    (user_id, media_id, platform, scheduled),
                 )
                 queue_id = cur.lastrowid
                 db.execute(
