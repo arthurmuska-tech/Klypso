@@ -5,15 +5,50 @@
 <section class="settings-page-v11"><div class="page-title-row"><div><span class="eyebrow-v11">PARAMÈTRES</span><h1>Ton compte, au même endroit.</h1><p>Gère le profil, le plan, les accès et les données associées à ton espace.</p></div></div>
 <div class="settings-grid-v11"><nav class="settings-menu-v11"><button class="active">Profil</button><a href="{{ url_for('billing.subscription') }}">Abonnement</a><a href="{{ url_for('brand_kit') }}">Brand Kit</a><button type="button">Notifications</button><button type="button">Sécurité</button><button type="button">Données</button></nav>
 <section class="panel-v11 settings-card-v11"><div class="profile-head"><div class="profile-avatar-big">{{ current_user[0]|upper }}</div><div><span class="eyebrow-v11">COMPTE</span><h2>{{ current_user }}</h2><p>Workspace personnel KLYPSO</p></div></div><div class="form-separator"></div><div class="v14-material-panel">
-  <span class="eyebrow-v11">APPARENCE V14.1</span>
-  <h3>Choisis la matière de Klypso</h3>
-  <p>L'interface adopte la lumière, les tons et les accents du matériau choisi. Le réglage est enregistré sur cet appareil.</p>
+  <span class="eyebrow-v11">PERSONNALISATION</span>
+  <h3>Personnalise vraiment ton workspace</h3>
+  <p>Les réglages ci-dessous sont enregistrés sur cet appareil et s'appliquent à toute l'interface.</p>
   <div class="v14-wood-picker" role="group" aria-label="Thème de matière">
     <button type="button" class="v14-wood-option" data-wood="oak"><span class="v14-wood-swatch"></span><strong>Chêne</strong><small>Clair & chaleureux</small></button>
     <button type="button" class="v14-wood-option" data-wood="walnut"><span class="v14-wood-swatch"></span><strong>Noyer</strong><small>Profond & naturel</small></button>
     <button type="button" class="v14-wood-option" data-wood="birch"><span class="v14-wood-swatch"></span><strong>Bouleau</strong><small>Minimal & doux</small></button>
     <button type="button" class="v14-wood-option" data-wood="cherry"><span class="v14-wood-swatch"></span><strong>Cerisier</strong><small>Chaleureux & rosé</small></button>
     <button type="button" class="v14-wood-option" data-wood="ebony"><span class="v14-wood-swatch"></span><strong>Ébène</strong><small>Sobre & profond</small></button>
+  </div>
+</div>
+<div class="v15-personalization-extra">
+  <div class="v15-setting-block">
+    <span class="eyebrow-v11">COULEUR D'ACCENT</span>
+    <p>Choisis la couleur utilisée pour les actions, liens, indicateurs et animations.</p>
+    <div class="v15-choice-row" data-setting-group="accent">
+      <button type="button" class="v15-accent-choice" data-accent="#9b7bff"><i></i><strong>Violet</strong></button>
+      <button type="button" class="v15-accent-choice" data-accent="#63a4ff"><i></i><strong>Bleu</strong></button>
+      <button type="button" class="v15-accent-choice" data-accent="#59e6df"><i></i><strong>Cyan</strong></button>
+      <button type="button" class="v15-accent-choice" data-accent="#ff76c8"><i></i><strong>Rose</strong></button>
+      <button type="button" class="v15-accent-choice" data-accent="#d59a62"><i></i><strong>Ambre</strong></button>
+    </div>
+  </div>
+  <div class="v15-setting-block">
+    <span class="eyebrow-v11">DENSITÉ</span>
+    <p>Modifie l'espace entre les blocs sans changer les fonctionnalités.</p>
+    <div class="v15-choice-row" data-setting-group="density">
+      <button type="button" data-value="compact"><strong>Compact</strong><small>Plus dense</small></button>
+      <button type="button" data-value="comfortable"><strong>Confortable</strong><small>Équilibré</small></button>
+      <button type="button" data-value="spacious"><strong>Aéré</strong><small>Plus d'espace</small></button>
+    </div>
+  </div>
+  <div class="v15-setting-block">
+    <span class="eyebrow-v11">ARRONDIS</span>
+    <p>Choisis le style des cartes et contrôles.</p>
+    <div class="v15-choice-row" data-setting-group="radius">
+      <button type="button" data-value="sharp"><strong>Net</strong><small>Peu arrondi</small></button>
+      <button type="button" data-value="round"><strong>Rond</strong><small>Standard</small></button>
+      <button type="button" data-value="soft"><strong>Doux</strong><small>Très arrondi</small></button>
+    </div>
+  </div>
+  <div class="v15-setting-block v15-motion-block">
+    <div><span class="eyebrow-v11">ANIMATIONS</span><p>Conserve les transitions et les effets d'interface.</p></div>
+    <label class="v15-toggle"><input type="checkbox" data-setting="motion" checked><span></span></label>
   </div>
 </div><div class="account-info-grid"><div><span>EMAIL</span><b>{{ current_user }}</b></div><div><span>PLAN ACTUEL</span><b>{{ current_plan.name }}</b></div></div><div class="promo-box"><div><span class="eyebrow-v11">CODE PROMO</span><h3>Activer un accès Pro ou Ultra</h3><p>Les codes définis côté serveur peuvent modifier temporairement ton plan.</p></div><form method="post" action="{{ url_for('promo.redeem') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input name="code" maxlength="64" required autocomplete="off" placeholder="KLYPSO-XXXX-XXXX"><button class="button" type="submit">Activer</button></form></div><div class="danger-zone"><div><span class="eyebrow-v11 danger-eyebrow">ZONE DANGER</span><h3>Supprimer définitivement ton compte</h3><p>Cette action supprime le compte et les fichiers locaux associés lorsqu'ils sont encore présents.</p></div><form method="post" action="{{ url_for('auth.delete_account') }}" onsubmit="return confirm('Supprimer définitivement le compte ?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-button" type="submit">Supprimer le compte</button></form></div></section></div></section>
 {% endblock %}
