@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from functools import wraps
 from pathlib import Path
+from .media.object_storage import delete_stored_path
 
 from authlib.integrations.flask_client import OAuth
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
@@ -466,9 +467,19 @@ def delete_account():
                         stripe.Subscription.cancel(sub.id)
         except Exception:
             current_app.logger.exception("Stripe cancellation failed")
+    stored_paths = []
     with get_db(current_app.config["DATABASE_PATH"]) as db:
+        stored_paths = [row["stored_path"] for row in db.execute(
+            "SELECT stored_path FROM media_files WHERE user_id=?",
+            (user_id,),
+        ).fetchall()]
         db.execute("DELETE FROM users WHERE id=?", (user_id,))
         db.commit()
+    for stored_path in stored_paths:
+        try:
+            delete_stored_path(stored_path)
+        except Exception:
+            current_app.logger.exception("Unable to delete media object during account deletion")
     folder = (storage_root / "users" / str(user_id)).resolve()
     try:
         folder.relative_to(storage_root / "users")
