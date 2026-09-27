@@ -452,4 +452,109 @@
     requestAnimationFrame(tickHalo);
   }
 
+
+  /* --- V20 interactive product spotlights --- */
+  const spotlight = document.querySelector('[data-spotlight-dialog]');
+  const spotlightCards = $('[data-spotlight]');
+  if (spotlight && spotlightCards.length) {
+    const data = {
+      accueil: {
+        kicker: 'WORKSPACE · ACCUEIL',
+        title: 'Ton cockpit de création.',
+        text: 'Retrouve tes projets, crédits et raccourcis dans une vue qui donne immédiatement le prochain geste à faire.',
+        pills: ['Projets', 'Crédits', 'Creator DNA']
+      },
+      clips: {
+        kicker: 'CLIPS IA · VIRAL ENGINE',
+        title: 'Détecter, comparer, choisir.',
+        text: 'Les signaux média, audio, chat et mémoire créateur servent à préparer une sélection de moments à travailler.',
+        pills: ['Scoring', 'Audio', 'Chat']
+      },
+      studio: {
+        kicker: 'KLYPSO STUDIO',
+        title: 'Passe du moment au montage.',
+        text: 'Canvas, timeline, texte, audio, cadrage et export restent dans le même projet pour éviter les allers-retours.',
+        pills: ['Timeline', 'Canvas', 'Export']
+      },
+      publication: {
+        kicker: 'PUBLICATION · DISTRIBUTION',
+        title: 'Publie puis apprends.',
+        text: 'Programme tes sorties, suis les performances et transforme les résultats en signaux pour les prochaines créations.',
+        pills: ['Calendrier', 'Performance', 'DNA']
+      }
+    };
+    const titleEl = spotlight.querySelector('[data-spotlight-title]');
+    const textEl = spotlight.querySelector('[data-spotlight-text]');
+    const kickerEl = spotlight.querySelector('[data-spotlight-kicker]');
+    const pillsEl = spotlight.querySelector('[data-spotlight-pills]');
+    const artEl = spotlight.querySelector('[data-spotlight-art]');
+    let lastSpotlightTrigger = null;
+
+    const closeSpotlight = () => {
+      spotlight.classList.remove('is-open');
+      window.setTimeout(() => { spotlight.hidden = true; }, 320);
+      document.body.classList.remove('v20-dialog-open');
+      if (lastSpotlightTrigger) lastSpotlightTrigger.focus();
+    };
+
+    const openSpotlight = (key, trigger) => {
+      const item = data[key];
+      if (!item) return;
+      lastSpotlightTrigger = trigger || null;
+      kickerEl.textContent = item.kicker;
+      titleEl.textContent = item.title;
+      textEl.textContent = item.text;
+      pillsEl.innerHTML = item.pills.map(p => '<span>' + p + '</span>').join('');
+      artEl.setAttribute('data-kind', key);
+      spotlight.hidden = false;
+      requestAnimationFrame(() => spotlight.classList.add('is-open'));
+      document.body.classList.add('v20-dialog-open');
+      const close = spotlight.querySelector('[data-spotlight-close]');
+      if (close) close.focus();
+    };
+
+    spotlightCards.forEach((card) => {
+      const open = () => openSpotlight(card.dataset.spotlight, card);
+      card.addEventListener('click', open);
+      card.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(); }
+      });
+    });
+    $('[data-spotlight-close]', spotlight).forEach((el) => el.addEventListener('click', closeSpotlight));
+    addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !spotlight.hidden) closeSpotlight();
+    });
+  }
+
+  /* Dashboard workflow cards behave like a mini command center. */
+  const flowRoutes = {
+    '01': '/projects/new',
+    '02': '/clips',
+    '03': '/studio',
+    '04': '/publisher'
+  };
+  $('.workspace-flow-steps > div').forEach((step) => {
+    const number = step.querySelector('span');
+    if (!number) return;
+    const target = flowRoutes[number.textContent.trim()];
+    if (!target) return;
+    step.setAttribute('role', 'link');
+    step.setAttribute('tabindex', '0');
+    const activate = () => { window.location.href = target; };
+    step.addEventListener('click', activate);
+    step.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); activate(); }
+    });
+  });
+
+  /* Scroll-linked active navigation on the public page. */
+  const publicAnchors = $('a[href*="#fonctionnalites"]');
+  const featureSection = document.getElementById('fonctionnalites');
+  if (featureSection && publicAnchors.length && 'IntersectionObserver' in window) {
+    const featureObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => publicAnchors.forEach((a) => a.classList.toggle('is-context-active', entry.isIntersecting)));
+    }, { threshold: 0.28 });
+    featureObserver.observe(featureSection);
+  }
+
 })();
