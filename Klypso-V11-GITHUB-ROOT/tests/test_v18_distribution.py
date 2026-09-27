@@ -103,7 +103,7 @@ def test_v18_schedule_daily_weekly_monthly(tmp_path):
         ids = [
             create_schedule_entry(user_id, media_id, "youtube", (start + timedelta(days=2)).isoformat()),
             create_schedule_entry(user_id, media_id, "tiktok", (start + timedelta(weeks=2)).isoformat()),
-            create_schedule_entry(user_id, media_id, "instagram", start.replace(day=1).isoformat()),
+            create_schedule_entry(user_id, media_id, "instagram", (start + timedelta(days=40)).replace(day=1).isoformat()),
         ]
         with get_db(app.config["DATABASE_PATH"]) as db:
             rows = db.execute("SELECT status,platform,scheduled_for FROM publish_queue WHERE id IN (?,?,?) ORDER BY id", ids).fetchall()
