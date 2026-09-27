@@ -19,11 +19,12 @@ def _month_key(dt):
 
 
 def credit_cost_from_request(request):
-    # Default clip with subtitles = 6 credits.
-    # The daily Free allowance is 3 credits, so unused credits can carry
-    # over and a regular user lands around 15 standard clips/month.
+    # Four creation modes share the same project workflow:
+    # AI clips / clip only use the clip budget; AI montage / montage only
+    # reserve more processing headroom for a full timeline.
+    mode = request.form.get("mode", "").strip()
     cost = 5
-    if request.form.get("goal") == "studio":
+    if mode in {"ai_montage", "montage_only"} or request.form.get("goal") == "studio":
         cost = 10
     if request.form.get("output_format", "9:16") in {"1:1", "4:5", "16:9"}:
         cost += 1
