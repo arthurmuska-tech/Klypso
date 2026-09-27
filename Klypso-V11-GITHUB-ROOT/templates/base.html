@@ -12,10 +12,10 @@
 <link rel="canonical" href="{{ public_base_url }}{{ request.path }}">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
 <link rel="icon" href="{{ url_for('static', filename='img/klypso-mark.svg') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=15.8">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v10.css') }}?v=15.8">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v11.css') }}?v=15.8">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v14.css') }}?v=15.8">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=16.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v10.css') }}?v=16.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v11.css') }}?v=16.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v14.css') }}?v=16.0">
 <title>{% block title %}KLYPSO{% endblock %}</title>
 {% block head_extra %}{% endblock %}
 </head>
@@ -25,7 +25,7 @@
 {% if current_user %}
 <div class="app-frame">
   <aside class="app-sidebar" id="app-sidebar">
-    <a class="sidebar-brand klypso-logo-mark" href="{{ url_for('dashboard') }}" aria-label="KLYPSO accueil"><span class="klypso-logo-word">KLYPSO</span><span class="version-chip">V15.8</span></a>
+    <a class="sidebar-brand klypso-logo-mark" href="{{ url_for('dashboard') }}" aria-label="KLYPSO accueil"><span class="klypso-logo-word">KLYPSO</span><span class="version-chip">V16.0</span></a>
     <button class="mobile-close" type="button" data-sidebar-close aria-label="Fermer le menu">×</button>
     <div class="sidebar-workspace">
       <span class="mini-label">WORKSPACE</span>
@@ -56,7 +56,7 @@
       <button class="mobile-menu" type="button" data-sidebar-open aria-label="Ouvrir le menu">☰</button>
       <div class="breadcrumbs">KLYPSO <span>/</span> {% block crumb %}Workspace{% endblock %}</div>
       <div class="topbar-actions">
-        <button class="icon-button" type="button" title="Recherche" data-search-open>⌕</button>
+        <button class="icon-button" type="button" title="Recherche (⌘K / Ctrl K)" data-search-open aria-keyshortcuts="Control+K">⌕</button>
         <a class="topbar-plan" href="{{ url_for('billing.pricing') }}"><span></span>{{ current_plan.name }} <b>→</b></a>
         <a class="topbar-avatar" href="{{ url_for('account') }}">{{ current_user[0]|upper }}</a>
       </div>
@@ -67,6 +67,25 @@
   <a class="public-brand klypso-logo-mark" href="{{ url_for('index') }}" aria-label="KLYPSO"><span class="klypso-logo-word">KLYPSO</span></a>
   <nav><a href="{{ url_for('billing.pricing') }}">Tarifs</a><a href="#fonctionnalites">Fonctionnalités</a><a href="{{ url_for('auth.login') }}">Connexion</a><a class="button small" href="{{ url_for('auth.register') }}">Commencer</a></nav>
 </header>
+{% endif %}
+{% if current_user %}
+<div class="command-palette" data-command-palette aria-hidden="true">
+  <div class="command-backdrop" data-command-close></div>
+  <section class="command-dialog" role="dialog" aria-modal="true" aria-labelledby="command-title">
+    <div class="command-head"><span class="command-mark">K</span><div><span class="eyebrow-v11">COMMAND CENTER</span><h2 id="command-title">Que veux-tu ouvrir ?</h2></div><button type="button" class="command-close" data-command-close aria-label="Fermer">Esc</button></div>
+    <label class="command-search"><span>⌕</span><input data-command-input type="search" autocomplete="off" placeholder="Rechercher une page, une action..." aria-label="Rechercher dans KLYPSO"></label>
+    <div class="command-list" data-command-list>
+      <a href="{{ url_for('dashboard') }}" data-command-item data-command-title="Accueil dashboard workspace"><span>⌂</span><div><strong>Accueil</strong><small>Ton workspace et tes crédits</small></div><kbd>G D</kbd></a>
+      <a href="{{ url_for('clips.create_clips') }}" data-command-item data-command-title="Nouveau projet créer clips analyser"><span>＋</span><div><strong>Nouveau projet</strong><small>Importer une VOD et lancer une analyse</small></div><kbd>N</kbd></a>
+      <a href="{{ url_for('clips.clips') }}" data-command-item data-command-title="Clips IA projets bibliothèque"><span>✦</span><div><strong>Clips IA</strong><small>Parcourir tes analyses et candidats</small></div><kbd>1</kbd></a>
+      <a href="{{ url_for('studio.studio') }}" data-command-item data-command-title="Studio montage timeline export"><span>◫</span><div><strong>Studio</strong><small>Monter, styliser et préparer l'export</small></div><kbd>S</kbd></a>
+      <a href="{{ url_for('brand_kit') }}" data-command-item data-command-title="Brand Kit identité captions watermark"><span>◈</span><div><strong>Brand Kit</strong><small>Ton identité visuelle réutilisable</small></div><kbd>B</kbd></a>
+      <a href="{{ url_for('billing.pricing') }}" data-command-item data-command-title="Tarifs plans Pro Ultra abonnement"><span>€</span><div><strong>Tarifs</strong><small>Comparer Free, Pro et Ultra</small></div><kbd>P</kbd></a>
+      <a href="{{ url_for('account') }}" data-command-item data-command-title="Paramètres compte Google Apple personnalisation"><span>⚙</span><div><strong>Paramètres</strong><small>Compte, thèmes et personnalisation</small></div><kbd>,</kbd></a>
+    </div>
+    <div class="command-foot"><span><kbd>↑</kbd><kbd>↓</kbd> naviguer</span><span><kbd>↵</kbd> ouvrir</span><span><kbd>Esc</kbd> fermer</span></div>
+  </section>
+</div>
 {% endif %}
 <main id="main-content" tabindex="-1">
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -81,9 +100,9 @@
 {% else %}
 <footer class="public-footer"><div><span class="klypso-logo-word">KLYPSO</span><span>Clips et montage vidéo pour créateurs.</span></div><nav><a href="{{ url_for('legal.mentions_legales') }}">Mentions légales</a><a href="{{ url_for('legal.confidentialite') }}">Confidentialité</a><a href="{{ url_for('legal.cgu') }}">CGU</a><a href="{{ url_for('legal.cgv') }}">CGV</a><a href="{{ url_for('legal.contact') }}">Contact</a></nav></footer>
 {% endif %}
-<script src="{{ url_for('static', filename='js/app.js') }}?v=15.8" defer></script>
-<script src="{{ url_for('static', filename='js/v11.js') }}?v=15.8" defer></script>
-<script src="{{ url_for('static', filename='js/v14.js') }}?v=15.8" defer></script>
+<script src="{{ url_for('static', filename='js/app.js') }}?v=16.0" defer></script>
+<script src="{{ url_for('static', filename='js/v11.js') }}?v=16.0" defer></script>
+<script src="{{ url_for('static', filename='js/v14.js') }}?v=16.0" defer></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>
