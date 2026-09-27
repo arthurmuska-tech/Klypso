@@ -94,7 +94,6 @@
   const storyDots = $$('[data-story-jump]');
   let storyRaf = 0;
   let storyActive = false;
-  let storyObserved = false;
 
   const clamp01 = (value) => Math.max(0, Math.min(1, value));
   const smoothstep = (value) => {
@@ -182,7 +181,7 @@
     const progress = clamp01(-rect.top / travel);
     const segment = 1 / slides.length;
     const rawStep = Math.min(slides.length - 1, progress / Math.max(segment, 0.0001));
-    const activeIndex = Math.min(slides.length - 1, Math.floor(rawStep + 0.5));
+    const activeIndex = Math.min(slides.length - 1, Math.floor(rawStep));
     const local = clamp01(rawStep - Math.floor(rawStep));
     const cameraLocal = storyCameraLocal(local);
     const phase = Math.min(slides.length - 1, Math.floor(rawStep) + cameraLocal);
@@ -242,7 +241,7 @@
 
   if (story && 'IntersectionObserver' in window) {
     const storyObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => { storyObserved = entry.isIntersecting; if (storyObserved) requestLandingStoryUpdate(); });
+      entries.forEach((entry) => { if (entry.isIntersecting) requestLandingStoryUpdate(); });
     }, { threshold: 0.01 });
     storyObserver.observe(story);
   }
