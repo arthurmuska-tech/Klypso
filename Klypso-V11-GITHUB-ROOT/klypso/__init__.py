@@ -64,12 +64,21 @@ def create_app(test_config=None):
     @app.route("/dashboard")
     @login_required
     def dashboard():
-        with get_db(app.config["DATABASE_PATH"]) as db:
-            user = db.execute("SELECT * FROM users WHERE id=?", (session_user_id(),)).fetchone()
-            jobs = db.execute(
-                "SELECT * FROM jobs WHERE user_id=? ORDER BY id DESC LIMIT 8",
-                (session_user_id(),),
-            ).fetchall()
+        from flask import flash, session
+        try:
+            with get_db(app.config["DATABASE_PATH"]) as db:
+                user = db.execute("SELECT * FROM users WHERE id=?", (session_user_id(),)).fetchone()
+                jobs = db.execute(
+                    "SELECT * FROM jobs WHERE user_id=? ORDER BY id DESC LIMIT 8",
+                    (session_user_id(),),
+                ).fetchall()
+        except Exception:
+            app.logger.exception("Unable to load dashboard data")
+            return render_template("errors/500.html"), 500
+        if user is None:
+            session.clear()
+            flash("Ta session a expiré. Reconnecte-toi pour revenir à ton espace.", "error")
+            return redirect(url_for("auth.login"))
         plan_key = effective_plan_key(user)
         try:
             credits = get_credit_state(user["id"], plan_key)
