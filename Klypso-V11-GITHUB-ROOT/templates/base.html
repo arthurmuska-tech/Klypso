@@ -12,10 +12,10 @@
 <link rel="canonical" href="{{ public_base_url }}{{ request.path }}">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
 <link rel="icon" href="{{ url_for('static', filename='img/klypso-mark.svg') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=17.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v10.css') }}?v=17.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v11.css') }}?v=17.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v14.css') }}?v=17.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=18.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v10.css') }}?v=18.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v11.css') }}?v=18.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v14.css') }}?v=18.0">
 <title>{% block title %}KLYPSO{% endblock %}</title>
 {% block head_extra %}{% endblock %}
 </head>
@@ -25,7 +25,7 @@
 {% if current_user %}
 <div class="app-frame">
   <aside class="app-sidebar" id="app-sidebar">
-    <a class="sidebar-brand klypso-logo-mark" href="{{ url_for('dashboard') }}" aria-label="KLYPSO accueil"><span class="klypso-logo-word">KLYPSO</span><span class="version-chip">V17.0</span></a>
+    <a class="sidebar-brand klypso-logo-mark" href="{{ url_for('dashboard') }}" aria-label="KLYPSO accueil"><span class="klypso-logo-word">KLYPSO</span><span class="version-chip">V18.0</span></a>
     <button class="mobile-close" type="button" data-sidebar-close aria-label="Fermer le menu">×</button>
     <div class="sidebar-workspace">
       <span class="mini-label">WORKSPACE</span>
@@ -36,6 +36,7 @@
       <a href="{{ url_for('clips.clips') }}" data-nav="clips"><span class="nav-ico">✦</span><span>Clips IA</span><kbd>1</kbd></a>
       <a href="{{ url_for('clips.create_clips') }}" data-nav="new"><span class="nav-ico">＋</span><span>Nouveau projet</span></a>
       <a href="{{ url_for('studio.studio') }}" data-nav="studio"><span class="nav-ico">◫</span><span>Studio</span><span class="nav-beta">ULTRA</span></a>
+      <a href="{{ url_for('publisher.publisher_page') }}" data-nav="publisher"><span class="nav-ico">↗</span><span>Publication</span><span class="nav-beta">V18</span></a>
       <div class="sidebar-divider"></div>
       <span class="mini-label nav-section-title">BIBLIOTHÈQUE</span>
       <a href="{{ url_for('clips.clips') }}#history" data-nav="library"><span class="nav-ico">▣</span><span>Projets</span></a>
@@ -79,6 +80,7 @@
       <a href="{{ url_for('clips.create_clips') }}" data-command-item data-command-title="Nouveau projet créer clips analyser"><span>＋</span><div><strong>Nouveau projet</strong><small>Importer une VOD et lancer une analyse</small></div><kbd>N</kbd></a>
       <a href="{{ url_for('clips.clips') }}" data-command-item data-command-title="Clips IA projets bibliothèque"><span>✦</span><div><strong>Clips IA</strong><small>Parcourir tes analyses et candidats</small></div><kbd>1</kbd></a>
       <a href="{{ url_for('studio.studio') }}" data-command-item data-command-title="Studio montage timeline export"><span>◫</span><div><strong>Studio</strong><small>Monter, styliser et préparer l'export</small></div><kbd>S</kbd></a>
+      <a href="{{ url_for('publisher.publisher_page') }}" data-command-item data-command-title="Publication réseaux calendrier cadence métriques"><span>↗</span><div><strong>Publication</strong><small>Programmer, publier et apprendre des résultats</small></div><kbd>D</kbd></a>
       <a href="{{ url_for('brand_kit') }}" data-command-item data-command-title="Brand Kit identité captions watermark"><span>◈</span><div><strong>Brand Kit</strong><small>Ton identité visuelle réutilisable</small></div><kbd>B</kbd></a>
       <a href="{{ url_for('billing.pricing') }}" data-command-item data-command-title="Tarifs plans Pro Ultra abonnement"><span>€</span><div><strong>Tarifs</strong><small>Comparer Free, Pro et Ultra</small></div><kbd>P</kbd></a>
       <a href="{{ url_for('account') }}" data-command-item data-command-title="Paramètres compte Google Apple personnalisation"><span>⚙</span><div><strong>Paramètres</strong><small>Compte, thèmes et personnalisation</small></div><kbd>,</kbd></a>
@@ -100,9 +102,9 @@
 {% else %}
 <footer class="public-footer"><div><span class="klypso-logo-word">KLYPSO</span><span>Clips et montage vidéo pour créateurs.</span></div><nav><a href="{{ url_for('legal.mentions_legales') }}">Mentions légales</a><a href="{{ url_for('legal.confidentialite') }}">Confidentialité</a><a href="{{ url_for('legal.cgu') }}">CGU</a><a href="{{ url_for('legal.cgv') }}">CGV</a><a href="{{ url_for('legal.contact') }}">Contact</a></nav></footer>
 {% endif %}
-<script src="{{ url_for('static', filename='js/app.js') }}?v=17.0" defer></script>
-<script src="{{ url_for('static', filename='js/v11.js') }}?v=17.0" defer></script>
-<script src="{{ url_for('static', filename='js/v14.js') }}?v=17.0" defer></script>
+<script src="{{ url_for('static', filename='js/app.js') }}?v=18.0" defer></script>
+<script src="{{ url_for('static', filename='js/v11.js') }}?v=18.0" defer></script>
+<script src="{{ url_for('static', filename='js/v14.js') }}?v=18.0" defer></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>
