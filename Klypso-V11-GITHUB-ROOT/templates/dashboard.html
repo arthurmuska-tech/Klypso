@@ -6,8 +6,9 @@
   <section class="workspace-hero">
     <div class="workspace-hero-copy">
       <span class="workspace-kicker">TON WORKSPACE · {{ current_plan.name|upper }}</span>
-      <h1>Crée sans quitter<br><em>ton espace.</em></h1>
+      <h1>Crée sans quitter<br><em>{{ current_display_name or 'ton espace' }}.</em></h1>
       <p>Retrouve tes projets, tes crédits et tes prochains raccourcis au même endroit. Le niveau Free te permet déjà de tester le cœur de KLYPSO avant de passer aux fonctions avancées.</p>
+      <div class="workspace-personal-chip"><span>{{ current_auth_provider|capitalize if current_auth_provider else 'E-mail' }}</span><b>Compte vérifié</b><i>✓</i></div>
       <div class="workspace-actions">
         <a class="button button-lg" href="{{ url_for('clips.create_clips') }}">Créer un projet <span>→</span></a>
         <a class="workspace-link" href="{{ url_for('clips.clips') }}">Voir mes projets</a>
