@@ -18,10 +18,6 @@ def make_app(tmp_path):
         "SESSION_COOKIE_SECURE": False,
         "GOOGLE_CLIENT_ID": "",
         "GOOGLE_CLIENT_SECRET": "",
-        "APPLE_CLIENT_ID": "",
-        "APPLE_TEAM_ID": "",
-        "APPLE_KEY_ID": "",
-        "APPLE_PRIVATE_KEY": "",
         "PUBLIC_BASE_URL": "http://localhost",
     })
 
@@ -161,7 +157,7 @@ def test_v18_publisher_schema_links_metrics():
 def test_v18_health_version(tmp_path):
     app = make_app(tmp_path)
     response = app.test_client().get("/healthz")
-    assert response.get_json()["version"] == "20.0.0"
+    assert response.get_json()["version"] == "22.0.0"
 
 
 def test_v18_creator_memory_can_keep_published_feedback(tmp_path):
