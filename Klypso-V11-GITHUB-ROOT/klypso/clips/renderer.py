@@ -97,7 +97,18 @@ def _subtitle_filter(subtitle_file, caption_style):
     return f"subtitles=filename='{_escape_filter_path(subtitle_file)}':force_style='{force}'"
 
 
-def _video_filter(output_size, social_preset="dynamic", subtitle_file=None, caption_style=None, zoom=None, fade_seconds=0.0, reframe_plan=None, motion_graphics=True, progress_duration=None, audio_cleanup="clean"):
+def build_audio_filter(normalize_audio=True, audio_cleanup="clean"):
+    if not normalize_audio:
+        return None
+    cleanup = str(audio_cleanup or "clean").lower()
+    if cleanup == "broadcast":
+        return "highpass=f=70,lowpass=f=14000,acompressor=threshold=-18dB:ratio=2.5:attack=15:release=120:makeup=2,loudnorm=I=-14:TP=-1.5:LRA=11"
+    if cleanup == "none":
+        return "loudnorm=I=-14:TP=-1.5:LRA=11"
+    return "highpass=f=55,lowpass=f=16000,acompressor=threshold=-20dB:ratio=2:attack=10:release=140:makeup=1,loudnorm=I=-14:TP=-1.5:LRA=11"
+
+
+def _video_filter(output_size, social_preset="dynamic", subtitle_file=None, caption_style=None, zoom=None, fade_seconds=0.0, reframe_plan=None, motion_graphics=True, progress_duration=None):
     width, height = output_size
     preset = SOCIAL_PRESETS.get(social_preset, SOCIAL_PRESETS["dynamic"])
     zoom_factor = max(1.0, float(zoom if zoom is not None else preset["zoom"]))
@@ -193,13 +204,7 @@ def render_candidate(
             "-pix_fmt", "yuv420p",
         ]
         if normalize_audio:
-            cleanup = str(audio_cleanup or "clean").lower()
-            if cleanup == "broadcast":
-                audio_filter = "highpass=f=70,lowpass=f=14000,acompressor=threshold=-18dB:ratio=2.5:attack=15:release=120:makeup=2,loudnorm=I=-14:TP=-1.5:LRA=11"
-            elif cleanup == "none":
-                audio_filter = "loudnorm=I=-14:TP=-1.5:LRA=11"
-            else:
-                audio_filter = "highpass=f=55,lowpass=f=16000,acompressor=threshold=-20dB:ratio=2:attack=10:release=140:makeup=1,loudnorm=I=-14:TP=-1.5:LRA=11"
+            audio_filter = build_audio_filter(True, audio_cleanup)
             args += ["-c:a", "aac", "-b:a", "160k", "-af", audio_filter]
         else:
             args += ["-c:a", "aac", "-b:a", "160k"]
