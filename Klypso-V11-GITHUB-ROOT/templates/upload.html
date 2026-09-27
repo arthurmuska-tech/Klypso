@@ -2,30 +2,137 @@
 {% block title %}Nouveau projet — KLYPSO{% endblock %}
 {% block crumb %}Nouveau projet{% endblock %}
 {% block content %}
-<section class="project-create-page">
-  <div class="page-title-row"><div><span class="eyebrow-v11">NOUVEAU PROJET</span><h1>Commence avec ta vidéo.</h1><p>Dépose une VOD, choisis ton objectif et laisse KLYPSO préparer le workflow.</p></div><a class="button ghost" href="{{ url_for('clips.clips') }}">Retour aux projets</a></div>
-  <div class="create-layout">
-    <form class="upload-studio-card" method="post" enctype="multipart/form-data" id="upload-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <label class="dropzone-v11" for="video"><div class="drop-orb">↑</div><div><strong id="file-name">Dépose ta vidéo ici</strong><span>ou clique pour parcourir tes fichiers</span></div><small>MP4 · MOV · MKV · WebM · selon la limite de ton plan</small><input id="video" type="file" name="video" accept="video/*" required></label>
-      <div class="create-options">
-        <div class="option-group"><span class="section-label-v11">OBJECTIF</span><div class="option-cards"><label class="choice-card selected"><input type="radio" name="goal" value="clips" checked><b>✦ Clips courts</b><small>Moments forts, format social</small></label><label class="choice-card"><input type="radio" name="goal" value="studio"><b>◫ Montage complet</b><small>Préparer un projet Studio</small></label></div></div>
-        <div class="option-group"><span class="section-label-v11">FORMAT DE SORTIE</span><div class="seg-row" data-seg-group="format"><label class="seg-btn active"><input type="radio" name="output_format" value="9:16" checked hidden>9:16</label><label class="seg-btn"><input type="radio" name="output_format" value="1:1" hidden>1:1</label><label class="seg-btn"><input type="radio" name="output_format" value="4:5" hidden>4:5</label><label class="seg-btn"><input type="radio" name="output_format" value="16:9" hidden>16:9</label></div></div>
-        <div class="option-group"><span class="section-label-v11">PRÉFÉRENCES</span><div class="check-grid">
-          <label><input type="checkbox" name="spoken" checked> Garder les moments parlés</label>
-          <label><input type="checkbox" name="subtitles" checked> Préparer les sous-titres</label>
-          <label><input type="checkbox" name="brand_kit"> Ajouter une couche Brand Kit</label>
-          <label><input type="checkbox" name="clean_audio"> Nettoyer l'audio</label>
-        </div></div>
-      </div>
-      <button class="button button-xl full" type="submit">Créer le projet <span>→</span></button>
-    </form>
-    <aside class="workflow-side">
-      <div class="workflow-head"><span class="eyebrow-v11">APERÇU DU WORKFLOW</span><span class="live-dot">LIVE</span></div>
-      <div class="workflow-steps"><div class="wf active"><i>01</i><span><b>Importer</b><small>Ta source originale reste intacte.</small></span></div><div class="wf"><i>02</i><span><b>Analyser</b><small>Média, durée, pistes et signaux.</small></span></div><div class="wf"><i>03</i><span><b>Sélectionner</b><small>Moments et formats à travailler.</small></span></div><div class="wf"><i>04</i><span><b>Personnaliser</b><small>Sous-titres, identité, cadrage.</small></span></div><div class="wf"><i>05</i><span><b>Exporter</b><small>Fichier final prêt à publier.</small></span></div></div>
-      <div class="tip-card"><span>✦</span><div><b>Crédits</b><p>Un clip standard avec sous-titres coûte 6 crédits. Les crédits inutilisés peuvent s'accumuler jusqu'à la limite de ton plan.</p></div></div>
-    </aside>
+<section class="project-create-page project-create-v16">
+  <div class="page-title-row">
+    <div>
+      <span class="eyebrow-v11">KLYPSO CREATOR ENGINE</span>
+      <h1>Choisis ce que KLYPSO doit fabriquer.</h1>
+      <p>Une même VOD devient soit des clips autonomes, soit une timeline. Avec l'IA, KLYPSO apprend aussi de tes projets précédents pour retrouver ton style.</p>
+    </div>
+    <a class="button ghost" href="{{ url_for('clips.clips') }}">Mes projets</a>
   </div>
+
+  <form class="create-layout ai-create-layout" method="post" enctype="multipart/form-data" id="upload-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="mode" id="project-mode" value="ai_clips">
+
+    <div class="upload-studio-card creator-engine-card">
+      <label class="dropzone-v11 creator-dropzone" for="video">
+        <div class="drop-orb">↑</div>
+        <div><strong id="file-name">Dépose ta VOD ici</strong><span>ou clique pour parcourir tes fichiers</span></div>
+        <small>MP4 · MOV · MKV · WebM · selon la limite de ton plan</small>
+        <input id="video" type="file" name="video" accept="video/*" required>
+      </label>
+
+      <div class="option-group mode-section">
+        <div class="mode-section-head">
+          <span class="section-label-v11">MODE DE CRÉATION</span>
+          <span class="mode-live" id="mode-live-label">IA · CLIPS</span>
+        </div>
+        <div class="creation-mode-grid">
+          <label class="creation-mode-card active" data-creation-mode="ai_clips">
+            <input type="radio" name="mode_ui" value="ai_clips" checked hidden>
+            <span class="creation-mode-icon">✦</span>
+            <span><b>Clips IA</b><small>Détecte, classe et fabrique les meilleurs moments sociaux.</small></span>
+          </label>
+          <label class="creation-mode-card" data-creation-mode="clip_only">
+            <input type="radio" name="mode_ui" value="clip_only" hidden>
+            <span class="creation-mode-icon">◉</span>
+            <span><b>Clip seul</b><small>Workflow simple sans scoring sémantique avancé.</small></span>
+          </label>
+          <label class="creation-mode-card" data-creation-mode="ai_montage">
+            <input type="radio" name="mode_ui" value="ai_montage" hidden>
+            <span class="creation-mode-icon">◫</span>
+            <span><b>Montage IA</b><small>Construit une séquence cohérente à partir des scènes fortes.</small></span>
+          </label>
+          <label class="creation-mode-card" data-creation-mode="montage_only">
+            <input type="radio" name="mode_ui" value="montage_only" hidden>
+            <span class="creation-mode-icon">▤</span>
+            <span><b>Montage seul</b><small>Envoie la source dans Studio pour une édition manuelle.</small></span>
+          </label>
+        </div>
+        <div class="mode-explanation" id="mode-explanation">
+          <strong>Le moteur va apprendre de tes projets précédents.</strong>
+          <span>Historique, retours conserver/rejeter, durées et types de scènes servent à personnaliser la prochaine sélection.</span>
+        </div>
+      </div>
+
+      <div class="create-options">
+        <div class="option-group">
+          <span class="section-label-v11">FORMAT DE SORTIE</span>
+          <div class="seg-row" data-seg-group="format">
+            <label class="seg-btn active"><input type="radio" name="output_format" value="9:16" checked hidden>9:16</label>
+            <label class="seg-btn"><input type="radio" name="output_format" value="1:1" hidden>1:1</label>
+            <label class="seg-btn"><input type="radio" name="output_format" value="4:5" hidden>4:5</label>
+            <label class="seg-btn"><input type="radio" name="output_format" value="16:9" hidden>16:9</label>
+          </div>
+        </div>
+        <div class="option-group">
+          <span class="section-label-v11">PRÉFÉRENCES DE MONTAGE</span>
+          <div class="check-grid">
+            <label><input type="checkbox" name="spoken" checked> Garder les moments parlés</label>
+            <label><input type="checkbox" name="subtitles" checked> Captions si une transcription est disponible</label>
+            <label><input type="checkbox" name="brand_kit"> Appliquer le Brand Kit à la sortie</label>
+            <label><input type="checkbox" name="clean_audio"> Normaliser l'audio</label>
+          </div>
+        </div>
+      </div>
+
+      <button class="button button-xl full" type="submit" id="create-project-btn">Créer le projet IA <span>→</span></button>
+    </div>
+
+    <aside class="workflow-side creator-engine-side">
+      <div class="workflow-head"><span class="eyebrow-v11">LE VIRAL ENGINE</span><span class="live-dot">LIVE</span></div>
+
+      <div class="engine-stack">
+        <div class="engine-row"><i>01</i><div><b>Comprendre</b><span>Transcription, scènes et structure du contenu.</span></div></div>
+        <div class="engine-row"><i>02</i><div><b>Repérer</b><span>Hook, payoff, réaction, surprise, densité et changement de rythme.</span></div></div>
+        <div class="engine-row"><i>03</i><div><b>Comparer</b><span>Le moteur regarde aussi tes anciens gagnants et tes retours.</span></div></div>
+        <div class="engine-row"><i>04</i><div><b>Classer</b><span>Scoring multi-signaux + garde-fou anti-doublons.</span></div></div>
+        <div class="engine-row"><i>05</i><div><b>Rendre</b><span>9:16, 4:5, 1:1 ou 16:9 avec captions horodatées.</span></div></div>
+      </div>
+
+      <div class="engine-score-card">
+        <span>OBJECTIF D'ÉDITION</span>
+        <strong>Plus de potentiel, pas une fausse promesse.</strong>
+        <p>KLYPSO cherche à renforcer les signaux qui favorisent rétention, compréhension, émotion, partage et replay. Aucun moteur ne peut garantir la viralité.</p>
+      </div>
+
+      <div class="tip-card">
+        <span>✦</span>
+        <div><b>Projet = mémoire</b><p>Chaque sélection peut devenir un exemple pour les suivantes. Tu construis progressivement ton propre style KLYPSO.</p></div>
+      </div>
+    </aside>
+  </form>
 </section>
 {% endblock %}
-{% block scripts %}<script>const i=document.getElementById('video'),n=document.getElementById('file-name');i?.addEventListener('change',()=>{n.textContent=i.files?.[0]?.name||'Dépose ta vidéo ici';});</script>{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const modeInput = document.getElementById('project-mode');
+  const liveLabel = document.getElementById('mode-live-label');
+  const explanation = document.getElementById('mode-explanation');
+  const createButton = document.getElementById('create-project-btn');
+  const modes = {
+    ai_clips: {label:'IA · CLIPS', button:'Créer le projet IA', title:'Le moteur va apprendre de tes projets précédents.', body:'Historique, retours conserver/rejeter, durées et types de scènes servent à personnaliser la prochaine sélection.'},
+    clip_only: {label:'STANDARD · CLIP', button:'Créer le projet clip', title:'Workflow simple.', body:'KLYPSO prépare un projet de clip sans scoring sémantique avancé.'},
+    ai_montage: {label:'IA · MONTAGE', button:'Créer le projet IA', title:'Le moteur construit une structure de montage.', body:'Les scènes retenues sont ordonnées pour éviter les doublons et donner un rythme cohérent.'},
+    montage_only: {label:'STANDARD · STUDIO', button:'Ouvrir le projet dans Studio', title:'Tu gardes le contrôle total.', body:'La source est enregistrée comme projet et pourra être reprise manuellement dans Studio.'}
+  };
+  document.querySelectorAll('[data-creation-mode]').forEach(card => {
+    card.addEventListener('click', () => {
+      const mode = card.dataset.creationMode;
+      modeInput.value = mode;
+      document.querySelectorAll('[data-creation-mode]').forEach(item => item.classList.toggle('active', item === card));
+      const config = modes[mode];
+      liveLabel.textContent = config.label;
+      createButton.innerHTML = config.button + ' <span>→</span>';
+      explanation.innerHTML = '<strong>' + config.title + '</strong><span>' + config.body + '</span>';
+    });
+  });
+  const input = document.getElementById('video');
+  const name = document.getElementById('file-name');
+  input?.addEventListener('change', () => { name.textContent = input.files?.[0]?.name || 'Dépose ta VOD ici'; });
+})();
+</script>
+{% endblock %}
