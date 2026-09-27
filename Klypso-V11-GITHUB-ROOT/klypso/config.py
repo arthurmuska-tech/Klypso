@@ -15,7 +15,7 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-change-me")
     DATABASE_PATH = os.environ.get("DATABASE_PATH", str(BASE_DIR / "data" / "klypso.sqlite3"))
     STORAGE_PATH = os.environ.get("STORAGE_PATH", str(BASE_DIR / "storage"))
-    MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH_MB", "512")) * 1024 * 1024
+    MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH_MB", "4096")) * 1024 * 1024
 
     FLASK_ENV = os.environ.get("FLASK_ENV", "development")
     SESSION_COOKIE_HTTPONLY = True
@@ -98,3 +98,4 @@ class Config:
     GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
     GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
     OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openrouter/free")
+
