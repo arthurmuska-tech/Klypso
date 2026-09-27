@@ -872,7 +872,7 @@ def _run_analysis_job(job_id):
 
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             db.execute(
-                "UPDATE jobs SET status=?,result_json=?,error_message=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                "UPDATE jobs SET status=?,result_json=?,error_message=NULL,locked_at=NULL,heartbeat_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?",
                 ("completed", json.dumps(saved, ensure_ascii=False), job_id),
             )
             update_creator_memory(db, session["user_id"], result, output_format)
@@ -888,7 +888,7 @@ def _run_analysis_job(job_id):
         current_app.logger.exception("AI analysis failed")
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             db.execute(
-                "UPDATE jobs SET status=?,error_message=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                "UPDATE jobs SET status=?,error_message=?,locked_at=NULL,heartbeat_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?",
                 ("failed", "AI analysis failed", job_id),
             )
             db.commit()
