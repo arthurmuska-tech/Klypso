@@ -13,6 +13,8 @@
         <label class="v24-field"><span>Adresse e-mail</span><input name="email" type="email" required autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="toi@exemple.com"></label>
         <label class="v24-field"><span>Mot de passe</span><input name="password" type="password" minlength="8" autocomplete="current-password" placeholder="Ton mot de passe"></label>
         <button class="button button-lg full v24-primary" type="submit">Se connecter <span>→</span></button>
+        <button class="v24-code-button" type="submit" name="passwordless" value="1">Recevoir un code par e-mail <span>→</span></button>
+
       </form>
       <p class="v24-auth-switch">Pas encore de compte ? <a href="{{ url_for('auth.register') }}">Créer mon compte</a></p><a class="v24-auth-back" href="{{ url_for('index') }}">← Retour à l'accueil</a>
     </div>
