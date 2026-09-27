@@ -43,6 +43,7 @@ def test_v20_social_connection_tokens_are_stored_encrypted(tmp_path, monkeypatch
                 account_name="Creator",
                 scopes="user.info.basic,video.publish",
             )
+            db.commit()
             row = db.execute(
                 "SELECT access_token_enc,refresh_token_enc FROM social_connections WHERE user_id=? AND platform='tiktok'",
                 (user_id,),
