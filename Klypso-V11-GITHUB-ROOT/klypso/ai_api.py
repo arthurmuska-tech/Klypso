@@ -254,6 +254,69 @@ def _gemini_video(video_path, duration, candidates, memory, mode, preferences, k
     return _json(text)
 
 
+def _local_signal_result(candidates, mode="ai_clips"):
+    """Keyless fallback using deterministic media/chat/face signals."""
+    ranked = []
+    for candidate in candidates or []:
+        media = max(0.0, min(1.0, float(candidate.get("media_signal_score", 0.0) or 0.0)))
+        chat = max(0.0, min(100.0, float(candidate.get("chat_signal_score", 0.0) or 0.0))) / 100.0
+        base = max(0.0, min(100.0, float(candidate.get("base_score", 0.0) or 0.0))) / 100.0
+        speech = max(0.0, min(1.0, float(candidate.get("speech_density", 0.0) or 0.0) / 3.0))
+        score = 100.0 * (0.36 * base + 0.30 * media + 0.20 * chat + 0.14 * speech)
+        ranked.append((score, candidate))
+    ranked.sort(key=lambda item: item[0], reverse=True)
+
+    clips = []
+    archetype_by_source = {
+        "chat_spike": "reaction",
+        "audio_peak": "reaction",
+        "scene_change": "surprise",
+        "media_event": "surprise",
+        "speech_cluster": "story",
+        "speech_focus": "punchline",
+    }
+    for index, (score, candidate) in enumerate(ranked[:5], start=1):
+        context = " ".join(str(candidate.get("context", "")).split())
+        source = str(candidate.get("source", "coverage_grid"))
+        archetype = archetype_by_source.get(source, "surprise")
+        hook = context[:150] if context else {
+            "chat_spike": "Le chat a explosé à ce moment-là.",
+            "reaction": "Réaction détectée.",
+            "media_event": "Moment de rupture détecté.",
+        }.get(source, "Moment fort détecté dans la VOD.")
+        clips.append({
+            "id": candidate["id"],
+            "start": candidate["start"],
+            "end": candidate["end"],
+            "title": f"Moment {index}",
+            "hook": hook,
+            "reason": "Sélection locale à partir des signaux média, chat, activité et rythme.",
+            "archetype": archetype,
+            "hook_score": round(min(100, score + 6)),
+            "payoff_score": round(min(100, score + 2)),
+            "emotion_score": round(min(100, score + (14 if source in {"chat_spike", "audio_peak"} else 6))),
+            "novelty_score": round(min(100, score)),
+            "context_score": round(min(100, 50 + len(context) * 0.8)),
+            "shareability_score": round(min(100, score)),
+            "creator_fit_score": round(min(100, score)),
+            "replay_score": round(min(100, score)),
+            "focus_x": candidate.get("focus_x", 0.5),
+            "focus_y": candidate.get("focus_y", 0.5),
+            "reframe_mode": candidate.get("reframe_mode", "smart_center"),
+        })
+    ids = [clip["id"] for clip in clips]
+    return {
+        "clips": clips,
+        "summary": "Analyse locale sans clé cloud: signaux média + chat + historique disponibles.",
+        "montage": {
+            "clip_ids": ids,
+            "opening_clip_id": ids[0] if ids else None,
+            "closing_clip_id": ids[-1] if ids else None,
+        },
+        "engine": "KLYPSO LOCAL VIRAL ENGINE v1",
+    }
+
+
 def _route(video_path, duration, candidates, memory, mode, preferences, agent_report=None):
     attempts = []
     for number, key in enumerate(_keys("GEMINI_API_KEY"), start=1):
@@ -296,7 +359,12 @@ def _route(video_path, duration, candidates, memory, mode, preferences, agent_re
             except Exception as exc:
                 attempts.append({"provider": "openrouter", "key_slot": number, "error": type(exc).__name__})
 
-    raise RuntimeError("AI router exhausted")
+    # No cloud provider is configured or all are unavailable: keep the workflow usable.
+    return (
+        _local_signal_result(candidates, mode),
+        {"provider": "local_signal", "key_slot": 0, "attempts": attempts},
+        {"text": "", "segments": []},
+    )
 
 
 def _job_for_user(job_id):
@@ -317,8 +385,6 @@ def _load_ai_payload(job):
 def _assert_advanced(user):
     if effective_plan_key(user) not in {"pro", "ultra"}:
         return jsonify({"error": "L'IA avancée est réservée aux plans Pro et Ultra."}), 403
-    if not (_keys("GEMINI_API_KEY") or _keys("GROQ_API_KEY") or _keys("OPENROUTER_API_KEY")):
-        return jsonify({"error": "Aucun moteur IA n'est configuré sur KLYPSO."}), 503
     return None
 
 
@@ -336,8 +402,9 @@ def status():
         providers.append("openrouter")
     return jsonify({
         "plan": effective_plan_key(user),
-        "enabled": effective_plan_key(user) in {"pro", "ultra"} and bool(providers),
+        "enabled": effective_plan_key(user) in {"pro", "ultra"},
         "providers": providers,
+        "local_fallback": True,
         "engine": "KLYPSO VIRAL ENGINE v3 · 15 agents + media/chat intelligence",
         "capabilities": {
             "ffmpeg_media_signals": True,
@@ -352,6 +419,7 @@ def status():
             "social_multi_render": True,
             "ai_broll": False,
             "ai_voiceover": False,
+            "local_signal_fallback": True,
         },
     })
 
