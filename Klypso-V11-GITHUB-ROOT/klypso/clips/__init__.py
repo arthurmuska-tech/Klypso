@@ -6,6 +6,7 @@ from ..auth import login_required
 from ..credits import CreditError, consume_clip_credits, credit_cost_from_request, refund_clip_credits, consume_monthly_clip_units, refund_monthly_clip_units
 from ..database import get_db
 from ..media.storage import safe_media_name, is_allowed_mime
+from ..media.object_storage import materialize_media, persist_file
 from ..promo import effective_plan_key
 from ..plans import get_plan
 from ..utils.paths import user_storage
@@ -123,10 +124,15 @@ def handle_upload():
                 f"Cette vidéo dépasse la limite de {plan.max_upload_mb} MB de ton plan."
             )
 
+        stored_path = persist_file(destination, user_id, file.filename, file.mimetype)
+        size_bytes = destination.stat().st_size if destination.exists() else None
+        if size_bytes is None:
+            # Object storage backend consumed the local file; use its remote object metadata later.
+            size_bytes = 0
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
                 "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
-                (user_id, file.filename, str(destination), file.mimetype, destination.stat().st_size),
+                (user_id, file.filename, stored_path, file.mimetype, size_bytes),
             )
             media_id = cur.lastrowid
             db.commit()
@@ -221,9 +227,7 @@ def render_standard_clip(job_id):
         return {"error": "Ce projet n'est pas un clip standard."}, 400
 
     payload = json.loads(job["payload_json"] or "{}")
-    source = Path(payload.get("path", ""))
-    if not source.is_file():
-        return {"error": "Vidéo source introuvable."}, 404
+    source_value = payload.get("path", "")
     body = request.get_json(silent=True) or {}
     try:
         from .analyzer import analyze_media
@@ -234,7 +238,8 @@ def render_standard_clip(job_id):
         output_format = body.get("output_format", payload.get("output_format", "9:16"))
         if output_format not in RATIOS:
             output_format = "9:16"
-        duration = float(analyze_media(str(source))["duration"])
+        with materialize_media(source_value) as source_path:
+            duration = float(analyze_media(str(source_path))["duration"])
         if duration <= 0:
             raise ValueError("Durée vidéo invalide.")
         start = min(start, max(0.0, duration - 1.0))
@@ -253,19 +258,20 @@ def render_standard_clip(job_id):
         folder = user_storage(current_app.config["STORAGE_PATH"], session["user_id"]) / "standard"
         folder.mkdir(parents=True, exist_ok=True)
         output = folder / f"klypso-{job_id}-standard-{int(start * 10)}.mp4"
-        render_candidate(
-            str(source),
-            str(output),
+            render_candidate(
+                str(source_path),
+                str(output),
             {"start": start, "end": end, "duration": end - start},
-            output_format=output_format,
-            transcript_segments=None,
-            subtitles=False,
-            normalize_audio=True,
-        )
+                output_format=output_format,
+                transcript_segments=None,
+                subtitles=False,
+                normalize_audio=True,
+            )
+        stored_output = persist_file(output, session["user_id"], output.name, "video/mp4")
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
                 "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
-                (session["user_id"], f"Clip standard #{job_id}.mp4", str(output), "video/mp4", output.stat().st_size),
+                (session["user_id"], f"Clip standard #{job_id}.mp4", stored_output, "video/mp4", output.stat().st_size if output.exists() else 0),
             )
             media_id = cur.lastrowid
             db.commit()
