@@ -25,9 +25,11 @@ def create_app(test_config=None):
     app.config.from_object(Config)
     if test_config:
         app.config.update(test_config)
-    Path(app.config["DATABASE_PATH"]).parent.mkdir(parents=True, exist_ok=True)
+    database_path = str(app.config["DATABASE_PATH"])
+    if not database_path.startswith(("postgresql://", "postgres://")):
+        Path(database_path).parent.mkdir(parents=True, exist_ok=True)
     Path(app.config["STORAGE_PATH"]).mkdir(parents=True, exist_ok=True)
-    init_db(app.config["DATABASE_PATH"])
+    init_db(database_path)
     register_security(app)
     init_oauth(app)
     app.register_blueprint(auth_bp)
