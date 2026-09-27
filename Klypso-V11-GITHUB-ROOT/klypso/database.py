@@ -203,6 +203,11 @@ CREATE TABLE IF NOT EXISTS social_connections (
     UNIQUE(user_id, platform)
 );
 CREATE INDEX IF NOT EXISTS idx_social_connections_user ON social_connections(user_id, platform);
+CREATE TABLE IF NOT EXISTS rate_limit_buckets (
+    rate_key TEXT PRIMARY KEY,
+    window_start INTEGER NOT NULL,
+    hit_count INTEGER NOT NULL DEFAULT 0
+);
 """
 
 
