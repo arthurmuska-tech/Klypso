@@ -224,7 +224,44 @@ def ensure_fresh_token(db, connection):
             connection.get("metadata", {}),
         )
         return token
+    if connection.get("platform") == "youtube":
+        data = youtube_refresh(refresh)
+        token = data.get("access_token") or token
+        new_refresh = data.get("refresh_token") or refresh
+        expires_at = _now() + timedelta(seconds=int(data.get("expires_in", 3600)))
+        upsert_connection(
+            db,
+            connection["user_id"],
+            "youtube",
+            token,
+            new_refresh,
+            expires_at,
+            connection.get("account_id"),
+            connection.get("account_name"),
+            data.get("scope", connection.get("scopes", "")),
+            connection.get("metadata", {}),
+        )
+        return token
     raise RuntimeError("Le renouvellement automatique de cette connexion n'est pas encore implémenté.")
+
+
+def youtube_refresh(refresh_token):
+    client_id = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+    client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
+    if not client_id or not client_secret or not refresh_token:
+        raise RuntimeError("Identifiants Google ou refresh token manquants.")
+    response = requests.post(
+        "https://oauth2.googleapis.com/token",
+        data={
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
+        },
+        timeout=20,
+    )
+    response.raise_for_status()
+    return response.json()
 
 
 def youtube_channel(access_token):
