@@ -111,7 +111,8 @@ def create_app(test_config=None):
         import shutil
         version_file = Path(app.root_path).parent / "VERSION"
         version = version_file.read_text(encoding="utf-8").strip() if version_file.exists() else "unknown"
-        database = "postgresql" if str(app.config["DATABASE_PATH"]).startswith(("postgresql://", "postgres://")) else "sqlite"
+        database_is_postgres = str(app.config["DATABASE_PATH"]).startswith(("postgresql://", "postgres://"))
+        database = "postgresql" if database_is_postgres else "sqlite"
         storage = "s3" if object_storage_enabled() else "local"
         email_ready = bool(
             app.config.get("EMAIL_FROM")
@@ -136,6 +137,7 @@ def create_app(test_config=None):
             "version": version,
             "database": database,
             "database_status": db_status,
+            "persistent_user_store": database_is_postgres,
             "storage": storage,
             "storage_required": bool(app.config.get("REQUIRE_OBJECT_STORAGE")),
             "object_storage_configured": object_storage_enabled(),
