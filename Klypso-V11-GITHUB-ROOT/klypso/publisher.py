@@ -26,6 +26,7 @@ from .social_connections import (
     tiktok_authorize_url,
     tiktok_exchange,
     tiktok_publish,
+    tiktok_creator_info,
     tiktok_publish_status,
     tiktok_user_info,
     upsert_connection,
@@ -216,12 +217,19 @@ def publish_queue_item(queue_id):
                             privacy=str(metadata.get("youtube_privacy") or "private"),
                         )
                     else:
+                        creator = tiktok_creator_info(token)
+                        options = creator.get("privacy_level_options") or ["SELF_ONLY"]
+                        requested_privacy = str(metadata.get("tiktok_privacy") or "")
+                        privacy = requested_privacy if requested_privacy in options else options[0]
                         native_result = tiktok_publish(
                             signed_media_url(item["user_id"], item["media_id"]),
                             token,
                             f"{caption} {hashtags}".strip(),
                             is_aigc=bool(metadata.get("is_aigc")),
+                            privacy_level=privacy,
                         )
+                        native_result["privacy_level"] = privacy
+                        native_result["creator_limits"] = creator
                     status = "published" if native_result.get("status") == "published" else "processing"
                     metadata["native_publish"] = native_result
                     db.execute(
