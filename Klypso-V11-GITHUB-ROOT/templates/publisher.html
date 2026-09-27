@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}Publication — KLYPSO{% endblock %}
+{% block crumb %}Publication{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/publisher.js') }}?v=18.0" defer></script>{% endblock %}
+{% block content %}
+<section class="publisher-page-v18">
+  <div class="page-title-row">
+    <div>
+      <span class="eyebrow-v11">KLYPSO DISTRIBUTION CENTER</span>
+      <h1>Prépare, programme et apprends de chaque publication.</h1>
+      <p>Une même bibliothèque de clips, un calendrier quotidien / hebdomadaire / mensuel et une boucle de performance qui alimente ton Creator DNA.</p>
+    </div>
+  </div>
+
+  <section class="publisher-hero">
+    <div class="publisher-hero-main">
+      <span class="publisher-orb">↗</span>
+      <div><span class="eyebrow-v11">BOUCLE ACTIVE</span><h2>Créer → publier → mesurer → apprendre.</h2><p>KLYPSO ne considère pas une publication comme la fin du workflow.</p></div>
+    </div>
+    <div class="publisher-stats">
+      <div><span>PROGRAMMÉS</span><strong>{{ stats.scheduled }}</strong></div>
+      <div><span>PUBLIÉS</span><strong>{{ stats.published }}</strong></div>
+      <div><span>ÉCHECS</span><strong>{{ stats.failed }}</strong></div>
+    </div>
+  </section>
+
+  <div class="publisher-grid-v18">
+    <section class="publisher-card">
+      <div class="publisher-card-head"><div><span class="eyebrow-v11">RÉSEAUX</span><h2>Connexions de publication</h2></div><span class="publisher-live-badge">ADAPTERS</span></div>
+      <div class="publisher-platform-grid">
+        {% for key, status in platforms.items() %}
+        <article class="publisher-platform">
+          <div class="publisher-platform-mark">{{ {'youtube':'▶','tiktok':'♪','instagram':'◎','x':'𝕏'}[key] }}</div>
+          <div><strong>{{ key|title }}</strong><small>{{ 'Connecté via adapter' if status.connected else 'Connexion à configurer' }}</small></div>
+          <span class="publisher-connection {{ 'is-on' if status.connected else '' }}">{{ 'ON' if status.connected else 'OFF' }}</span>
+        </article>
+        {% endfor %}
+      </div>
+      <p class="publisher-note">Les identifiants sociaux ne sont pas stockés dans KLYPSO. La publication native passe par un adapter sécurisé configuré côté serveur.</p>
+    </section>
+
+    <section class="publisher-card">
+      <div class="publisher-card-head"><div><span class="eyebrow-v11">CADENCE</span><h2>Programmer une série</h2></div><span class="publisher-live-badge">AUTO</span></div>
+      <div class="publisher-form">
+        <label>Clips à utiliser<select multiple size="5" data-publisher-media>
+          {% for item in media %}<option value="{{ item.id }}">{{ item.original_name }} · #{{ item.id }}</option>{% endfor %}
+        </select></label>
+        <div class="publisher-field-grid">
+          <label>Réseaux<div class="publisher-checks">
+            {% for platform in platforms %}<label><input type="checkbox" value="{{ platform }}" data-platform-check><span>{{ platform|title }}</span></label>{% endfor %}
+          </div></label>
+          <label>Fréquence<select data-publisher-frequency><option value="daily">Tous les jours</option><option value="weekly">Toutes les semaines</option><option value="monthly">Tous les mois</option></select></label>
+        </div>
+        <div class="publisher-field-grid">
+          <label>Première publication<input type="datetime-local" data-publisher-start></label>
+          <label>Nombre de publications<input type="number" min="1" max="31" value="7" data-publisher-count></label>
+        </div>
+        <label>Titre optionnel<input type="text" maxlength="90" placeholder="Laisse vide pour utiliser le titre IA" data-publisher-title></label>
+        <label>Légende optionnelle<textarea rows="3" maxlength="500" placeholder="Laisse vide pour utiliser le hook IA" data-publisher-caption></textarea></label>
+        <button class="button button-lg" type="button" data-create-cadence>Créer la cadence →</button>
+        <span class="publisher-form-status" data-publisher-status></span>
+      </div>
+    </section>
+  </div>
+
+  <section class="publisher-card publisher-queue-card">
+    <div class="publisher-card-head"><div><span class="eyebrow-v11">FILE D’ATTENTE</span><h2>Calendrier des publications</h2></div><button class="filter-btn" type="button" data-refresh-queue>Actualiser</button></div>
+    <div class="publisher-queue" data-publisher-queue>
+      {% for item in queue %}
+      <article class="publisher-queue-row">
+        <div class="publisher-queue-date"><strong>{{ item.scheduled_for }}</strong><span>{{ item.platform|upper }}</span></div>
+        <div class="publisher-queue-main"><b>{{ item.title }}</b><small>{{ item.caption }}</small><span class="publisher-status {{ item.status }}">{{ status_labels.get(item.status, item.status) }}</span></div>
+        <div class="publisher-queue-actions">
+          {% if item.status in ['scheduled','needs_connection','failed'] %}<button class="filter-btn" type="button" data-publish-now="{{ item.id }}">Publier maintenant</button>{% endif %}
+          {% if item.status == 'published' %}<button class="filter-btn" type="button" data-metrics-open="{{ item.id }}">Ajouter métriques</button>{% endif %}
+          {% if item.remote_url %}<a class="filter-btn" href="{{ item.remote_url }}" target="_blank" rel="noopener">Voir →</a>{% endif %}
+        </div>
+        <div class="publisher-metrics-panel" data-metrics-panel="{{ item.id }}" hidden>
+          <label>Vues<input type="number" min="0" value="0" data-metric-views></label>
+          <label>Likes<input type="number" min="0" value="0" data-metric-likes></label>
+          <label>Commentaires<input type="number" min="0" value="0" data-metric-comments></label>
+          <label>Partages<input type="number" min="0" value="0" data-metric-shares></label>
+          <label>Complétion %<input type="number" min="0" max="100" step="0.1" value="0" data-metric-completion></label>
+          <button class="button small" type="button" data-save-metrics="{{ item.id }}">Apprendre de cette publication</button>
+          <span data-metrics-status></span>
+        </div>
+      </article>
+      {% else %}
+      <div class="publisher-empty"><span>↗</span><div><strong>Aucune publication programmée.</strong><p>Choisis des clips, une cadence et des réseaux pour remplir ton calendrier.</p></div></div>
+      {% endfor %}
+    </div>
+  </section>
+</section>
+{% endblock %}
