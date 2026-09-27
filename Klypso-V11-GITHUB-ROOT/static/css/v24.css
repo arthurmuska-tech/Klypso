@@ -382,3 +382,7 @@ html.v24-motion-ready .v24-reveal{opacity:0;transform:translate3d(0,38px,0)}html
 .v24-faq-list details[open] summary::after{content:'−'}
 .v24-faq-list details p{margin:0 0 20px;max-width:62ch;color:#6e6258;font-size:13px;line-height:1.7}
 @media(max-width:860px){.v24-faq{grid-template-columns:1fr;gap:28px;padding:68px 0}}
+
+.v24-code-button{width:100%;margin-top:10px;padding:12px 14px;border:1px solid rgba(60,45,31,.14);border-radius:12px;background:rgba(255,255,255,.42);color:#6f5e4d;font:700 12px/1.2 'Space Grotesk',sans-serif;cursor:pointer;transition:transform .18s ease,background .18s ease,border-color .18s ease}
+.v24-code-button:hover{transform:translateY(-1px);background:rgba(255,255,255,.7);border-color:rgba(154,101,57,.28)}
+.v24-code-button span{float:right}
