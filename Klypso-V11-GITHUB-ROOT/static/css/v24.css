@@ -371,3 +371,14 @@ html.v24-motion-ready .v24-reveal{opacity:0;transform:translate3d(0,38px,0)}html
 .mode-upgrade-note strong{font:800 10px 'Space Grotesk';letter-spacing:.08em;color:#8b5a32}
 .mode-upgrade-note a{font-weight:800;color:#8b5a32;white-space:nowrap}
 @media(max-width:760px){.mode-upgrade-note{grid-template-columns:1fr}.mode-upgrade-note a{justify-self:start}}
+
+
+.v24-faq{display:grid;grid-template-columns:minmax(280px,.78fr) minmax(0,1.22fr);gap:48px;align-items:start;padding:96px 0}
+.v24-faq-list{display:grid;gap:10px}
+.v24-faq-list details{border:1px solid rgba(60,45,31,.12);border-radius:16px;background:rgba(255,255,255,.48);padding:0 18px}
+.v24-faq-list summary{cursor:pointer;list-style:none;padding:20px 34px 20px 0;position:relative;font:700 15px/1.35 'Space Grotesk',sans-serif;color:#2f281f}
+.v24-faq-list summary::-webkit-details-marker{display:none}
+.v24-faq-list summary::after{content:'+';position:absolute;right:4px;top:17px;font-size:22px;font-weight:400;color:#8b5a32}
+.v24-faq-list details[open] summary::after{content:'−'}
+.v24-faq-list details p{margin:0 0 20px;max-width:62ch;color:#6e6258;font-size:13px;line-height:1.7}
+@media(max-width:860px){.v24-faq{grid-template-columns:1fr;gap:28px;padding:68px 0}}
