@@ -198,11 +198,11 @@ def test_oauth_and_account_scenarios(client, app, scenario, monkeypatch):
     elif scenario == "login_session_metadata":
         with app.app_context():
             user = _oauth_user("google", profile["sub"], profile["email"], profile)
-        with client.session_transaction():
+        with app.test_request_context("/"):
             _login(user)
-        with client.session_transaction() as sess:
-            assert sess["auth_provider"] == "google"
-            assert sess["user_name"] == "Google Creator"
+            from flask import session
+            assert session["auth_provider"] == "google"
+            assert session["user_name"] == "Google Creator"
     elif scenario == "google_callback":
         class FakeGoogleClient:
             def authorize_access_token(self):
