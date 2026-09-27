@@ -102,6 +102,14 @@ def create_app(test_config=None):
         database_is_postgres = database.startswith(("postgresql://", "postgres://"))
         storage_ready = object_storage_enabled() if app.config.get("REQUIRE_OBJECT_STORAGE") else True
         database_ready = not app.config.get("REQUIRE_POSTGRES") or database_is_postgres
+        legal_keys = (
+            "LEGAL_ENTITY_NAME", "LEGAL_STATUS", "LEGAL_ADDRESS",
+            "LEGAL_PUBLICATION_DIRECTOR", "LEGAL_CONTACT_EMAIL",
+            "HOSTER_NAME", "HOSTER_ADDRESS",
+        )
+        legal_ready = all(str(app.config.get(key) or "").strip() for key in legal_keys)
+        if not app.config.get("REQUIRE_LEGAL_CONFIG"):
+            legal_ready = True
         try:
             with get_db(app.config["DATABASE_PATH"]) as db:
                 db.execute("SELECT 1").fetchone()
@@ -113,13 +121,15 @@ def create_app(test_config=None):
                 "database_required": bool(app.config.get("REQUIRE_POSTGRES")),
                 "storage_ready": storage_ready,
             }, 503
-        if not database_ready or not storage_ready:
+        if not database_ready or not storage_ready or not legal_ready:
             return {
                 "status": "not_ready",
                 "database": "postgresql" if database_is_postgres else "sqlite",
                 "database_required": bool(app.config.get("REQUIRE_POSTGRES")),
                 "storage": "s3" if storage_ready else "local_unavailable",
                 "storage_required": bool(app.config.get("REQUIRE_OBJECT_STORAGE")),
+                "legal_ready": legal_ready,
+                "legal_required": bool(app.config.get("REQUIRE_LEGAL_CONFIG")),
             }, 503
         return {
             "status": "ready",
