@@ -4,7 +4,13 @@
 <section class="form-page auth-v12"><div class="auth-card">
 <span class="eyebrow-v11">CRÉATION DE COMPTE</span><h1>Crée ton espace KLYPSO.</h1>
 <p class="auth-lead">Crée ton compte avec Google, Apple ou ton adresse e-mail + un mot de passe.</p>
-{% if config.GOOGLE_CLIENT_ID and config.GOOGLE_CLIENT_SECRET %}<a class="oauth-button" href="{{ url_for('auth.google_login') }}"><b class="google-mark">G</b> S'inscrire avec Google</a>{% endif %}
+{% if config.GOOGLE_CLIENT_ID %}
+<div class="oauth-google-wrap" data-google-signin>
+  <div id="g_id_onload" data-client_id="{{ config.GOOGLE_CLIENT_ID }}" data-context="signup" data-ux_mode="popup" data-callback="handleGoogleCredential" data-auto_prompt="false"></div>
+  <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="signup_with" data-shape="rectangular" data-width="380"></div>
+  <small class="google-inline-status" data-google-status></small>
+</div>
+{% endif %}
 {% if config.APPLE_CLIENT_ID and config.APPLE_TEAM_ID and config.APPLE_KEY_ID and config.APPLE_PRIVATE_KEY %}
 <a class="oauth-button" href="{{ url_for('auth.apple_login') }}"><b class="apple-mark"></b> S'inscrire avec Apple</a>
 {% else %}
