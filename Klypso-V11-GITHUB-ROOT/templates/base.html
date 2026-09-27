@@ -12,10 +12,10 @@
 <link rel="canonical" href="{{ public_base_url }}{{ request.path }}">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
 <link rel="icon" href="{{ url_for('static', filename='img/klypso-mark.svg') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=15.7">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v10.css') }}?v=15.7">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v11.css') }}?v=15.7">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v14.css') }}?v=15.7">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=15.8">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v10.css') }}?v=15.8">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v11.css') }}?v=15.8">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v14.css') }}?v=15.8">
 <title>{% block title %}KLYPSO{% endblock %}</title>
 {% block head_extra %}{% endblock %}
 </head>
@@ -25,11 +25,11 @@
 {% if current_user %}
 <div class="app-frame">
   <aside class="app-sidebar" id="app-sidebar">
-    <a class="sidebar-brand klypso-logo-mark" href="{{ url_for('dashboard') }}" aria-label="KLYPSO accueil"><span class="klypso-logo-word">KLYPSO</span><span class="version-chip">V15.7</span></a>
+    <a class="sidebar-brand klypso-logo-mark" href="{{ url_for('dashboard') }}" aria-label="KLYPSO accueil"><span class="klypso-logo-word">KLYPSO</span><span class="version-chip">V15.8</span></a>
     <button class="mobile-close" type="button" data-sidebar-close aria-label="Fermer le menu">×</button>
     <div class="sidebar-workspace">
       <span class="mini-label">WORKSPACE</span>
-      <div class="workspace-switch"><span class="workspace-avatar">{{ current_user[0]|upper }}</span><div><strong>{{ current_user.split('@')[0] }}</strong><small>{{ current_plan.name }}</small></div><span class="chevron">⌄</span></div>
+      <div class="workspace-switch"><span class="workspace-avatar">{{ current_user[0]|upper }}</span><div><strong>{{ current_display_name or current_user.split('@')[0] }}</strong><small>{{ current_plan.name }}{% if current_auth_provider == 'google' %} · Google{% elif current_auth_provider == 'apple' %} · Apple{% endif %}</small></div><span class="chevron">⌄</span></div>
     </div>
     <nav class="sidebar-nav" aria-label="Navigation de l'application">
       <a href="{{ url_for('dashboard') }}" data-nav="dashboard"><span class="nav-ico">⌂</span><span>Accueil</span></a>
@@ -81,9 +81,9 @@
 {% else %}
 <footer class="public-footer"><div><span class="klypso-logo-word">KLYPSO</span><span>Clips et montage vidéo pour créateurs.</span></div><nav><a href="{{ url_for('legal.mentions_legales') }}">Mentions légales</a><a href="{{ url_for('legal.confidentialite') }}">Confidentialité</a><a href="{{ url_for('legal.cgu') }}">CGU</a><a href="{{ url_for('legal.cgv') }}">CGV</a><a href="{{ url_for('legal.contact') }}">Contact</a></nav></footer>
 {% endif %}
-<script src="{{ url_for('static', filename='js/app.js') }}?v=15.7" defer></script>
-<script src="{{ url_for('static', filename='js/v11.js') }}?v=15.7" defer></script>
-<script src="{{ url_for('static', filename='js/v14.js') }}?v=15.7" defer></script>
+<script src="{{ url_for('static', filename='js/app.js') }}?v=15.8" defer></script>
+<script src="{{ url_for('static', filename='js/v11.js') }}?v=15.8" defer></script>
+<script src="{{ url_for('static', filename='js/v14.js') }}?v=15.8" defer></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>
