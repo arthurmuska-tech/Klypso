@@ -45,12 +45,18 @@ def clips():
 @clips_bp.get("/clips/create")
 @login_required
 def create_clips():
-    return render_template("upload.html")
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        user = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
+    plan_key = effective_plan_key(user) if user else "free"
+    return render_template("upload.html", plan_key=plan_key, plan=get_plan(plan_key))
 
 
 def handle_upload():
     if request.method == "GET":
-        return render_template("upload.html")
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            user = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
+        plan_key = effective_plan_key(user) if user else "free"
+        return render_template("upload.html", plan_key=plan_key, plan=get_plan(plan_key))
     if not session.get("user_id"):
         return redirect(url_for("auth.login"))
 
@@ -71,6 +77,13 @@ def handle_upload():
 
         plan_key = effective_plan_key(user)
         plan = get_plan(plan_key)
+
+        # Never create an advanced AI project that the current plan cannot analyze.
+        # Reject it before charging credits or touching the uploaded file.
+        if mode in {"ai_clips", "ai_montage"} and not plan.advanced_ai:
+            flash("Les modes IA avancés sont disponibles avec Pro et Ultra. Tu peux utiliser « Clip seul » gratuitement.", "error")
+            return render_template("upload.html", plan_key=plan_key, plan=plan), 403
+
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             project_count = db.execute(
                 "SELECT COUNT(*) AS n FROM projects WHERE user_id=?",
@@ -209,18 +222,18 @@ def handle_upload():
 
     except CreditError as exc:
         flash(str(exc), "error")
-        return render_template("upload.html"), 402
+        return render_template("upload.html", plan_key=plan_key, plan=plan), 402
     except ValueError as exc:
         if charged:
             refund_clip_credits(user_id, credit_cost, {"reason": "upload_validation_failed"})
         flash(str(exc), "error")
-        return render_template("upload.html"), 400
+        return render_template("upload.html", plan_key=plan_key, plan=plan), 400
     except Exception:
         if charged:
             refund_clip_credits(user_id, credit_cost, {"reason": "clip_creation_failed"})
         current_app.logger.exception("Upload failed")
         flash("L'import n'a pas pu être traité.", "error")
-        return render_template("upload.html"), 500
+        return render_template("upload.html", plan_key=plan_key, plan=plan), 500
 
 
 @clips_bp.post("/api/clips/render-standard/<int:job_id>")
