@@ -24,6 +24,7 @@ from .clips.media_intelligence import analyze_media_signals, enrich_candidates_w
 from .clips.renderer import concat_videos, render_candidate
 from .clips.vision_tracking import analyze_face_tracking, enrich_candidates_with_face_tracking
 from .clips.gameplay_intelligence import classify_game_context, enrich_gameplay_candidates
+from .clips.audio_intelligence import analyze_audio_quality, enrich_candidates_with_audio_quality
 from .social_profiles import clamp_candidate_to_profile, get_social_profile
 from .ai_assets import asset_status, compose_assets, generate_broll_image, generate_voiceover
 
@@ -737,8 +738,10 @@ def analyze_job(job_id):
             if key not in seen_windows and len(candidates) < 90:
                 candidates.append(item)
                 seen_windows.add(key)
+        audio_profile = analyze_audio_quality(analysis["duration"], [], media_signals.get("silences", []))
         candidates = enrich_candidates_with_media_signals(candidates, media_signals)
         candidates = enrich_candidates_with_chat_signals(candidates, chat_signals)
+        candidates = enrich_candidates_with_audio_quality(candidates, audio_profile)
         candidates = enrich_candidates_with_face_tracking(candidates, face_tracking)
         candidates = enrich_gameplay_candidates(candidates, game_context)
         agent_report = run_agent_suite(
@@ -767,8 +770,10 @@ def analyze_job(job_id):
                 existing = {(round(float(candidate.get("start", 0)), 1), round(float(candidate.get("end", 0)), 1)) for candidate in candidates}
                 if key not in existing and len(candidates) < 90:
                     candidates.append(item)
+            audio_profile = analyze_audio_quality(analysis["duration"], transcript_data["segments"], media_signals.get("silences", []))
             candidates = enrich_candidates_with_media_signals(candidates, media_signals)
             candidates = enrich_candidates_with_chat_signals(candidates, chat_signals)
+            candidates = enrich_candidates_with_audio_quality(candidates, audio_profile)
             candidates = enrich_candidates_with_face_tracking(candidates, face_tracking)
             agent_report = run_agent_suite(
                 analysis["duration"],
@@ -806,6 +811,7 @@ def analyze_job(job_id):
         result["chat_intelligence"] = chat_signals
         result["vision_tracking"] = face_tracking
         result["gameplay_intelligence"] = game_context
+        result["audio_quality"] = audio_profile
 
         saved = {
             "mode": mode,
@@ -820,6 +826,7 @@ def analyze_job(job_id):
             "media_signals": media_signals,
             "vision_tracking": face_tracking,
             "gameplay_intelligence": game_context,
+            "audio_quality": audio_profile,
         }
 
         with get_db(current_app.config["DATABASE_PATH"]) as db:
@@ -938,6 +945,7 @@ def _render_ai_clips(job, result, requested_ids=None, social_preset=None, captio
                 "focus_y": candidate.get("focus_y", 0.5),
                 "mode": candidate.get("reframe_mode", "smart_center"),
             },
+            audio_cleanup="broadcast" if candidate.get("audio_quality_score", 72) >= 82 else "clean",
         )
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
