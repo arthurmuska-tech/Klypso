@@ -9,6 +9,7 @@ from klypso.clips.media_intelligence import enrich_candidates_with_media_signals
 from klypso.clips.vision_tracking import enrich_candidates_with_face_tracking
 from klypso.social_profiles import clamp_candidate_to_profile, get_social_profile
 from klypso.clips.renderer import _video_filter
+from klypso.clips.audio_intelligence import analyze_audio_quality, enrich_candidates_with_audio_quality
 
 
 def make_app(tmp_path):
@@ -263,3 +264,31 @@ def test_v20_studio_rejects_foreign_project(tmp_path):
         sess["user_email"] = "owner-v20@example.com"
         sess["csrf_token"] = "csrf-v20"
     assert client.get(f"/api/studio/projects/{project_id}").status_code == 404
+
+
+def test_v20_audio_quality_detects_fillers_and_silence():
+    profile = analyze_audio_quality(
+        40,
+        transcript_segments=[
+            {"start": 5, "end": 12, "text": "Euh je pense que c'est incroyable"},
+            {"start": 16, "end": 23, "text": "C'est vraiment le moment"},
+        ],
+        silences=[{"start": 0, "end": 4}, {"start": 24, "end": 28}],
+    )
+    assert profile["filler_count"] >= 1
+    assert profile["silence_ratio"] > 0
+    assert 0 <= profile["score"] <= 100
+
+
+def test_v20_audio_quality_enriches_candidates():
+    enriched = enrich_candidates_with_audio_quality(
+        [{"id": "c1", "start": 0, "end": 30, "duration": 30, "base_score": 80, "audio_peak": 0.8}],
+        {"score": 82, "silence_ratio": 0.1, "filler_rate": 0.01, "filler_count": 2},
+    )
+    assert enriched[0]["audio_quality_score"] > 0
+    assert enriched[0]["filler_count"] == 2
+
+
+def test_v20_renderer_broadcast_audio_mode():
+    filters, _ = _video_filter((1080, 1920), audio_cleanup="broadcast")
+    assert "highpass" not in ",".join(filters)
