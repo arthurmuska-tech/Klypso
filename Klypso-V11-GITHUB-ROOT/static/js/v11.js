@@ -6,9 +6,10 @@
   const set=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
 
   const accent=get('klypso.accent','#9b7bff');
-  const theme={"#63a4ff":"blue","#59e6df":"cyan","#ff76c8":"pink"}[accent]||'violet';
+  const theme={"#63a4ff":"blue","#59e6df":"cyan","#ff76c8":"pink","#ffb44c":"amber","#d59a62":"amber"}[accent]||'violet';
   root.dataset.theme=theme;
-  root.dataset.density=get('klypso.density','comfortable');
+  const savedDensity=get('klypso.density','comfortable');
+  root.dataset.density=savedDensity==='airy'?'spacious':savedDensity;
   root.dataset.radius=get('klypso.radius','round');
   root.style.setProperty('--accent',accent);
 
