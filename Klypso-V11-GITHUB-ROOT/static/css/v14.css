@@ -1254,3 +1254,12 @@ body.v14-no-motion .button:after{display:none}
 .social-render-controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin:10px 0;border:1px solid var(--k-line);border-radius:14px;background:var(--k-bg)}.social-render-controls span{color:var(--k-muted);font:800 6px 'Space Grotesk';letter-spacing:.08em}.social-render-controls select{padding:7px 8px;border:1px solid var(--k-line);border-radius:8px;background:var(--k-surface);color:var(--k-ink);font:700 7px 'DM Sans'}
 @media(max-width:920px){.publisher-grid-v18{grid-template-columns:1fr}.publisher-hero{align-items:flex-start;flex-direction:column}.publisher-stats{width:100%}.publisher-stats div{flex:1}.publisher-field-grid{grid-template-columns:1fr}.publisher-queue-row{grid-template-columns:1fr}.publisher-queue-actions{justify-content:flex-start}.publisher-metrics-panel{grid-template-columns:repeat(2,minmax(0,1fr))}.publisher-metrics-panel button{grid-column:1/-1}}
 @media(max-width:640px){.agent-grid-list{grid-template-columns:repeat(2,minmax(0,1fr))}.publisher-stats{display:grid;grid-template-columns:repeat(3,1fr)}}
+
+
+/* V20 distribution intelligence */
+.distribution-strategy-card .publisher-strategy-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
+.distribution-strategy-card .publisher-strategy-grid>div{padding:16px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.025)}
+.distribution-strategy-card .publisher-strategy-grid span{display:block;font-size:10px;letter-spacing:.12em;opacity:.58}
+.distribution-strategy-card .publisher-strategy-grid strong{display:block;margin-top:8px;font-size:18px}
+.distribution-strategy-card .publisher-strategy-grid small{display:block;margin-top:5px;opacity:.6}
+@media (max-width:900px){.distribution-strategy-card .publisher-strategy-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
