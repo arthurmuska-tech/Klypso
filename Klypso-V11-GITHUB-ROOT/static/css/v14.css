@@ -636,3 +636,11 @@ html[data-theme="amber"] .v14-wood-option.selected,html[data-theme="amber"] .v15
 .auth-v12 .notice{padding:12px 13px;border:1px solid var(--k-line);border-radius:12px;background:var(--k-bg-soft);color:var(--k-muted);font-size:10px;line-height:1.55}
 @media(max-width:520px){.auth-v12 .auth-card{padding:28px 20px}.auth-v12 .auth-card h1{font-size:33px}}
 @media(prefers-reduced-motion:reduce){.auth-v12 .oauth-button{transition:none}}
+
+/* ================= V15.6 — STORY NAV + FAQ ================= */
+.landing-story-footer{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:24px}
+.landing-story-dots{display:flex;gap:7px}.landing-story-dots button{width:38px;height:30px;border:1px solid var(--k-line);border-radius:9px;background:var(--k-surface);color:var(--k-muted);font:800 9px 'Space Grotesk';cursor:pointer;transition:transform .2s,border-color .2s,color .2s,background .2s}.landing-story-dots button:hover{transform:translateY(-2px);color:var(--k-ink);border-color:var(--k-accent)}.landing-story-dots button.active{background:var(--k-accent-soft);color:var(--k-accent);border-color:color-mix(in srgb,var(--k-accent) 42%,var(--k-line))}
+.landing-story-progress{margin:0;height:3px}
+.landing-v15-faq{display:grid;grid-template-columns:.72fr 1.28fr;gap:70px;padding:90px 20px 30px}.landing-v15-faq h2{margin:15px 0 0;font:800 clamp(38px,4.5vw,61px)/1 'Manrope';letter-spacing:-.06em}.landing-faq-list{border-top:1px solid var(--k-line)}.landing-faq-list details{padding:21px 0;border-bottom:1px solid var(--k-line)}.landing-faq-list summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:20px;color:var(--k-ink);font:800 15px/1.4 'Manrope'}.landing-faq-list summary::-webkit-details-marker{display:none}.landing-faq-list summary:after{content:'+';color:var(--k-accent);font:500 20px 'DM Sans';transition:transform .2s}.landing-faq-list details[open] summary:after{transform:rotate(45deg)}.landing-faq-list p{max-width:710px;margin:10px 0 0;color:var(--k-muted);font-size:13px;line-height:1.7;padding-right:30px}
+@media(max-width:900px){.landing-story-footer{grid-template-columns:1fr}.landing-story-dots{justify-content:center}.landing-v15-faq{grid-template-columns:1fr;gap:30px;padding-top:65px}}
+@media(prefers-reduced-motion:reduce){.landing-story-dots button{transition:none}}
