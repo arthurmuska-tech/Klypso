@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import requests
@@ -31,6 +32,21 @@ from .ai_assets import asset_status, compose_assets, generate_broll_image, gener
 
 
 ai_bp = Blueprint("ai_api", __name__)
+
+_ANALYSIS_EXECUTOR = ThreadPoolExecutor(
+    max_workers=max(1, int(os.getenv("AI_BACKGROUND_WORKERS", "2")))
+)
+
+
+def _background_analyze(app, user_id, job_id):
+    """Run a long AI analysis outside the request thread while keeping Flask context."""
+    try:
+        with app.app_context():
+            with app.test_request_context("/"):
+                session["user_id"] = user_id
+                _run_analysis_job(job_id)
+    except Exception:
+        app.logger.exception("Background AI analysis failed for job %s", job_id)
 
 
 def _keys(name):
@@ -663,9 +679,7 @@ def status():
     })
 
 
-@ai_bp.post("/api/ai/analyze/<int:job_id>")
-@login_required
-def analyze_job(job_id):
+def _run_analysis_job(job_id):
     with get_db(current_app.config["DATABASE_PATH"]) as db:
         user = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
         job = db.execute(
@@ -863,6 +877,60 @@ def analyze_job(job_id):
             )
             db.commit()
         return jsonify({"error": "L'analyse IA a échoué. Vérifie les moteurs IA et FFmpeg configurés."}), 500
+
+@ai_bp.post("/api/ai/analyze/<int:job_id>")
+@login_required
+def analyze_job(job_id):
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        user = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
+        job = db.execute(
+            "SELECT id,status,result_json,error_message FROM jobs WHERE id=? AND user_id=?",
+            (job_id, session["user_id"]),
+        ).fetchone()
+    denied = _assert_advanced(user)
+    if denied:
+        return denied
+    if not job:
+        return jsonify({"error": "Projet introuvable."}), 404
+    if job["status"] == "completed" and job["result_json"]:
+        return jsonify({"ok": True, "job_id": job_id, "status": "completed", "result": json.loads(job["result_json"])}), 200
+    if job["status"] == "processing":
+        return jsonify({"ok": True, "job_id": job_id, "status": "processing"}), 202
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        db.execute(
+            "UPDATE jobs SET status='processing',error_message=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?",
+            (job_id, session["user_id"]),
+        )
+        db.commit()
+    app = current_app._get_current_object()
+    try:
+        _ANALYSIS_EXECUTOR.submit(_background_analyze, app, session["user_id"], job_id)
+    except Exception as exc:
+        current_app.logger.exception("Unable to queue AI analysis: %s", type(exc).__name__)
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            db.execute("UPDATE jobs SET status='failed',error_message=?,updated_at=CURRENT_TIMESTAMP WHERE id=?", ("Unable to queue AI analysis", job_id))
+            db.commit()
+        return jsonify({"error": "L'analyse IA n'a pas pu être mise en file."}), 503
+    return jsonify({"ok": True, "job_id": job_id, "status": "processing"}), 202
+
+
+@ai_bp.get("/api/ai/analyze/status/<int:job_id>")
+@login_required
+def analyze_status(job_id):
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        job = db.execute(
+            "SELECT id,status,result_json,error_message,updated_at FROM jobs WHERE id=? AND user_id=?",
+            (job_id, session["user_id"]),
+        ).fetchone()
+    if not job:
+        return jsonify({"error": "Projet introuvable."}), 404
+    payload = {"ok": True, "job_id": job_id, "status": job["status"], "updated_at": job["updated_at"]}
+    if job["status"] == "completed" and job["result_json"]:
+        payload["result"] = json.loads(job["result_json"])
+    if job["status"] == "failed":
+        payload["error"] = job["error_message"] or "Analyse IA échouée."
+    return jsonify(payload), 200 if job["status"] in {"completed","failed"} else 202
+
 
 @ai_bp.post("/api/ai/chat/<int:job_id>")
 @login_required
