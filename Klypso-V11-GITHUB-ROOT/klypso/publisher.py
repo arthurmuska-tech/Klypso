@@ -1,0 +1,478 @@
+"""KLYPSO Distribution Center: scheduling, publishing adapters and feedback loop.
+
+Direct network posting is intentionally adapter-based. A configured platform webhook
+receives a signed, short-lived media URL plus the post package. This keeps platform
+credentials out of KLYPSO's SQLite database and lets an owner connect an approved
+publisher (Make, n8n, a private adapter, etc.) without pretending that a post was
+published when no platform adapter is configured.
+"""
+import calendar
+import json
+import os
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+import requests
+from flask import Blueprint, current_app, jsonify, render_template, request, send_file, session
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+
+from .auth import login_required
+from .database import get_db
+from .clips.intelligence import update_creator_memory
+
+
+publisher_bp = Blueprint("publisher", __name__)
+
+PLATFORMS = ("youtube", "tiktok", "instagram", "x")
+FREQUENCIES = ("daily", "weekly", "monthly")
+STATUS_LABELS = {
+    "scheduled": "Programmé",
+    "processing": "Publication…",
+    "published": "Publié",
+    "needs_connection": "Connexion requise",
+    "failed": "Échec",
+    "cancelled": "Annulé",
+}
+
+
+def _now():
+    return datetime.now(timezone.utc)
+
+
+def _parse_dt(value):
+    if not value:
+        return None
+    raw = str(value).strip().replace("Z", "+00:00")
+    parsed = datetime.fromisoformat(raw)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _iso(value):
+    parsed = value if isinstance(value, datetime) else _parse_dt(value)
+    return parsed.isoformat(timespec="seconds").replace("+00:00", "Z") if parsed else None
+
+
+def _platform_webhook(platform):
+    key = f"KLYPSO_PUBLISH_{platform.upper()}_WEBHOOK_URL"
+    return os.getenv(key, "").strip()
+
+
+def platform_status():
+    return {
+        platform: {
+            "connected": bool(_platform_webhook(platform)),
+            "adapter": "webhook" if _platform_webhook(platform) else None,
+        }
+        for platform in PLATFORMS
+    }
+
+
+def _serializer():
+    return URLSafeTimedSerializer(current_app.config["SECRET_KEY"], salt="klypso-publisher-media")
+
+
+def signed_media_token(user_id, media_id):
+    return _serializer().dumps({"user_id": int(user_id), "media_id": int(media_id)})
+
+
+def signed_media_url(user_id, media_id):
+    token = signed_media_token(user_id, media_id)
+    base = current_app.config["PUBLIC_BASE_URL"].rstrip("/")
+    return f"{base}/publisher/media/{token}"
+
+
+def _post_package(db, item):
+    title = item["title"] or "Nouveau clip KLYPSO"
+    caption = item["caption"] or title
+    hashtags = item["hashtags"] or "#KLYPSO #gaming #shorts"
+    payload = {
+        "queue_id": item["id"],
+        "platform": item["platform"],
+        "title": title,
+        "caption": caption,
+        "hashtags": hashtags,
+        "scheduled_for": item["scheduled_for"],
+        "media_url": signed_media_url(item["user_id"], item["media_id"]),
+        "metadata": json.loads(item["metadata_json"] or "{}"),
+    }
+    return payload
+
+
+def _record_metrics(db, item, metrics):
+    if not isinstance(metrics, dict):
+        return
+    def integer(name):
+        try:
+            return max(0, int(metrics.get(name, 0) or 0))
+        except (TypeError, ValueError):
+            return 0
+    try:
+        completion = float(metrics.get("completion_rate", 0) or 0)
+    except (TypeError, ValueError):
+        completion = 0.0
+    completion = max(0.0, min(100.0, completion))
+    db.execute(
+        "INSERT INTO clip_metrics(user_id,job_id,candidate_id,queue_id,platform,views,likes,comments,shares,completion_rate) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?)",
+        (
+            item["user_id"],
+            item["job_id"],
+            item["candidate_id"],
+            item["id"],
+            item["platform"],
+            integer("views"),
+            integer("likes"),
+            integer("comments"),
+            integer("shares"),
+            completion,
+        ),
+    )
+    try:
+        update_creator_memory(db, item["user_id"], json.loads(
+            db.execute("SELECT result_json FROM jobs WHERE id=?", (item["job_id"],)).fetchone()["result_json"] or "{}"
+        ).get("ai", {}), "9:16")
+    except Exception:
+        # Metrics remain persisted even when memory refresh is unavailable.
+        pass
+
+
+def publish_queue_item(queue_id):
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        item = db.execute(
+            "SELECT * FROM publish_queue WHERE id=?",
+            (queue_id,),
+        ).fetchone()
+        if not item:
+            return {"ok": False, "status": "not_found", "error": "Publication introuvable."}
+        if item["status"] == "published":
+            return {"ok": True, "status": "published", "remote_url": item["remote_url"]}
+        webhook = _platform_webhook(item["platform"])
+        if not webhook:
+            db.execute(
+                "UPDATE publish_queue SET status='needs_connection',last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                ("Aucun adaptateur de publication configuré pour cette plateforme.", queue_id),
+            )
+            db.commit()
+            return {"ok": False, "status": "needs_connection", "error": "Aucun adaptateur connecté."}
+
+        db.execute(
+            "UPDATE publish_queue SET status='processing',attempts=attempts+1,last_error=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            (queue_id,),
+        )
+        db.commit()
+        payload = _post_package(db, item)
+        try:
+            response = requests.post(
+                webhook,
+                json=payload,
+                headers={"Content-Type": "application/json", "X-KLYPSO-Platform": item["platform"]},
+                timeout=45,
+            )
+            response.raise_for_status()
+            remote = None
+            metrics = None
+            try:
+                body = response.json()
+                remote = body.get("url") or body.get("remote_url")
+                metrics = body.get("metrics")
+            except ValueError:
+                body = {}
+            db.execute(
+                "UPDATE publish_queue SET status='published',published_at=CURRENT_TIMESTAMP,remote_url=?,last_error=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                (remote, queue_id),
+            )
+            _record_metrics(db, item, metrics)
+            db.commit()
+            return {"ok": True, "status": "published", "remote_url": remote, "metrics": metrics or {}}
+        except Exception as exc:
+            db.execute(
+                "UPDATE publish_queue SET status='failed',last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                (str(exc)[:500], queue_id),
+            )
+            db.commit()
+            return {"ok": False, "status": "failed", "error": str(exc)[:500]}
+
+
+def run_due_posts(user_id=None, limit=12):
+    now = _iso(_now())
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        if user_id is None:
+            rows = db.execute(
+                "SELECT * FROM publish_queue WHERE status='scheduled' AND scheduled_for<=? ORDER BY scheduled_for,id LIMIT ?",
+                (now, max(1, min(50, int(limit)))),
+            ).fetchall()
+        else:
+            rows = db.execute(
+                "SELECT * FROM publish_queue WHERE user_id=? AND status='scheduled' AND scheduled_for<=? ORDER BY scheduled_for,id LIMIT ?",
+                (user_id, now, max(1, min(50, int(limit)))),
+            ).fetchall()
+    results = [publish_queue_item(row["id"]) for row in rows]
+    return {"processed": len(results), "results": results}
+
+
+def _add_months(value, months):
+    year = value.year + (value.month - 1 + months) // 12
+    month = (value.month - 1 + months) % 12 + 1
+    day = min(value.day, calendar.monthrange(year, month)[1])
+    return value.replace(year=year, month=month, day=day)
+
+
+def _generate_dates(start, frequency, count):
+    for index in range(count):
+        if frequency == "daily":
+            yield start + timedelta(days=index)
+        elif frequency == "weekly":
+            yield start + timedelta(weeks=index)
+        else:
+            yield _add_months(start, index)
+
+
+def _social_copy(job, candidate_id, platform):
+    title = "Clip KLYPSO"
+    hook = "Nouveau moment fort."
+    archetype = "moment"
+    if job and job["result_json"]:
+        try:
+            saved = json.loads(job["result_json"])
+            for clip in (saved.get("ai", {}).get("clips") or []):
+                if str(clip.get("id")) == str(candidate_id):
+                    title = str(clip.get("title") or title)[:90]
+                    hook = str(clip.get("hook") or hook)[:180]
+                    archetype = str(clip.get("archetype") or archetype)
+                    break
+        except (TypeError, ValueError, json.JSONDecodeError):
+            pass
+    tags = ["#KLYPSO", "#gaming", f"#{archetype}"]
+    if platform == "youtube":
+        tags.append("#shorts")
+    elif platform == "instagram":
+        tags.append("#reels")
+    elif platform == "tiktok":
+        tags.append("#tiktok")
+    return {
+        "title": title,
+        "caption": hook,
+        "hashtags": " ".join(tags),
+    }
+
+
+def create_schedule_entry(user_id, media_id, platform, scheduled_for, job_id=None, candidate_id=None, title="", caption="", hashtags="", metadata=None):
+    when = _parse_dt(scheduled_for)
+    if not when:
+        raise ValueError("Date de publication invalide.")
+    if when < _now() - timedelta(minutes=2):
+        raise ValueError("La date doit être dans le futur.")
+    if platform not in PLATFORMS:
+        raise ValueError("Plateforme non prise en charge.")
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        media = db.execute(
+            "SELECT id FROM media_files WHERE id=? AND user_id=?",
+            (media_id, user_id),
+        ).fetchone()
+        if not media:
+            raise ValueError("Média introuvable.")
+        job = db.execute(
+            "SELECT result_json FROM jobs WHERE id=? AND user_id=?",
+            (job_id, user_id),
+        ).fetchone() if job_id else None
+        package = _social_copy(job, candidate_id, platform)
+        cur = db.execute(
+            "INSERT INTO publish_queue(user_id,media_id,job_id,candidate_id,platform,scheduled_for,status,title,caption,hashtags,metadata_json) "
+            "VALUES(?,?,?,?,?,'scheduled',?,?,?,?,?,?)",
+            (
+                user_id, media_id, job_id, candidate_id, platform, _iso(when),
+                title or package["title"], caption or package["caption"], hashtags or package["hashtags"],
+                json.dumps(metadata or {}, ensure_ascii=False),
+            ),
+        )
+        queue_id = cur.lastrowid
+        db.commit()
+    return queue_id
+
+
+def _user_queue(user_id, limit=60):
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        rows = db.execute(
+            "SELECT * FROM publish_queue WHERE user_id=? ORDER BY scheduled_for DESC,id DESC LIMIT ?",
+            (user_id, max(1, min(120, int(limit)))),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+@publisher_bp.get("/publisher")
+@login_required
+def publisher_page():
+    user_id = session["user_id"]
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        media = db.execute(
+            "SELECT id,original_name,created_at FROM media_files WHERE user_id=? AND mime_type LIKE 'video/%' ORDER BY id DESC LIMIT 30",
+            (user_id,),
+        ).fetchall()
+        stats = {
+            "scheduled": db.execute("SELECT COUNT(*) AS n FROM publish_queue WHERE user_id=? AND status='scheduled'", (user_id,)).fetchone()["n"],
+            "published": db.execute("SELECT COUNT(*) AS n FROM publish_queue WHERE user_id=? AND status='published'", (user_id,)).fetchone()["n"],
+            "failed": db.execute("SELECT COUNT(*) AS n FROM publish_queue WHERE user_id=? AND status='failed'", (user_id,)).fetchone()["n"],
+        }
+    return render_template(
+        "publisher.html",
+        queue=_user_queue(user_id),
+        media=[dict(item) for item in media],
+        platforms=platform_status(),
+        stats=stats,
+        status_labels=STATUS_LABELS,
+    )
+
+
+@publisher_bp.get("/api/publisher/queue")
+@login_required
+def queue_api():
+    return jsonify({"queue": _user_queue(session["user_id"]), "platforms": platform_status()})
+
+
+@publisher_bp.post("/api/publisher/schedule")
+@login_required
+def schedule_api():
+    body = request.get_json(silent=True) or {}
+    try:
+        media_id = int(body.get("media_id"))
+        platforms = body.get("platforms") or [body.get("platform")]
+        platforms = [str(p).lower() for p in platforms if p]
+        when = body.get("scheduled_for")
+        job_id = int(body["job_id"]) if body.get("job_id") else None
+        candidate_id = str(body.get("candidate_id") or "") or None
+        ids = []
+        for platform in platforms:
+            ids.append(create_schedule_entry(
+                session["user_id"], media_id, platform, when, job_id, candidate_id,
+                body.get("title", ""), body.get("caption", ""), body.get("hashtags", ""),
+                body.get("metadata") if isinstance(body.get("metadata"), dict) else {},
+            ))
+        return jsonify({"ok": True, "queue_ids": ids}), 201
+    except (TypeError, ValueError) as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@publisher_bp.post("/api/publisher/cadence")
+@login_required
+def cadence_api():
+    body = request.get_json(silent=True) or {}
+    media_ids = []
+    for value in body.get("media_ids") or []:
+        try:
+            media_ids.append(int(value))
+        except (TypeError, ValueError):
+            pass
+    platforms = [str(p).lower() for p in body.get("platforms") or [] if str(p).lower() in PLATFORMS]
+    frequency = str(body.get("frequency", "daily")).lower()
+    if not media_ids or not platforms:
+        return jsonify({"error": "Sélectionne au moins un média et un réseau."}), 400
+    if frequency not in FREQUENCIES:
+        return jsonify({"error": "Fréquence invalide."}), 400
+    try:
+        count = max(1, min(31, int(body.get("count", 7))))
+    except (TypeError, ValueError):
+        count = 7
+    start = _parse_dt(body.get("start_at"))
+    if not start:
+        return jsonify({"error": "Date de départ invalide."}), 400
+    if start < _now() - timedelta(minutes=2):
+        return jsonify({"error": "La date de départ doit être future."}), 400
+    created = []
+    for index, when in enumerate(_generate_dates(start, frequency, count)):
+        media_id = media_ids[index % len(media_ids)]
+        for platform in platforms:
+            try:
+                created.append(create_schedule_entry(
+                    session["user_id"], media_id, platform, when,
+                    body.get("job_id"), body.get("candidate_id"),
+                    metadata={"cadence": frequency, "series_index": index + 1},
+                ))
+            except ValueError:
+                continue
+    return jsonify({"ok": True, "created": len(created), "queue_ids": created}), 201
+
+
+@publisher_bp.post("/api/publisher/publish/<int:queue_id>")
+@login_required
+def publish_now_api(queue_id):
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        owner = db.execute("SELECT user_id FROM publish_queue WHERE id=?", (queue_id,)).fetchone()
+    if not owner or int(owner["user_id"]) != int(session["user_id"]):
+        return jsonify({"error": "Publication introuvable."}), 404
+    result = publish_queue_item(queue_id)
+    return jsonify(result), 200 if result.get("ok") else 409
+
+
+@publisher_bp.post("/api/publisher/run-due")
+def run_due_api():
+    secret = os.getenv("KLYPSO_CRON_SECRET", "").strip()
+    header = request.headers.get("X-KLYPSO-CRON-KEY", "").strip()
+    if secret and header == secret:
+        return jsonify(run_due_posts(limit=50))
+    if session.get("user_id"):
+        return jsonify(run_due_posts(user_id=session["user_id"], limit=12))
+    return jsonify({"error": "Non autorisé."}), 401
+
+
+@publisher_bp.post("/api/publisher/metrics/<int:queue_id>")
+@login_required
+def metrics_api(queue_id):
+    body = request.get_json(silent=True) or {}
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        item = db.execute(
+            "SELECT * FROM publish_queue WHERE id=? AND user_id=?",
+            (queue_id, session["user_id"]),
+        ).fetchone()
+        if not item:
+            return jsonify({"error": "Publication introuvable."}), 404
+        def integer(name):
+            try:
+                return max(0, int(body.get(name, 0) or 0))
+            except (TypeError, ValueError):
+                return 0
+        try:
+            completion = float(body.get("completion_rate", 0) or 0)
+        except (TypeError, ValueError):
+            completion = 0.0
+        completion = max(0.0, min(100.0, completion))
+        db.execute(
+            "INSERT INTO clip_metrics(user_id,job_id,candidate_id,queue_id,platform,views,likes,comments,shares,completion_rate) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?)",
+            (
+                session["user_id"], item["job_id"], item["candidate_id"], item["id"], item["platform"],
+                integer("views"), integer("likes"), integer("comments"), integer("shares"), completion,
+            ),
+        )
+        if item["job_id"]:
+            try:
+                saved = json.loads(db.execute("SELECT result_json FROM jobs WHERE id=?", (item["job_id"],)).fetchone()["result_json"] or "{}")
+                update_creator_memory(db, session["user_id"], saved.get("ai", {}), "9:16")
+            except Exception:
+                pass
+        db.commit()
+    return jsonify({"ok": True, "message": "Performance ingérée dans le Creator DNA."}), 200
+
+
+@publisher_bp.get("/publisher/media/<token>")
+def publisher_media(token):
+    try:
+        payload = _serializer().loads(token, max_age=900)
+    except SignatureExpired:
+        return jsonify({"error": "Le lien de publication a expiré."}), 410
+    except BadSignature:
+        return jsonify({"error": "Lien de publication invalide."}), 403
+    try:
+        user_id = int(payload["user_id"])
+        media_id = int(payload["media_id"])
+    except (TypeError, ValueError, KeyError):
+        return jsonify({"error": "Lien de publication invalide."}), 403
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        row = db.execute(
+            "SELECT stored_path,mime_type,original_name FROM media_files WHERE id=? AND user_id=?",
+            (media_id, user_id),
+        ).fetchone()
+    if not row or not Path(row["stored_path"]).is_file():
+        return jsonify({"error": "Média introuvable."}), 404
+    return send_file(row["stored_path"], mimetype=row["mime_type"], download_name=Path(row["original_name"]).name)
