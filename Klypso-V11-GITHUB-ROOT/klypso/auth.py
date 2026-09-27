@@ -40,6 +40,9 @@ def login_required(view):
     def wrapped(*args, **kwargs):
         if not session.get("user_id"):
             return redirect(url_for("auth.login", next=request.path))
+        # Keep authenticated sessions persistent and refresh their expiration
+        # while the creator is actively using the application.
+        session.permanent = True
         return view(*args, **kwargs)
     return wrapped
 
@@ -65,6 +68,7 @@ def _login(user):
         db.execute("UPDATE users SET last_login_at=?, updated_at=? WHERE id=?", (now, now, user["id"]))
         db.commit()
     session.clear()
+    session.permanent = True
     session["user_id"] = user["id"]
     session["user_email"] = user["email"]
     session["user_name"] = user["display_name"] or user["email"].split("@", 1)[0]
