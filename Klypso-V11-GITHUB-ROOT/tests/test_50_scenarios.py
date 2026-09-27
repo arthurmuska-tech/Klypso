@@ -257,8 +257,6 @@ def test_data_security_scenarios(client, app, scenario):
     with app.app_context():
         user = _create_email_user("security@example.com")
         user_id = user["id"]
-        with client.session_transaction():
-            _login(user)
         with get_db(app.config["DATABASE_PATH"]) as db:
             db.execute("INSERT INTO projects(user_id,name) VALUES(?,?)", (user_id, "Project test"))
             db.execute("INSERT INTO jobs(user_id,job_type) VALUES(?,?)", (user_id, "clip"))
