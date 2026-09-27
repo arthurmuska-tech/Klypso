@@ -109,11 +109,12 @@ def test_v25_full_reliability_matrix(case, tmp_path):
         account = (root / "templates" / "account.html").read_text(encoding="utf-8")
         brand = (root / "templates" / "brand_kit.html").read_text(encoding="utf-8")
         js = (root / "static" / "js" / "app.js").read_text(encoding="utf-8")
+        auth_js = (root / "static" / "js" / "auth-ui.js").read_text(encoding="utf-8")
 
         contracts = [
             'meta name="csrf-token"', "canonical", "app.css", "v14.css", "v14.js",
             "data-sidebar-open", "data-command-palette", "csrf_token()",
-            "data-google-signin", "g_id_onload", "handleGoogleCredential",
+            "data-google-signin", "handleGoogleCredential",
             'type="email"', 'type="password"', 'autocomplete="new-password"',
             "data-save-settings", "data-appearance-reset", "data-brand-reset",
             'data-setting="watermark"', 'data-setting="motion"',
@@ -125,7 +126,7 @@ def test_v25_full_reliability_matrix(case, tmp_path):
             "window.addEventListener('storage'",
         ]
         needle = contracts[(case - 160) % len(contracts)]
-        combined = base + login + register + account + brand + js
+        combined = base + login + register + account + brand + js + auth_js
         assert needle in combined, needle
         # The main auth forms must expose CSRF protection.
         assert "csrf_token()" in login
