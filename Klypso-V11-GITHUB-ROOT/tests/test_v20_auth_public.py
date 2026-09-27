@@ -76,3 +76,26 @@ def test_v20_public_home_has_product_sections(tmp_path):
     assert response.status_code == 200
     for marker in ["STUDIO", "CLIPS IA", "BRAND KIT", "PUBLICATION", "QUESTIONS FRÉQUENTES"]:
         assert marker in html
+
+
+def test_v22_google_csp_allows_identity_services(tmp_path):
+    app = make_app(tmp_path)
+    response = app.test_client().get("/login")
+    csp = response.headers["Content-Security-Policy"]
+    assert "https://accounts.google.com" in csp
+    assert "https://oauth2.googleapis.com" in csp
+    assert "frame-src https://accounts.google.com" in csp
+
+
+def test_v22_studio_is_server_gated_to_ultra(tmp_path):
+    app = make_app(tmp_path)
+    with app.app_context():
+        user = __import__("klypso.auth", fromlist=["_create_email_user"])._create_email_user("studio-free@example.com")
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["user_id"] = user["id"]
+        sess["user_email"] = user["email"]
+        sess["csrf_token"] = "studio-free-csrf"
+    response = client.get("/studio")
+    assert response.status_code == 302
+    assert "pricing" in response.headers["Location"]
