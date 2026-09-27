@@ -148,6 +148,7 @@ def render_candidate(
     fade_seconds=0.0,
     reframe_plan=None,
     motion_graphics=True,
+    audio_cleanup="clean",
 ):
     width, height = RATIOS.get(output_format, RATIOS["9:16"])
     start = max(0.0, float(candidate["start"]))
@@ -173,6 +174,7 @@ def render_candidate(
             reframe_plan=reframe_plan,
             motion_graphics=motion_graphics,
             progress_duration=duration,
+            audio_cleanup=audio_cleanup,
         )
         if fade:
             fade = min(float(fade), duration / 3.0)
