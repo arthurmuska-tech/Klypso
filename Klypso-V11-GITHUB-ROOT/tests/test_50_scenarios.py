@@ -754,6 +754,31 @@ def test_v17_semantic_scenarios(client, app, scenario):
         assert len(result["clips"]) == 2
         assert {clip["id"] for clip in result["clips"]} == {"a","c"}
 
+V17_MONTAGE_SCENARIOS = [
+    "montage_respects_ai_order",
+]
+
+@pytest.mark.parametrize("scenario", V17_MONTAGE_SCENARIOS, ids=V17_MONTAGE_SCENARIOS)
+def test_v17_montage_scenarios(client, app, scenario):
+    from klypso.clips.intelligence import enrich_ai_result
+
+    if scenario == "montage_respects_ai_order":
+        candidates = [
+            {"id":"a","start":10,"end":30,"duration":20,"base_score":95,"speech_density":4,"context":"setup"},
+            {"id":"b","start":60,"end":82,"duration":22,"base_score":94,"speech_density":4,"context":"payoff"},
+            {"id":"c","start":110,"end":132,"duration":22,"base_score":93,"speech_density":4,"context":"reaction"},
+        ]
+        def raw(candidate, archetype):
+            return {"id":candidate["id"],"start":candidate["start"],"end":candidate["end"],"title":candidate["id"],"hook":"hook","reason":"reason","archetype":archetype,
+                    "hook_score":95,"payoff_score":95,"emotion_score":90,"novelty_score":85,"context_score":92,"shareability_score":90,"creator_fit_score":90,"replay_score":88}
+        result = enrich_ai_result(
+            {"clips":[raw(candidates[0],"story"),raw(candidates[1],"clutch"),raw(candidates[2],"reaction")],
+             "montage":{"clip_ids":["b","a","c"],"opening_clip_id":"b","closing_clip_id":"c"}},
+            candidates,
+            {},
+        )
+        assert result["montage"]["clip_ids"] == ["b","a","c"]
+
 V17_PERFORMANCE_SCENARIOS = [
     "performance_memory_reads_real_results",
     "performance_endpoint_accepts_valid_clip",
