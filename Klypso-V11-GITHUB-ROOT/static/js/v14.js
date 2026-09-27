@@ -4,7 +4,8 @@
 
   const root = document.documentElement;
   const body = document.body;
-  const $$ = (selector, parent = document) => Array.from(parent.querySelectorAll(selector));
+  const $ = (selector, parent = document) => parent.querySelector(selector);
+  const $ = (selector, parent = document) => Array.from(parent.querySelectorAll(selector));
   const getStore = (key, fallback) => {
     try {
       const value = localStorage.getItem(key);
@@ -65,7 +66,7 @@
   }
 
   /* --- Generic reveal for app pages --- */
-  const reveal = $('.home-feature,.home-intro,.home-capabilities,.capability-grid > div,.home-library,.dash-hero,.quick-card,.panel-v11,.settings-card-v11,.project-row,.landing-v15-intro,.landing-v15-feature-grid,.landing-v15-details,.landing-v15-free,.landing-v15-faq,.landing-v15-cta,.landing-product-showcase,.landing-proof > div,.landing-v15-hero-copy,.landing-v15-hero-art');
+  const reveal = $$('.home-feature,.home-intro,.home-capabilities,.capability-grid > div,.home-library,.dash-hero,.quick-card,.panel-v11,.settings-card-v11,.project-row,.landing-v15-intro,.landing-v15-feature-grid,.landing-v15-details,.landing-v15-free,.landing-v15-faq,.landing-v15-cta,.landing-product-showcase,.landing-proof > div,.landing-v15-hero-copy,.landing-v15-hero-art');
   reveal.forEach((el, index) => {
     el.classList.add('v14-reveal');
     el.style.setProperty('--reveal-delay', Math.min(index * 35, 280) + 'ms');
@@ -86,8 +87,8 @@
   }
 
   /* --- V20 deterministic public scroll effects --- */
-  const publicObjects = $('.v20-scroll-object');
-  const publicScenes = $('.v20-scroll-reveal');
+  const publicObjects = $$('.v20-scroll-object');
+  const publicScenes = $$('.v20-scroll-reveal');
   const updatePublicMotion = () => {
     if (!motionEnabled) return;
     const viewport = window.innerHeight || 800;
@@ -367,7 +368,7 @@
     });
   });
   /* --- Premium V20 interaction layer --- */
-  const interactiveCards = $('.workspace-start-card,.workspace-metrics article,.landing-v15-feature-grid article,.landing-detail-grid article,.showcase-card,.publisher-card,.publisher-platform,.quick-card,.panel-v11,.choice-card,.studio-tool-card,.pricing-card-v11');
+  const interactiveCards = $$('.workspace-start-card,.workspace-metrics article,.landing-v15-feature-grid article,.landing-detail-grid article,.showcase-card,.publisher-card,.publisher-platform,.quick-card,.panel-v11,.choice-card,.studio-tool-card,.pricing-card-v11');
   interactiveCards.forEach((card) => {
     card.classList.add('v20-surface');
     card.addEventListener('pointermove', (event) => {
@@ -390,7 +391,7 @@
     }, { passive: true });
   });
 
-  const ripples = $('.button,.icon-button,.filter-btn,.tab-btn,.canvas-tab,.editor-tool,.small-icon,.zoom-chip,.landing-secondary,.workspace-link,.choice-card');
+  const ripples = $$('.button,.icon-button,.filter-btn,.tab-btn,.canvas-tab,.editor-tool,.small-icon,.zoom-chip,.landing-secondary,.workspace-link,.choice-card');
   ripples.forEach((el) => {
     if (el.dataset.v20PressBound) return;
     el.dataset.v20PressBound = '1';
@@ -406,7 +407,7 @@
     }, { passive: true });
   });
 
-  const pressables = $('.button,.icon-button,.filter-btn,.tab-btn,.canvas-tab,.editor-tool,.small-icon,.zoom-chip');
+  const pressables = $$('.button,.icon-button,.filter-btn,.tab-btn,.canvas-tab,.editor-tool,.small-icon,.zoom-chip');
   pressables.forEach((el) => {
     el.addEventListener('pointerdown', () => el.classList.add('v20-pressed'), { passive: true });
     ['pointerup','pointercancel','pointerleave'].forEach((eventName) => {
@@ -415,7 +416,7 @@
   });
 
   /* Keep the public homepage feeling continuous instead of empty between blocks. */
-  const stagedSections = $('.landing-v15-intro,.landing-v15-feature-grid,.landing-story,.landing-v15-details,.landing-v15-free,.landing-v15-faq,.landing-v15-cta,.workspace-start-grid,.workspace-flow,.workspace-projects');
+  const stagedSections = $$('.landing-v15-intro,.landing-v15-feature-grid,.landing-story,.landing-v15-details,.landing-v15-free,.landing-v15-faq,.landing-v15-cta,.workspace-start-grid,.workspace-flow,.workspace-projects');
   stagedSections.forEach((section) => section.classList.add('v20-stage'));
 
   const updateStageFocus = () => {
@@ -463,7 +464,7 @@
 
   /* --- V20 interactive product spotlights --- */
   const spotlight = document.querySelector('[data-spotlight-dialog]');
-  const spotlightCards = $('[data-spotlight]');
+  const spotlightCards = $$('[data-spotlight]');
   if (spotlight && spotlightCards.length) {
     const data = {
       accueil: {
@@ -556,7 +557,7 @@
   });
 
   /* Scroll-linked active navigation on the public page. */
-  const publicAnchors = $('a[href*="#fonctionnalites"]');
+  const publicAnchors = $$('a[href*="#fonctionnalites"]');
   const featureSection = document.getElementById('fonctionnalites');
   if (featureSection && publicAnchors.length && 'IntersectionObserver' in window) {
     const featureObserver = new IntersectionObserver((entries) => {
