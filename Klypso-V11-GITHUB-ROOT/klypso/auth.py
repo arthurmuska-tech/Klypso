@@ -188,7 +188,13 @@ def _oauth_user(provider, subject, email, profile=None):
             (provider, subject),
         ).fetchone()
         if identity:
-            return db.execute("SELECT * FROM users WHERE id=?", (identity["user_id"],)).fetchone()
+            uid = identity["user_id"]
+            db.execute(
+                "UPDATE users SET auth_provider=?,email_verified_at=COALESCE(email_verified_at,?),display_name=COALESCE(NULLIF(?,''),display_name),avatar_url=COALESCE(NULLIF(?,''),avatar_url),updated_at=? WHERE id=?",
+                (provider, now, display_name, avatar_url or "", now, uid),
+            )
+            db.commit()
+            return db.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
         user = db.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
         if not user:
             cur = db.execute(
