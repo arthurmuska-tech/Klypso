@@ -68,10 +68,12 @@ def test_v20_email_password_registration_and_login(tmp_path):
     assert response.status_code == 302
     assert response.headers["Location"].endswith("/dashboard")
 
+    with client.session_transaction() as sess:
+        fresh_csrf = sess["csrf_token"]
     wrong = client.post("/login", data={
         "email": "creator@example.com",
         "password": "bad-password",
-        "csrf_token": "auth-csrf-2",
+        "csrf_token": fresh_csrf,
     })
     assert wrong.status_code == 401
 
