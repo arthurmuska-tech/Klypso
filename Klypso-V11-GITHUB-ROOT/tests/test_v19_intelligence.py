@@ -322,3 +322,32 @@ def test_v20_studio_edit_operations_are_non_destructive():
 
     configured = apply_edit(marked, {"type": "set_setting", "key": "audio_cleanup", "value": "broadcast"})
     assert configured["settings"]["audio_cleanup"] == "broadcast"
+
+
+def test_v20_opportunity_score_is_normalized():
+    from klypso.clips.intelligence import enrich_ai_result
+    candidate = {
+        "id": "c1",
+        "start": 0,
+        "end": 20,
+        "duration": 20,
+        "base_score": 100,
+        "media_signal_score": 1.0,
+        "chat_signal_score": 100,
+        "audio_quality_score": 100,
+        "gameplay_signal": 1.0,
+        "context": "perfect moment",
+        "speech_density": 3.0,
+    }
+    raw = {
+        "clips": [{
+            "id": "c1", "start": 0, "end": 20,
+            "title": "Peak", "hook": "Hook",
+            "hook_score": 100, "payoff_score": 100,
+            "emotion_score": 100, "novelty_score": 100,
+            "context_score": 100, "shareability_score": 100,
+            "creator_fit_score": 100, "replay_score": 100,
+        }]
+    }
+    result = enrich_ai_result(raw, [candidate], {}, [])
+    assert result["clips"][0]["opportunity_score"] <= 100
