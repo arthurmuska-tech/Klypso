@@ -1,4 +1,4 @@
-name: KLYPSO — 50 scenario tests
+name: KLYPSO — 60 scenario tests
 on:
   push:
     paths:
@@ -22,5 +22,5 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Run 50 scenarios
+      - name: Run 60 scenarios
         run: pytest -q tests/test_50_scenarios.py
