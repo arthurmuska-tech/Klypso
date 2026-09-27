@@ -42,6 +42,26 @@
     }).join('');
   };
 
+  const refreshAnalytics = async () => {
+    const response = await api('/api/publisher/analytics');
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Impossible de charger les analytics.');
+    const totals = data.totals || {};
+    document.querySelector('[data-analytics-views]')?.replaceChildren(document.createTextNode(Number(totals.views || 0).toLocaleString('fr-FR')));
+    document.querySelector('[data-analytics-likes]')?.replaceChildren(document.createTextNode(Number(totals.likes || 0).toLocaleString('fr-FR')));
+    document.querySelector('[data-analytics-shares]')?.replaceChildren(document.createTextNode(Number(totals.shares || 0).toLocaleString('fr-FR')));
+    document.querySelector('[data-analytics-completion]')?.replaceChildren(document.createTextNode(Number(totals.completion_rate || 0) + '%'));
+    const box = document.querySelector('[data-analytics-platforms]');
+    if (box) {
+      const entries = Object.entries(data.by_platform || {});
+      box.innerHTML = entries.length ? entries.map(([platform, values]) =>
+        '<article class="publisher-platform"><div><strong>' + escapeHtml(platform.toUpperCase()) + '</strong><small>' +
+        Number(values.views || 0).toLocaleString('fr-FR') + ' vues · ' + Number(values.engagement_rate || 0) + '% engagement</small></div>' +
+        '<span class="publisher-connection is-on">' + Number(values.completion_rate || 0) + '%</span></article>'
+      ).join('') : '<div class="publisher-empty"><span>◎</span><div><strong>Pas encore de données.</strong><p>Ajoute les métriques des publications pour alimenter la mémoire Klypso.</p></div></div>';
+    }
+  };
+
   const refresh = async () => {
     const response = await api('/api/publisher/queue');
     const data = await response.json().catch(() => ({}));
@@ -135,5 +155,11 @@
     if (event.target.closest('[data-refresh-queue]')) {
       try { await refresh(); } catch (error) { alert(error.message); }
     }
+    if (event.target.closest('[data-refresh-analytics]')) {
+      try { await refreshAnalytics(); } catch (error) { alert(error.message); }
+    }
+  refreshAnalytics().catch(() => {});
+  refresh().catch(() => {});
+
   });
 })();
