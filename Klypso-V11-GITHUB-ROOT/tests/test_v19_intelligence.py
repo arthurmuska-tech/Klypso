@@ -22,10 +22,6 @@ def make_app(tmp_path):
         "SESSION_COOKIE_SECURE": False,
         "GOOGLE_CLIENT_ID": "",
         "GOOGLE_CLIENT_SECRET": "",
-        "APPLE_CLIENT_ID": "",
-        "APPLE_TEAM_ID": "",
-        "APPLE_KEY_ID": "",
-        "APPLE_PRIVATE_KEY": "",
         "PUBLIC_BASE_URL": "http://localhost",
     })
 
@@ -126,7 +122,7 @@ def test_v19_enriched_clip_persists_reframe_and_signal_scores():
 def test_v19_health_version(tmp_path):
     app = make_app(tmp_path)
     response = app.test_client().get("/healthz")
-    assert response.get_json()["version"] == "20.0.0"
+    assert response.get_json()["version"] == "22.0.0"
 
 
 def test_v19_face_tracking_focus_is_applied_when_present():
