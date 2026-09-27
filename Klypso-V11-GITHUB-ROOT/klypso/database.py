@@ -288,6 +288,7 @@ CREATE TABLE IF NOT EXISTS publish_queue (
 );
 CREATE INDEX IF NOT EXISTS idx_publish_queue_user ON publish_queue(user_id, scheduled_for);
 CREATE INDEX IF NOT EXISTS idx_publish_queue_due ON publish_queue(status, scheduled_for);
+CREATE INDEX IF NOT EXISTS idx_publish_queue_processing ON publish_queue(status, updated_at);
 
 CREATE TABLE IF NOT EXISTS social_connections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
