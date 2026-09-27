@@ -1126,3 +1126,29 @@ body.command-open{overflow:hidden}
 }
 body.v14-no-motion .workspace-hero:after,body.v14-no-motion .workspace-status-orbit span{animation:none!important}
 body.v14-no-motion .button:after{display:none}
+
+
+/* V16 pricing + payments */
+.v16-plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:28px}
+.v16-plan-card{position:relative;padding:25px;border:1px solid var(--k-line);border-radius:22px;background:var(--k-surface);box-shadow:var(--k-shadow);overflow:hidden}
+.v16-plan-card:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 100% 0,color-mix(in srgb,var(--k-accent) 10%,transparent),transparent 32%);pointer-events:none}
+.v16-plan-card>*{position:relative;z-index:1}
+.v16-plan-card.featured{background:linear-gradient(145deg,var(--k-surface-strong),color-mix(in srgb,var(--k-accent-soft) 45%,var(--k-surface)));border-color:color-mix(in srgb,var(--k-accent) 24%,var(--k-line));box-shadow:0 35px 90px color-mix(in srgb,var(--k-accent) 8%,transparent)}
+.v16-plan-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.v16-plan-badge{padding:5px 8px;border-radius:999px;background:var(--k-bg-soft);border:1px solid var(--k-line);color:var(--k-muted);font:800 7px 'Space Grotesk';letter-spacing:.08em}
+.v16-plan-badge.accent{background:var(--k-accent-soft);color:var(--k-accent);border-color:color-mix(in srgb,var(--k-accent) 28%,var(--k-line))}
+.v16-plan-card h2{margin:27px 0 9px;font:800 25px 'Manrope';letter-spacing:-.04em}.v16-plan-card>p{margin:0;color:var(--k-muted);font-size:11px;line-height:1.6;min-height:53px}
+.v16-price{display:flex;align-items:baseline;gap:5px;margin:2px 0 11px}.v16-price strong{font:800 clamp(31px,3vw,39px) 'Manrope';letter-spacing:-.055em}.v16-price span{color:var(--k-muted);font-size:9px}
+.v16-feature-list{display:grid;gap:8px;margin:20px 0 22px;padding:16px 0;border-top:1px solid var(--k-line);border-bottom:1px solid var(--k-line)}
+.v16-feature-list span{font-size:9px;color:var(--k-ink)}
+.v16-checkout-form{display:grid;gap:9px}.v16-checkout-form label{display:flex;align-items:flex-start;gap:7px;color:var(--k-muted);font-size:8px;line-height:1.4}.v16-checkout-form input{accent-color:var(--k-accent)}
+.v16-billing-note{display:flex;align-items:center;gap:16px;margin-top:14px;padding:14px 16px;border:1px solid var(--k-line);border-radius:17px;background:var(--k-bg-soft)}
+.v16-billing-note>span{padding:6px 8px;border-radius:8px;background:var(--k-surface);color:var(--k-accent);font:800 7px 'Space Grotesk';letter-spacing:.12em}
+.v16-billing-note strong,.v16-billing-note small{display:block}.v16-billing-note strong{font-size:9px}.v16-billing-note small{margin-top:3px;color:var(--k-muted);font-size:8px;line-height:1.5}
+
+.payment-card-v12,.v16-plan-card,.workspace-note,.identity-panel,.account-profile-editor{backdrop-filter:blur(12px)}
+.payment-card-v12{border-radius:22px!important;box-shadow:var(--k-shadow)!important}
+.payment-page-v12 .page-title-row h1{letter-spacing:-.065em}
+
+@media(max-width:980px){.v16-plan-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:680px){.v16-plan-grid{grid-template-columns:1fr}.v16-billing-note{align-items:flex-start;flex-direction:column}}
