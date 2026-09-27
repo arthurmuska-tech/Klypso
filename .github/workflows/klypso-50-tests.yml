@@ -1,4 +1,4 @@
-name: KLYPSO — 89 scenario tests
+name: KLYPSO — V18 scenario tests
 on:
   push:
     paths:
@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Python compile check
-        run: python -m py_compile web_app.py klypso/__init__.py klypso/ai_api.py klypso/clips/intelligence.py klypso/clips/renderer.py klypso/clips/pipeline.py klypso/clips/__init__.py
+        run: python -m py_compile web_app.py klypso/__init__.py klypso/ai_api.py klypso/clips/intelligence.py klypso/clips/renderer.py klypso/clips/pipeline.py klypso/clips/__init__.py klypso/clips/agents.py klypso/publisher.py klypso/publisher_cron.py
 
       - name: JavaScript syntax check
         run: |
@@ -33,9 +33,10 @@ jobs:
           node --check static/js/studio.js
           node --check static/js/project-create.js
           node --check static/js/ai-clips.js
+          node --check static/js/publisher.js
 
       - name: CSS structure check
         run: python -c "from pathlib import Path; css=Path('static/css/v14.css').read_text(encoding='utf-8'); assert css.count('{')==css.count('}'), 'Unbalanced CSS braces'; assert css.count('(')==css.count(')'), 'Unbalanced CSS parentheses'; print('CSS structure OK')"
 
       - name: Run 89 scenarios
-        run: pytest -q tests/test_50_scenarios.py
+        run: pytest -q tests/test_50_scenarios.py tests/test_v18_distribution.py
