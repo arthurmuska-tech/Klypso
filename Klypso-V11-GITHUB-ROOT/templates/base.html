@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#07080d">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <meta name="description" content="{% block meta_description %}KLYPSO — workspace vidéo pour transformer tes streams en clips et montages prêts à publier.{% endblock %}">
-<meta property="og:type" content="website"><meta property="og:site_name" content="KLYPSO">
+<meta property="og:type" content="website"><meta property="og:site_name" content="KLYPSO">\n<meta property="og:url" content="{{ public_base_url }}{{ request.path }}">
 <meta property="og:title" content="{% block og_title %}KLYPSO{% endblock %}">
 <meta property="og:description" content="{% block og_description %}KLYPSO Clips et Klypso Studio dans un workspace pensé pour les créateurs.{% endblock %}">
 <link rel="canonical" href="{{ public_base_url }}{{ request.path }}">
