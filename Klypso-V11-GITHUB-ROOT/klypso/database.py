@@ -358,6 +358,24 @@ def _add_column_if_missing(conn, table, column, declaration):
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {declaration}")
 
 
+def _seed_creator_promo_codes(conn):
+    """Seed one-use Pro codes supplied securely through Render environment variables."""
+    raw = os.environ.get("KLYPSO_CREATOR_PROMO_CODES", "")
+    codes = [item.strip().upper() for item in raw.split(",") if item.strip()]
+    if not codes:
+        return
+    for code in dict.fromkeys(codes):
+        if len(code) > 64:
+            continue
+        exists = conn.execute("SELECT 1 FROM promo_codes WHERE code=? LIMIT 1", (code,)).fetchone()
+        if exists:
+            continue
+        conn.execute(
+            "INSERT INTO promo_codes(code,plan,duration_weeks,max_redemptions,expires_at) VALUES(?,?,?,?,?)",
+            (code, "pro", 4, 1, None),
+        )
+
+
 def init_db(path):
     if not str(path).startswith(("postgresql://", "postgres://")):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -380,6 +398,7 @@ def init_db(path):
         _add_column_if_missing(conn, "jobs", "locked_at", "TEXT")
         _add_column_if_missing(conn, "jobs", "heartbeat_at", "TEXT")
         conn.execute("UPDATE users SET display_name=substr(email,1,instr(email,'@')-1) WHERE display_name='' AND instr(email,'@')>1")
+        _seed_creator_promo_codes(conn)
         conn.commit()
 
 
