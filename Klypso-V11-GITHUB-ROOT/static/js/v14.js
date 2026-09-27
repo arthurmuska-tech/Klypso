@@ -358,4 +358,98 @@
       });
     });
   });
+  /* --- Premium V20 interaction layer --- */
+  const interactiveCards = $('.workspace-start-card,.workspace-metrics article,.landing-v15-feature-grid article,.landing-detail-grid article,.showcase-card,.publisher-card,.publisher-platform,.quick-card,.panel-v11,.choice-card,.studio-tool-card,.pricing-card-v11');
+  interactiveCards.forEach((card) => {
+    card.classList.add('v20-surface');
+    card.addEventListener('pointermove', (event) => {
+      if (body.classList.contains('v14-no-motion') || event.pointerType === 'touch') return;
+      const rect = card.getBoundingClientRect();
+      const px = ((event.clientX - rect.left) / Math.max(1, rect.width)) * 100;
+      const py = ((event.clientY - rect.top) / Math.max(1, rect.height)) * 100;
+      card.style.setProperty('--mx', px.toFixed(2) + '%');
+      card.style.setProperty('--my', py.toFixed(2) + '%');
+      card.style.setProperty('--rx', (((py - 50) / 50) * -1.8).toFixed(2) + 'deg');
+      card.style.setProperty('--ry', (((px - 50) / 50) * 2.2).toFixed(2) + 'deg');
+      card.classList.add('v20-hovering');
+    }, { passive: true });
+    card.addEventListener('pointerleave', () => {
+      card.style.setProperty('--mx', '50%');
+      card.style.setProperty('--my', '50%');
+      card.style.setProperty('--rx', '0deg');
+      card.style.setProperty('--ry', '0deg');
+      card.classList.remove('v20-hovering');
+    }, { passive: true });
+  });
+
+  const ripples = $('.button,.icon-button,.filter-btn,.tab-btn,.canvas-tab,.editor-tool,.small-icon,.zoom-chip,.landing-secondary,.workspace-link,.choice-card');
+  ripples.forEach((el) => {
+    if (el.dataset.v20PressBound) return;
+    el.dataset.v20PressBound = '1';
+    el.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      const rect = el.getBoundingClientRect();
+      const wave = document.createElement('span');
+      wave.className = 'v20-ripple';
+      wave.style.left = (event.clientX - rect.left) + 'px';
+      wave.style.top = (event.clientY - rect.top) + 'px';
+      el.appendChild(wave);
+      window.setTimeout(() => wave.remove(), 650);
+    }, { passive: true });
+  });
+
+  const pressables = $('.button,.icon-button,.filter-btn,.tab-btn,.canvas-tab,.editor-tool,.small-icon,.zoom-chip');
+  pressables.forEach((el) => {
+    el.addEventListener('pointerdown', () => el.classList.add('v20-pressed'), { passive: true });
+    ['pointerup','pointercancel','pointerleave'].forEach((eventName) => {
+      el.addEventListener(eventName, () => el.classList.remove('v20-pressed'), { passive: true });
+    });
+  });
+
+  /* Keep the public homepage feeling continuous instead of empty between blocks. */
+  const stagedSections = $('.landing-v15-intro,.landing-v15-feature-grid,.landing-story,.landing-v15-details,.landing-v15-free,.landing-v15-faq,.landing-v15-cta,.workspace-start-grid,.workspace-flow,.workspace-projects');
+  stagedSections.forEach((section) => section.classList.add('v20-stage'));
+
+  const updateStageFocus = () => {
+    if (body.classList.contains('v14-no-motion')) return;
+    const viewport = window.innerHeight || 800;
+    stagedSections.forEach((section) => {
+      const rect = section.getBoundingClientRect();
+      const distance = Math.abs((rect.top + rect.height * 0.35) - viewport * 0.52);
+      const focus = Math.max(0, Math.min(1, 1 - distance / Math.max(viewport * 1.25, 1)));
+      section.style.setProperty('--stage-focus', focus.toFixed(3));
+    });
+  };
+  let stageRaf = 0;
+  const requestStageFocus = () => {
+    if (stageRaf) return;
+    stageRaf = requestAnimationFrame(() => {
+      stageRaf = 0;
+      updateStageFocus();
+    });
+  };
+  addEventListener('scroll', requestStageFocus, { passive: true });
+  addEventListener('resize', requestStageFocus, { passive: true });
+  requestStageFocus();
+
+  /* A subtle cursor halo gives the page a tangible layer without hijacking scrolling. */
+  if (!window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const halo = document.createElement('div');
+    halo.className = 'v20-cursor-halo';
+    body.appendChild(halo);
+    let haloX = window.innerWidth * 0.5;
+    let haloY = window.innerHeight * 0.35;
+    let targetX = haloX;
+    let targetY = haloY;
+    const moveHalo = (event) => { targetX = event.clientX; targetY = event.clientY; };
+    addEventListener('pointermove', moveHalo, { passive: true });
+    const tickHalo = () => {
+      haloX += (targetX - haloX) * 0.14;
+      haloY += (targetY - haloY) * 0.14;
+      halo.style.transform = 'translate3d(' + (haloX - 120) + 'px,' + (haloY - 120) + 'px,0)';
+      requestAnimationFrame(tickHalo);
+    };
+    requestAnimationFrame(tickHalo);
+  }
+
 })();
