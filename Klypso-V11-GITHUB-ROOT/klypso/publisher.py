@@ -186,6 +186,76 @@ def publish_queue_item(queue_id):
             return {"ok": False, "status": "not_found", "error": "Publication introuvable."}
         if item["status"] == "published":
             return {"ok": True, "status": "published", "remote_url": item["remote_url"]}
+
+        db.execute(
+            "UPDATE publish_queue SET status='processing',attempts=attempts+1,last_error=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            (queue_id,),
+        )
+        db.commit()
+
+        title = item["title"] or "Nouveau clip KLYPSO"
+        caption = item["caption"] or title
+        hashtags = item["hashtags"] or "#KLYPSO #gaming #shorts"
+        try:
+            metadata = json.loads(item["metadata_json"] or "{}")
+        except (TypeError, ValueError):
+            metadata = {}
+
+        if item["platform"] in {"youtube", "tiktok"}:
+            connection = connection_for(db, item["user_id"], item["platform"])
+            if connection and connection.get("access_token"):
+                try:
+                    media = db.execute(
+                        "SELECT stored_path FROM media_files WHERE id=? AND user_id=?",
+                        (item["media_id"], item["user_id"]),
+                    ).fetchone()
+                    if not media or not Path(media["stored_path"]).is_file():
+                        raise FileNotFoundError("Média source introuvable.")
+                    token = ensure_fresh_token(db, connection)
+                    if item["platform"] == "youtube":
+                        native_result = youtube_upload(
+                            media["stored_path"],
+                            token,
+                            title,
+                            f"{caption}\n\n{hashtags}",
+                            privacy=str(metadata.get("youtube_privacy") or "private"),
+                        )
+                    else:
+                        native_result = tiktok_publish(
+                            signed_media_url(item["user_id"], item["media_id"]),
+                            token,
+                            f"{caption} {hashtags}".strip(),
+                            is_aigc=bool(metadata.get("is_aigc")),
+                        )
+                    status = "published" if native_result.get("status") == "published" else "processing"
+                    metadata["native_publish"] = native_result
+                    db.execute(
+                        "UPDATE publish_queue SET status=?,published_at=CASE WHEN ?='published' THEN CURRENT_TIMESTAMP ELSE published_at END,"
+                        "remote_url=COALESCE(?,remote_url),last_error=NULL,metadata_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                        (
+                            status,
+                            status,
+                            native_result.get("url"),
+                            json.dumps(metadata, ensure_ascii=False),
+                            queue_id,
+                        ),
+                    )
+                    db.commit()
+                    return {
+                        "ok": True,
+                        "status": status,
+                        "remote_url": native_result.get("url"),
+                        "platform_status": native_result.get("platform_status"),
+                        "native": True,
+                    }
+                except Exception as exc:
+                    db.execute(
+                        "UPDATE publish_queue SET status='failed',last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                        (str(exc)[:500], queue_id),
+                    )
+                    db.commit()
+                    return {"ok": False, "status": "failed", "error": str(exc)[:500], "native": True}
+
         webhook = _platform_webhook(item["platform"])
         if not webhook:
             db.execute(
@@ -195,11 +265,6 @@ def publish_queue_item(queue_id):
             db.commit()
             return {"ok": False, "status": "needs_connection", "error": "Aucun adaptateur connecté."}
 
-        db.execute(
-            "UPDATE publish_queue SET status='processing',attempts=attempts+1,last_error=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?",
-            (queue_id,),
-        )
-        db.commit()
         payload = _post_package(db, item)
         try:
             response = requests.post(
@@ -223,7 +288,7 @@ def publish_queue_item(queue_id):
             )
             _record_metrics(db, item, metrics)
             db.commit()
-            return {"ok": True, "status": "published", "remote_url": remote, "metrics": metrics or {}}
+            return {"ok": True, "status": "published", "remote_url": remote, "metrics": metrics or {}, "native": False}
         except Exception as exc:
             db.execute(
                 "UPDATE publish_queue SET status='failed',last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
