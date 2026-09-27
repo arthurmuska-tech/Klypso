@@ -1,6 +1,85 @@
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
+import re
+
+POSTGRES_ID_TABLES = {
+    "users", "oauth_identities", "email_codes", "credit_transactions",
+    "promo_codes", "promo_redemptions", "user_consents", "media_files",
+    "jobs", "clip_feedback", "projects", "clip_metrics",
+    "publish_queue", "social_connections",
+}
+
+
+class CompatCursor:
+    def __init__(self, cursor, buffered=None, lastrowid=None):
+        self._cursor = cursor
+        self._buffered = buffered or []
+        self.lastrowid = lastrowid
+
+    def __getattr__(self, name):
+        return getattr(self._cursor, name)
+
+    def fetchone(self):
+        if self._buffered:
+            return self._buffered.pop(0)
+        return self._cursor.fetchone()
+
+    def fetchall(self):
+        if self._buffered:
+            rows = self._buffered + list(self._cursor.fetchall())
+            self._buffered = []
+            return rows
+        return self._cursor.fetchall()
+
+
+class CompatConnection:
+    def __init__(self, conn):
+        self._conn = conn
+        self.is_postgres = True
+
+    def execute(self, sql, params=()):
+        sql = str(sql)
+        statement = sql.strip()
+        if statement.upper() == "BEGIN IMMEDIATE":
+            statement = "BEGIN"
+        params = tuple(params or ())
+        match = re.match(r"INSERT\\s+INTO\\s+([A-Za-z_][A-Za-z0-9_]*)", statement, re.I)
+        buffered = []
+        lastrowid = None
+        if match and match.group(1).lower() in POSTGRES_ID_TABLES and " RETURNING " not in statement.upper():
+            statement = statement.rstrip().rstrip(";") + " RETURNING id"
+        cursor = self._conn.cursor()
+        cursor.execute(statement, params)
+        if match and match.group(1).lower() in POSTGRES_ID_TABLES and " RETURNING id" in statement.upper():
+            row = cursor.fetchone()
+            if row is not None:
+                lastrowid = row["id"] if isinstance(row, dict) else row[0]
+                buffered = [row]
+        return CompatCursor(cursor, buffered=buffered, lastrowid=lastrowid)
+
+    def executescript(self, script):
+        statements = [item.strip() for item in str(script).split(";") if item.strip()]
+        for statement in statements:
+            statement = statement.replace(
+                "INTEGER PRIMARY KEY AUTOINCREMENT",
+                "BIGSERIAL PRIMARY KEY",
+            )
+            self.execute(statement)
+        return None
+
+    def executemany(self, sql, seq_of_params):
+        return self._conn.executemany(str(sql).strip(), seq_of_params)
+
+    def commit(self):
+        return self._conn.commit()
+
+    def rollback(self):
+        return self._conn.rollback()
+
+    def close(self):
+        return self._conn.close()
+
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -212,6 +291,10 @@ CREATE TABLE IF NOT EXISTS rate_limit_buckets (
 
 
 def connect(path):
+    if str(path).startswith(("postgresql://", "postgres://")):
+        import psycopg
+        from psycopg.rows import dict_row
+        return CompatConnection(psycopg.connect(str(path), connect_timeout=20, row_factory=dict_row))
     conn = sqlite3.connect(path, timeout=20)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
@@ -220,6 +303,14 @@ def connect(path):
 
 
 def _add_column_if_missing(conn, table, column, declaration):
+    if getattr(conn, "is_postgres", False):
+        row = conn.execute(
+            "SELECT 1 FROM information_schema.columns WHERE table_name=%s AND column_name=%s LIMIT 1",
+            (table, column),
+        ).fetchone()
+        if row is None:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {declaration}")
+        return
     columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
     if column not in columns:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {declaration}")
