@@ -26,6 +26,7 @@ from .clips.media_intelligence import analyze_media_signals, enrich_candidates_w
 from .clips.renderer import concat_videos, render_candidate
 from .clips.vision_tracking import analyze_face_tracking, enrich_candidates_with_face_tracking
 from .clips.gameplay_intelligence import classify_game_context, enrich_gameplay_candidates
+from .media.object_storage import materialize_media_path, persist_file
 from .clips.audio_intelligence import analyze_audio_quality, enrich_candidates_with_audio_quality
 from .social_connections import connection_status
 from .social_profiles import clamp_candidate_to_profile, get_social_profile
@@ -457,12 +458,15 @@ def compose_clip_assets(job_id):
             raise RuntimeError("Clip de base introuvable.")
 
         output = folder / f"klypso-{job_id}-clip-{clip_id}-ai-assets.mp4"
-        compose_assets(base_row["stored_path"], output, broll_image=broll_path, voiceover_audio=voice_path, broll_start=1.5, broll_duration=4.5)
+        base_path = materialize_media_path(base_row["stored_path"])
+        compose_assets(base_path, output, broll_image=broll_path, voiceover_audio=voice_path, broll_start=1.5, broll_duration=4.5)
+        size_bytes = output.stat().st_size
+        stored_output = persist_file(output, session["user_id"], output.name, "video/mp4")
 
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
                 "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
-                (session["user_id"], f"{clip.get('title','Clip')} · AI assets.mp4", str(output), "video/mp4", output.stat().st_size),
+                (session["user_id"], f"{clip.get('title','Clip')} · AI assets.mp4", stored_output, "video/mp4", size_bytes),
             )
             media_id = cur.lastrowid
             db.commit()
@@ -696,7 +700,14 @@ def _run_analysis_job(job_id):
 
     payload = json.loads(job["payload_json"] or "{}")
     path = payload.get("path")
-    if not path or not Path(path).exists():
+    if not path:
+        return jsonify({"error": "Vidéo introuvable."}), 404
+    try:
+        path = materialize_media_path(path)
+    except Exception:
+        current_app.logger.exception("Unable to materialize source media")
+        return jsonify({"error": "Vidéo source inaccessible."}), 503
+    if not Path(path).exists():
         return jsonify({"error": "Vidéo introuvable."}), 404
 
     mode = payload.get("mode", "ai_clips")
@@ -988,7 +999,7 @@ def import_chat(job_id):
 
 def _render_ai_clips(job, result, requested_ids=None, social_preset=None, caption_style=None, montage=False, social_profile=None):
     payload = json.loads(job["payload_json"] or "{}")
-    source = Path(payload.get("path", ""))
+    source = Path(materialize_media_path(payload.get("path", "")))
     if not source.is_file():
         raise FileNotFoundError("Vidéo source introuvable.")
 
@@ -1039,9 +1050,11 @@ def _render_ai_clips(job, result, requested_ids=None, social_preset=None, captio
             audio_cleanup="broadcast" if candidate.get("audio_quality_score", 72) >= 82 else "clean",
         )
         with get_db(current_app.config["DATABASE_PATH"]) as db:
+            size_bytes = output.stat().st_size
+            stored_output = persist_file(output, session["user_id"], f"{candidate['title']}.mp4", "video/mp4")
             cur = db.execute(
                 "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
-                (session["user_id"], f"{candidate['title']}.mp4", str(output), "video/mp4", output.stat().st_size),
+                (session["user_id"], f"{candidate['title']}.mp4", stored_output, "video/mp4", size_bytes),
             )
             media_id = cur.lastrowid
             db.commit()
