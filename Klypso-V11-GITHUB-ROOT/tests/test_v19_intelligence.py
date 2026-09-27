@@ -169,3 +169,21 @@ def test_v19_local_fallback_is_keyless(monkeypatch):
     ])
     assert result["engine"] == "KLYPSO LOCAL VIRAL ENGINE v1"
     assert result["clips"][0]["id"] == "signal-1"
+
+
+def test_v19_gameplay_context_and_candidate_signal():
+    from klypso.clips.gameplay_intelligence import classify_game_context, enrich_gameplay_candidates
+    context = classify_game_context("Valorant", "gros clutch headshot round")
+    assert context["genre"] == "fps"
+    enriched = enrich_gameplay_candidates(
+        [{"id":"c1","start":10,"end":30,"source":"chat_spike","context":"clutch headshot"}],
+        context,
+    )
+    assert enriched[0]["gameplay_signal"] > 0
+    assert enriched[0]["scene_type"] == "gameplay_event"
+
+
+def test_v19_renderer_motion_graphics_progress_bar():
+    from klypso.clips.renderer import _video_filter
+    filters, _ = _video_filter((1080, 1920), progress_duration=30)
+    assert any(item.startswith("drawbox=") for item in filters)
