@@ -442,6 +442,8 @@ def test_v16_surface_scenarios(client, app, scenario):
         assert updated["avatar_url"] == "https://example.com/new.png"
 
 
+
+# V17/Viral Engine coverage: creator memory, feedback, performance and render paths.
 V17_SCENARIOS = [
     "creator_memory_empty",
     "intelligent_candidates_use_transcript",
