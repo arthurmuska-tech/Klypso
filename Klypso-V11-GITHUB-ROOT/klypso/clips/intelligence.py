@@ -533,7 +533,7 @@ def enrich_ai_result(result, candidates, memory, transcript_segments=None):
         },
         "summary": _text(result.get("summary"), 500) or "Sélection optimisée à partir des signaux disponibles.",
         "creator_memory_used": memory,
-        "engine": "KLYPSO VIRAL ENGINE v2 · Creator DNA + 15 agents",
+        "engine": "KLYPSO VIRAL ENGINE v3 · Creator DNA + media/chat/vision",
     }
 
 
@@ -563,7 +563,7 @@ def update_creator_memory(db, user_id, result, output_format):
         "preferred_formats": list(dict.fromkeys([output_format] + existing.get("preferred_formats", [])))[:4],
         "preferred_archetypes": [item[0] for item in archetype_counts.most_common(6)],
         "recent_winners": recent,
-        "updated_from_engine": "KLYPSO VIRAL ENGINE v2 · Creator DNA + 15 agents",
+        "updated_from_engine": "KLYPSO VIRAL ENGINE v3 · Creator DNA + media/chat/vision",
     }
     db.execute(
         "INSERT INTO creator_ai_profiles(user_id,profile_json,updated_at) VALUES(?,?,CURRENT_TIMESTAMP) "
