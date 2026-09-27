@@ -53,23 +53,23 @@
       <p>Une vue publique de la logique du produit : analyser, choisir, monter et publier depuis le même espace.</p>
     </div>
     <div class="showcase-grid">
-      <article class="showcase-card showcase-dashboard v20-scroll-object">
+      <article class="showcase-card showcase-dashboard v20-scroll-object" data-spotlight="accueil" tabindex="0" role="button" aria-label="Découvrir l'accueil KLYPSO">
         <div class="showcase-top"><span>ACCUEIL</span><b>WORKSPACE</b></div>
         <div class="showcase-metric-row"><span><small>PROJETS</small><strong>08</strong></span><span><small>CLIPS PRÊTS</small><strong>24</strong></span><span><small>DNA</small><strong>ACTIF</strong></span></div>
         <div class="showcase-lines"><i></i><i></i><i></i><i></i></div>
         <div class="showcase-caption">Tout ton travail reste centralisé.</div>
       </article>
-      <article class="showcase-card showcase-clips v20-scroll-object" data-motion-depth="1">
+      <article class="showcase-card showcase-clips v20-scroll-object" data-motion-depth="1" data-spotlight="clips" tabindex="0" role="button" aria-label="Découvrir les Clips IA">
         <div class="showcase-top"><span>CLIPS IA</span><b>VIRAL ENGINE</b></div>
         <div class="showcase-clip-list"><div><span>01</span><b>Réaction instantanée</b><strong>92</strong></div><div><span>02</span><b>Clutch final</b><strong>88</strong></div><div><span>03</span><b>Moment surprise</b><strong>84</strong></div></div>
         <div class="showcase-caption">Les candidats sont triés avant le rendu.</div>
       </article>
-      <article class="showcase-card showcase-studio v20-scroll-object" data-motion-depth="2">
+      <article class="showcase-card showcase-studio v20-scroll-object" data-motion-depth="2" data-spotlight="studio" tabindex="0" role="button" aria-label="Découvrir KLYPSO Studio">
         <div class="showcase-top"><span>STUDIO</span><b>9:16</b></div>
         <div class="showcase-editor"><div class="showcase-canvas"><span>PREVIEW</span><b>▶</b></div><div class="showcase-timeline"><i></i><i></i><i></i><i></i><i></i></div></div>
         <div class="showcase-caption">Timeline, cadrage, audio et export.</div>
       </article>
-      <article class="showcase-card showcase-social v20-scroll-object" data-motion-depth="3">
+      <article class="showcase-card showcase-social v20-scroll-object" data-motion-depth="3" data-spotlight="publication" tabindex="0" role="button" aria-label="Découvrir la publication">
         <div class="showcase-top"><span>PUBLICATION</span><b>DNA</b></div>
         <div class="showcase-social-row"><span>YT</span><span>TT</span><span>IG</span><span>X</span></div>
         <div class="showcase-schedule"><b>18:00</b><span>Créneau appris par les performances</span></div>
@@ -147,5 +147,24 @@
     <h2>Commence par une VOD.<br><em>Tu verras le reste en avançant.</em></h2>
     <div class="landing-actions"><a class="button button-lg" href="{{ url_for('auth.register') }}">Créer mon espace gratuitement <span>→</span></a><a class="landing-secondary dark" href="{{ url_for('auth.login') }}">J'ai déjà un compte</a></div>
   </section>
+
+  <div class="v20-spotlight" data-spotlight-dialog hidden>
+    <div class="v20-spotlight-backdrop" data-spotlight-close></div>
+    <section class="v20-spotlight-dialog" role="dialog" aria-modal="true" aria-labelledby="spotlight-title">
+      <button class="v20-spotlight-close" type="button" data-spotlight-close aria-label="Fermer">×</button>
+      <div class="v20-spotlight-art" data-spotlight-art></div>
+      <div class="v20-spotlight-copy">
+        <span class="landing-kicker" data-spotlight-kicker>WORKSPACE</span>
+        <h2 id="spotlight-title" data-spotlight-title>KLYPSO</h2>
+        <p data-spotlight-text></p>
+        <div class="v20-spotlight-pills" data-spotlight-pills></div>
+        <div class="landing-actions">
+          <a class="button button-lg" href="{{ url_for('auth.register') }}">Essayer gratuitement <span>→</span></a>
+          <a class="landing-secondary" href="{{ url_for('public_demo') }}">Ouvrir la démo <span>↗</span></a>
+        </div>
+      </div>
+    </section>
+  </div>
+
 </div>
 {% endblock %}
