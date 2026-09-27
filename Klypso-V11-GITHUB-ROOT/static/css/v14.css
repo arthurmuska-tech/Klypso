@@ -1660,3 +1660,48 @@ body.v14-no-motion .v20-surface{transform:none!important}
   .v20-spotlight,.v20-spotlight-dialog,.v20-spotlight-close,[data-spotlight],.workspace-flow-steps>div{transition:none!important}
 }
 body.v14-no-motion .v20-spotlight-dialog{transform:none!important}
+
+
+/* ================= V20.7 — SIGNAL RAIL ================= */
+.landing-signal-rail{
+  margin:0 -8vw 20px;
+  border-top:1px solid var(--k-line);
+  border-bottom:1px solid var(--k-line);
+  overflow:hidden;
+  background:color-mix(in srgb,var(--k-surface) 48%,transparent);
+  backdrop-filter:blur(12px);
+  transform:translateZ(0);
+}
+.landing-signal-track{
+  width:max-content;display:flex;align-items:center;gap:24px;
+  padding:14px 0;
+  animation:klypsoSignalMarquee 28s linear infinite;
+  will-change:transform;
+}
+.landing-signal-track span{
+  font:800 8px 'Space Grotesk';letter-spacing:.15em;white-space:nowrap;color:var(--k-muted);
+}
+.landing-signal-track span:nth-child(8n+1),
+.landing-signal-track span:nth-child(8n+5){color:var(--k-accent)}
+.landing-signal-track i{
+  display:block;width:4px;height:4px;border-radius:50%;
+  background:var(--k-accent);opacity:.55;flex:none;
+  box-shadow:0 0 14px color-mix(in srgb,var(--k-accent) 30%,transparent);
+}
+@keyframes klypsoSignalMarquee{
+  from{transform:translate3d(0,0,0)}
+  to{transform:translate3d(-50%,0,0)}
+}
+.landing-signal-rail::before{
+  content:"";position:absolute;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--k-accent),transparent);
+  opacity:.2;
+}
+@media(max-width:900px){
+  .landing-signal-rail{margin-left:-5vw;margin-right:-5vw}
+  .landing-signal-track{gap:18px;animation-duration:24s}
+}
+@media(prefers-reduced-motion:reduce){
+  .landing-signal-track{animation:none!important;transform:none!important}
+}
+body.v14-no-motion .landing-signal-track{animation:none!important;transform:none!important}
