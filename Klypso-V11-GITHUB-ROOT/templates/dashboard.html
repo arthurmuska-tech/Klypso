@@ -2,88 +2,99 @@
 {% block title %}Accueil — KLYPSO{% endblock %}
 {% block crumb %}Accueil{% endblock %}
 {% block content %}
-<section class="dash-page klypso-home">
-  <section class="home-hero">
-    <div class="home-hero-copy">
-      <span class="eyebrow-v11">KLYPSO · CRÉATION VIDÉO</span>
-      <h1>De ton stream à une vidéo prête à publier.</h1>
-      <p>KLYPSO réunit les clips IA, le montage Studio et ton identité visuelle dans un seul espace.</p>
-      <div class="hero-actions">
+<section class="workspace-v15">
+  <section class="workspace-hero">
+    <div class="workspace-hero-copy">
+      <span class="workspace-kicker">TON WORKSPACE · {{ current_plan.name|upper }}</span>
+      <h1>Crée sans quitter<br><em>ton espace.</em></h1>
+      <p>Retrouve tes projets, tes crédits et tes prochains raccourcis au même endroit. Le niveau Free te permet déjà de tester le cœur de KLYPSO avant de passer aux fonctions avancées.</p>
+      <div class="workspace-actions">
         <a class="button button-lg" href="{{ url_for('clips.create_clips') }}">Créer un projet <span>→</span></a>
-        <a class="button ghost button-lg" href="{{ url_for('studio.studio') }}">Découvrir Studio</a>
+        <a class="workspace-link" href="{{ url_for('clips.clips') }}">Voir mes projets</a>
       </div>
     </div>
-    <div class="home-hero-orbit" aria-hidden="true">
-      <div class="home-orbit-ring"></div>
-      <div class="home-orbit-card home-orbit-main"><span>✦</span><strong>CLIPS IA</strong><small>Moments forts détectés</small></div>
-      <div class="home-orbit-card home-orbit-one"><span>◫</span><strong>STUDIO</strong><small>Montage complet</small></div>
-      <div class="home-orbit-card home-orbit-two"><span>◈</span><strong>BRAND KIT</strong><small>Ton identité</small></div>
+    <div class="workspace-hero-status">
+      <div class="workspace-status-orbit"><span></span><strong>READY</strong><small>Workspace opérationnel</small></div>
+      <div class="workspace-status-line"><span>PLAN</span><b>{{ current_plan.name }}</b></div>
+      <div class="workspace-status-line"><span>CRÉDITS</span><b>{{ credits.balance }}</b></div>
     </div>
   </section>
 
-  <section class="home-intro">
-    <div><span class="eyebrow-v11">UN SEUL WORKSPACE</span><h2>Tout ce qu'il faut pour transformer une VOD.</h2></div>
-    <p>Tu peux automatiser les premières étapes, reprendre chaque détail à la main et garder le contrôle jusqu'à l'export.</p>
+  <section class="workspace-metrics">
+    <article><span>CRÉDITS DISPONIBLES</span><strong>{{ credits.balance }}</strong><small>jusqu'à {{ credits.bank_cap }} en réserve</small></article>
+    <article><span>CRÉDITS / JOUR</span><strong>{{ credits.daily_credits }}</strong><small>les crédits inutilisés s'accumulent</small></article>
+    <article><span>CLIPS CE MOIS</span><strong>{{ credits.monthly_clip_count }}<i>/ {{ credits.monthly_clip_limit }}</i></strong><small>selon les caractéristiques du projet</small></article>
+    <article><span>PROJETS</span><strong>{{ jobs|length }}</strong><small>8 derniers affichés ici</small></article>
   </section>
 
-  <section class="home-feature-grid">
-    <a class="home-feature featured" href="{{ url_for('clips.create_clips') }}">
-      <span class="feature-number">01</span><div class="feature-icon">✦</div>
-      <div><span class="card-kicker">KLYPSO CLIPS</span><h3>Les meilleurs moments.</h3><p>Analyse ta vidéo, repère les passages intéressants et prépare des clips adaptés aux formats sociaux.</p></div><span class="feature-arrow">↗</span>
+  <section class="workspace-start-grid">
+    <a class="workspace-start-card workspace-start-main" href="{{ url_for('clips.create_clips') }}">
+      <span class="workspace-card-number">01 · COMMENCER</span>
+      <div class="workspace-start-icon">✦</div>
+      <h2>Transformer une VOD en clips.</h2>
+      <p>Importe une vidéo, choisis le format et laisse KLYPSO préparer ton projet d'analyse.</p>
+      <span class="workspace-card-arrow">Créer →</span>
     </a>
-    <a class="home-feature" href="{{ url_for('studio.studio') }}">
-      <span class="feature-number">02</span><div class="feature-icon">◫</div>
-      <div><span class="card-kicker">KLYPSO STUDIO</span><h3>Le montage complet.</h3><p>Timeline, audio, texte, cadrage et export : reprends la main quand tu veux.</p></div><span class="feature-arrow">↗</span>
+    <a class="workspace-start-card" href="{{ url_for('studio.studio') }}">
+      <span class="workspace-card-number">02 · STUDIO</span>
+      <div class="workspace-start-icon">◫</div>
+      <h2>Continuer au montage.</h2>
+      <p>Canvas, timeline, audio et propriétés sont réunis dans le même espace.</p>
+      <span class="workspace-card-arrow">Ouvrir →</span>
     </a>
-    <a class="home-feature" href="{{ url_for('brand_kit') }}">
-      <span class="feature-number">03</span><div class="feature-icon">◈</div>
-      <div><span class="card-kicker">BRAND KIT</span><h3>Une identité cohérente.</h3><p>Couleurs, logo, sous-titres et réglages visuels peuvent suivre tous tes projets.</p></div><span class="feature-arrow">↗</span>
+    <a class="workspace-start-card" href="{{ url_for('brand_kit') }}">
+      <span class="workspace-card-number">03 · IDENTITÉ</span>
+      <div class="workspace-start-icon">◈</div>
+      <h2>Préparer ton style.</h2>
+      <p>Ton Brand Kit et les réglages du workspace se retrouvent sur les prochains projets.</p>
+      <span class="workspace-card-arrow">Personnaliser →</span>
     </a>
   </section>
 
-  <section class="home-story" aria-label="Présentation de KLYPSO">
-    <div class="home-story-sticky">
-      <div class="home-story-copy">
-        <span class="eyebrow-v11">FAIS DÉFILER</span>
-        <div class="story-step is-active" data-story-step="0"><span>01</span><h2>Importe.</h2><p>Dépose ta VOD ou ton fichier vidéo.</p></div>
-        <div class="story-step" data-story-step="1"><span>02</span><h2>Analyse.</h2><p>KLYPSO prépare les moments et les éléments utiles au montage.</p></div>
-        <div class="story-step" data-story-step="2"><span>03</span><h2>Monte.</h2><p>Passe dans Studio pour ajuster chaque détail.</p></div>
-        <div class="story-step" data-story-step="3"><span>04</span><h2>Publie.</h2><p>Choisis ton format et exporte une version prête pour les réseaux.</p></div>
-      </div>
-      <div class="home-story-stage">
-        <div class="story-stage-label">KLYPSO WORKFLOW</div>
-        <div class="story-visual" data-story-visual="0"><span>VIDEO</span><strong>01</strong><small>IMPORT</small></div>
-        <div class="story-visual" data-story-visual="1"><span>AI</span><strong>02</strong><small>ANALYSE</small></div>
-        <div class="story-visual" data-story-visual="2"><span>EDIT</span><strong>03</strong><small>STUDIO</small></div>
-        <div class="story-visual" data-story-visual="3"><span>READY</span><strong>04</strong><small>EXPORT</small></div>
-        <div class="story-track"></div>
-      </div>
+  <section class="workspace-flow">
+    <div class="workspace-flow-copy">
+      <span class="workspace-kicker">LE FLUX KLYPSO</span>
+      <h2>Une seule chaîne du fichier brut à l'export.</h2>
+      <p>Le produit garde le contexte entre les étapes au lieu de t'obliger à reconstruire ton projet dans plusieurs outils.</p>
+    </div>
+    <div class="workspace-flow-steps">
+      <div class="active"><span>01</span><b>Importer</b><small>Vidéo source</small></div>
+      <div><span>02</span><b>Analyser</b><small>Moments + signaux</small></div>
+      <div><span>03</span><b>Monter</b><small>Studio + identité</small></div>
+      <div><span>04</span><b>Exporter</b><small>Version finale</small></div>
     </div>
   </section>
 
-  <section class="home-capabilities">
-    <div class="home-intro compact"><div><span class="eyebrow-v11">PENSÉ POUR CRÉER</span><h2>Les outils restent à portée de main.</h2></div></div>
-    <div class="capability-grid">
-      <div><b>🎯</b><strong>Moments forts</strong><span>Une première sélection pour démarrer plus vite.</span></div>
-      <div><b>📐</b><strong>Formats sociaux</strong><span>Vertical, horizontal, carré et 4:5.</span></div>
-      <div><b>💬</b><strong>Sous-titres</strong><span>Une présentation pensée pour les vidéos courtes.</span></div>
-      <div><b>🎨</b><strong>Brand Kit</strong><span>Garde ton identité sur tes créations.</span></div>
-      <div><b>🔊</b><strong>Audio</strong><span>Travaille le rendu sonore quand le média le permet.</span></div>
-      <div><b>↗</b><strong>Export</strong><span>Prépare ton fichier final depuis le même workspace.</span></div>
+  <section class="panel-v11 workspace-projects">
+    <div class="panel-head-v11">
+      <div><span class="workspace-kicker">BIBLIOTHÈQUE</span><h2>Projets récents</h2><p>Les derniers travaux de ton workspace.</p></div>
+      <a class="text-link-v11" href="{{ url_for('clips.clips') }}">Voir toute la bibliothèque →</a>
     </div>
-  </section>
-
-  <section class="panel-v11 activity-panel home-library" id="history">
-    <div class="panel-head-v11"><div><span class="eyebrow-v11">TON ESPACE</span><h2>Projets récents</h2></div><a class="text-link-v11" href="{{ url_for('clips.clips') }}">Voir tout →</a></div>
     {% if jobs %}
-      <div class="project-list">
+      <div class="workspace-project-list">
       {% for job in jobs %}
-        <div class="project-row"><div class="project-thumb"><span>{{ '✦' if job.job_type == 'analysis' else '◫' }}</span></div><div class="project-main"><strong>Projet #{{ job.id }}</strong><span>{{ job.job_type|replace('_',' ')|title }}</span></div><div class="project-status"><i class="status-led {{ job.status|lower }}"></i>{{ job.status }}</div><div class="project-date">{{ job.created_at }}</div><a class="project-open" href="{{ url_for('clips.clips') }}">Ouvrir →</a></div>
+        <div class="workspace-project-row">
+          <div class="workspace-project-index">{{ '%02d'|format(loop.index) }}</div>
+          <div class="workspace-project-icon">{{ '✦' if job.job_type == 'analysis' else '◫' }}</div>
+          <div class="workspace-project-main"><strong>Projet #{{ job.id }}</strong><span>{{ job.job_type|replace('_',' ')|title }}</span></div>
+          <div class="workspace-project-state"><i class="status-led {{ job.status|lower }}"></i>{{ job.status|title }}</div>
+          <div class="workspace-project-date">{{ job.created_at }}</div>
+          <a href="{{ url_for('clips.clips') }}" aria-label="Ouvrir le projet {{ job.id }}">→</a>
+        </div>
       {% endfor %}
       </div>
     {% else %}
-      <div class="empty-state-v11"><div class="empty-visual"><span>✦</span></div><div><h3>Prêt pour ton premier projet ?</h3><p>Importe une VOD et commence avec KLYPSO Clips.</p></div><a class="button" href="{{ url_for('clips.create_clips') }}">Créer mon premier projet →</a></div>
+      <div class="workspace-empty">
+        <div class="workspace-empty-icon">✦</div>
+        <div><h3>Ton espace est prêt.</h3><p>Crée ton premier projet pour voir apparaître ton historique ici.</p></div>
+        <a class="button" href="{{ url_for('clips.create_clips') }}">Créer mon premier projet →</a>
+      </div>
     {% endif %}
+  </section>
+
+  <section class="workspace-note">
+    <div><span class="workspace-kicker">FREE, SANS BLOCAGE</span><h2>Le cœur du produit reste accessible sans abonnement.</h2><p>Le plan Free fournit déjà un quota de crédits et de clips. Les fonctions avancées d'IA restent séparées pour protéger les coûts d'infrastructure.</p></div>
+    <a class="workspace-note-button" href="{{ url_for('billing.pricing') }}">Comparer les plans →</a>
   </section>
 </section>
 {% endblock %}
