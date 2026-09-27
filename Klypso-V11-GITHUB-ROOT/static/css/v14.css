@@ -858,3 +858,43 @@ html[data-theme="amber"] .v14-wood-option.selected,html[data-theme="amber"] .v15
 }
 body.v14-no-motion .story-word{opacity:1!important;transform:none!important;filter:none!important}
 body.v14-no-motion .landing-story-slide{transition:none!important}
+
+
+/* V15.7 scroll cue */
+.landing-story-scroll-guide{
+  position:absolute;
+  right:clamp(26px,4vw,54px);
+  bottom:clamp(78px,10vh,112px);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  max-width:190px;
+  color:var(--k-muted);
+  font:800 8px/1.35 'Space Grotesk',sans-serif;
+  letter-spacing:.12em;
+  text-align:right;
+  opacity:.62;
+  pointer-events:none;
+  z-index:5;
+}
+.landing-story-scroll-guide i{
+  position:relative;
+  width:2px;
+  height:32px;
+  overflow:hidden;
+  border-radius:99px;
+  background:var(--k-line);
+}
+.landing-story-scroll-guide i:after{
+  content:"";
+  position:absolute;
+  left:0;right:0;top:-70%;
+  height:70%;
+  border-radius:99px;
+  background:var(--k-accent);
+  animation:storyGuide 1.8s ease-in-out infinite;
+}
+@keyframes storyGuide{0%{transform:translateY(0);opacity:.15}55%{transform:translateY(210%);opacity:1}100%{transform:translateY(210%);opacity:.05}}
+@media(max-width:900px){.landing-story-scroll-guide{display:none}}
+@media(prefers-reduced-motion:reduce){.landing-story-scroll-guide i:after{animation:none;top:15%;height:35%}}
+body.v14-no-motion .landing-story-scroll-guide i:after{animation:none;top:15%;height:35%}
