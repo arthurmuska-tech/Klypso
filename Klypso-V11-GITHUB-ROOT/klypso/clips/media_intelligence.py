@@ -177,6 +177,61 @@ def _overlap_fraction(start, end, regions):
     return min(1.0, overlap / length)
 
 
+def generate_signal_candidates(duration, signals, limit=36):
+    """Create candidate windows from non-verbal audio/visual events."""
+    duration = max(0.0, float(duration or 0))
+    if duration <= 0:
+        return []
+
+    raw_events = []
+    for event in (signals or {}).get("event_windows") or []:
+        start = max(0.0, float(event.get("start", 0)) - 3.0)
+        end = min(duration, float(event.get("end", start)) + 4.0)
+        if end - start >= 8.0:
+            raw_events.append({
+                "start": start,
+                "end": end,
+                "source": "media_event",
+                "signal_source": event.get("source", "signal"),
+            })
+
+    raw_events.sort(key=lambda item: (item["start"], item["end"]))
+    merged = []
+    for event in raw_events:
+        if not merged or event["start"] - merged[-1]["end"] > 4.0:
+            merged.append(dict(event))
+        else:
+            merged[-1]["end"] = max(merged[-1]["end"], event["end"])
+            merged[-1]["signal_source"] = "+".join(sorted({
+                merged[-1]["signal_source"],
+                event["signal_source"],
+            }))
+
+    candidates = []
+    seen = set()
+    for item in merged:
+        start = round(max(0.0, item["start"]), 3)
+        end = round(min(duration, item["end"]), 3)
+        key = (start, end)
+        if key in seen or end - start < 8.0:
+            continue
+        seen.add(key)
+        candidates.append({
+            "id": f"signal-{len(candidates)+1}",
+            "start": start,
+            "end": end,
+            "duration": round(end - start, 3),
+            "speech_words": 0,
+            "speech_density": 0.0,
+            "context": "",
+            "source": item["signal_source"],
+            "base_score": 62,
+        })
+        if len(candidates) >= limit:
+            break
+    return candidates
+
+
 def enrich_candidates_with_media_signals(candidates, signals):
     signals = signals or {}
     scenes = [float(value) for value in signals.get("scene_changes", [])]
