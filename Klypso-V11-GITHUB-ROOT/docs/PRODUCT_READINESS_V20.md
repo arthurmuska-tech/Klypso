@@ -1,4 +1,4 @@
-# KLYPSO V20 — Product Readiness & Buyer Dossier
+# KLYPSO V22 — Product Readiness & Buyer Dossier
 
 ## Positionnement
 
@@ -60,10 +60,10 @@ Le différenciateur produit n'est pas un nombre de lignes de code : c'est la com
 - SQLite avec clés étrangères et index ciblés
 - stockage média par utilisateur
 - FFmpeg / FFprobe
-- Authlib pour OAuth
+- Authlib pour OAuth Google
 - Fernet pour chiffrement des tokens sociaux au repos
 - Stripe pour les abonnements
-- Google / Apple OAuth pour l'authentification
+- Google Credential Sign-In pour l'authentification, avec e-mail + mot de passe comme parcours principal
 - Gemini / Groq / OpenRouter pour les moteurs IA optionnels
 - ElevenLabs pour la voix optionnelle
 - Render web service + cron de distribution
@@ -87,7 +87,7 @@ Instagram et X disposent encore de chemins adapter/webhook dans cette version et
 
 Le service web est configuré pour Python 3.12 et Gunicorn. Le cron appelle le service web avec un secret partagé pour exécuter les publications dues et synchroniser les publications TikTok en cours.
 
-Variables sensibles principales : SECRET_KEY, STRIPE_*, GOOGLE_CLIENT_*, APPLE_*, GEMINI_*, GROQ_*, OPENROUTER_*, ELEVENLABS_*, TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET.
+Variables sensibles principales : SECRET_KEY, STRIPE_*, GOOGLE_CLIENT_*, GEMINI_*, GROQ_*, OPENROUTER_*, ELEVENLABS_*, TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET.
 
 ## Qualité et preuve de maturité
 
@@ -99,10 +99,10 @@ Pour un acquéreur, la valeur vient surtout de la fonctionnalité réellement d�
 
 Le nombre de lignes peut servir de métrique descriptive, mais ne doit pas être utilisé comme proxy direct de la valeur.
 
-## État V20
+## État V22
 
-Version : 20.0.0
+Version : 22.0.0
 
-Objectif produit : se rapprocher d'une plateforme de clipping social complète, de la VOD à la publication et à l'apprentissage par la performance.
+Objectif produit : disposer d'un produit démontrable et transmissible, de la VOD à la publication et à l'apprentissage par la performance.
 
-Limites connues : tracking vidéo encore heuristique, Studio pas encore au niveau d'un NLE complet, B-roll/voiceover dépendants de fournisseurs configurés, Instagram/X encore adapter-based.
+Limites connues : tracking vidéo encore heuristique, Studio pas encore au niveau d'un NLE complet, B-roll/voiceover dépendants de fournisseurs configurés, Instagram/X encore adapter-based, Google/les publications sociales nécessitent leurs identifiants développeur respectifs.
