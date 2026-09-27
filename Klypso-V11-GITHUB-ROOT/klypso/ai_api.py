@@ -24,6 +24,7 @@ from .clips.media_intelligence import analyze_media_signals, enrich_candidates_w
 from .clips.renderer import concat_videos, render_candidate
 from .clips.vision_tracking import analyze_face_tracking, enrich_candidates_with_face_tracking
 from .social_profiles import clamp_candidate_to_profile, get_social_profile
+from .ai_assets import asset_status, generate_broll_image, generate_voiceover
 
 
 ai_bp = Blueprint("ai_api", __name__)
@@ -367,6 +368,150 @@ def _route(video_path, duration, candidates, memory, mode, preferences, agent_re
     )
 
 
+
+def _saved_job_clip(job_id, clip_id):
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        job = db.execute(
+            "SELECT * FROM jobs WHERE id=? AND user_id=?",
+            (job_id, session["user_id"]),
+        ).fetchone()
+    if not job:
+        raise LookupError("Projet introuvable.")
+    if not job["result_json"]:
+        raise RuntimeError("Lance d'abord l'analyse IA.")
+    saved = json.loads(job["result_json"] or "{}")
+    clips = saved.get("ai", {}).get("clips") or []
+    clip = next((item for item in clips if str(item.get("id")) == str(clip_id)), None)
+    if not clip:
+        raise LookupError("Clip introuvable.")
+    return job, saved, clip
+
+
+@ai_bp.get("/api/ai/assets/status")
+@login_required
+def assets_status():
+    status = asset_status()
+    return jsonify({
+        "ok": True,
+        "broll": status["ai_broll"],
+        "voiceover": status["ai_voiceover"],
+        "provider_state": {
+            "gemini": status["ai_broll"],
+            "elevenlabs": status["ai_voiceover"],
+        },
+    })
+
+
+@ai_bp.post("/api/ai/broll/<int:job_id>")
+@login_required
+def generate_broll(job_id):
+    body = request.get_json(silent=True) or {}
+    clip_id = str(body.get("clip_id") or "")
+    if not clip_id:
+        return jsonify({"error": "clip_id est requis."}), 400
+    try:
+        job, saved, clip = _saved_job_clip(job_id, clip_id)
+        prompt = " ".join(str(body.get("prompt") or "").split())[:1200]
+        if not prompt:
+            context = str(clip.get("context") or clip.get("hook") or clip.get("title") or "").strip()
+            prompt = (
+                f"Vertical social B-roll for a gaming creator. Illustrate this moment without "
+                f"showing the real creator or inventing specific game footage: {context}"
+            )[:1200]
+        aspect_ratio = str(body.get("aspect_ratio") or "9:16")
+        folder = Path(current_app.config["STORAGE_PATH"]) / "users" / str(session["user_id"]) / "ai-assets"
+        output = folder / f"klypso-{job_id}-broll-{clip_id}.png"
+        generate_broll_image(prompt, output, aspect_ratio=aspect_ratio)
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            cur = db.execute(
+                "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
+                (session["user_id"], output.name, str(output), "image/png", output.stat().st_size),
+            )
+            media_id = cur.lastrowid
+            db.commit()
+        saved.setdefault("ai_assets", {}).setdefault("broll", []).append({
+            "clip_id": clip_id,
+            "media_id": media_id,
+            "prompt": prompt,
+            "aspect_ratio": aspect_ratio,
+        })
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            db.execute(
+                "UPDATE jobs SET result_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                (json.dumps(saved, ensure_ascii=False), job_id),
+            )
+            db.commit()
+        return jsonify({
+            "ok": True,
+            "clip_id": clip_id,
+            "media_id": media_id,
+            "prompt": prompt,
+            "download_url": f"/studio/ai-download/{media_id}",
+        }), 201
+    except LookupError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except Exception:
+        current_app.logger.exception("B-roll generation failed")
+        return jsonify({"error": "Le B-roll IA n'a pas pu être généré. Vérifie la configuration Gemini."}), 503
+
+
+@ai_bp.post("/api/ai/voiceover/<int:job_id>")
+@login_required
+def generate_clip_voiceover(job_id):
+    body = request.get_json(silent=True) or {}
+    clip_id = str(body.get("clip_id") or "")
+    try:
+        if clip_id:
+            job, saved, clip = _saved_job_clip(job_id, clip_id)
+            default_text = str(clip.get("hook") or clip.get("title") or clip.get("context") or "")
+        else:
+            with get_db(current_app.config["DATABASE_PATH"]) as db:
+                job = db.execute(
+                    "SELECT * FROM jobs WHERE id=? AND user_id=?",
+                    (job_id, session["user_id"]),
+                ).fetchone()
+            if not job or not job["result_json"]:
+                return jsonify({"error": "Projet introuvable ou analyse absente."}), 404
+            saved = json.loads(job["result_json"] or "{}")
+            default_text = str(saved.get("ai", {}).get("summary") or "Voici le moment fort de la session.")
+        text_value = " ".join(str(body.get("text") or default_text).split())[:5000]
+        if not text_value:
+            return jsonify({"error": "Aucun texte de voiceover."}), 400
+        folder = Path(current_app.config["STORAGE_PATH"]) / "users" / str(session["user_id"]) / "ai-assets"
+        output = folder / f"klypso-{job_id}-voiceover-{clip_id or 'summary'}.mp3"
+        generate_voiceover(text_value, output, voice_id=body.get("voice_id"))
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            cur = db.execute(
+                "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
+                (session["user_id"], output.name, str(output), "audio/mpeg", output.stat().st_size),
+            )
+            media_id = cur.lastrowid
+            db.commit()
+        saved.setdefault("ai_assets", {}).setdefault("voiceover", []).append({
+            "clip_id": clip_id or None,
+            "media_id": media_id,
+            "text": text_value,
+        })
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            db.execute(
+                "UPDATE jobs SET result_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                (json.dumps(saved, ensure_ascii=False), job_id),
+            )
+            db.commit()
+        return jsonify({
+            "ok": True,
+            "clip_id": clip_id or None,
+            "media_id": media_id,
+            "text": text_value,
+            "download_url": f"/studio/ai-download/{media_id}",
+        }), 201
+    except LookupError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except Exception:
+        current_app.logger.exception("Voiceover generation failed")
+        return jsonify({"error": "Le voiceover IA n'a pas pu être généré. Vérifie ElevenLabs et ELEVENLABS_VOICE_ID."}), 503
+
+
 def _job_for_user(job_id):
     with get_db(current_app.config["DATABASE_PATH"]) as db:
         row = db.execute(
@@ -417,9 +562,10 @@ def status():
             "scheduled_distribution": True,
             "native_platform_posting": False,
             "social_multi_render": True,
-            "ai_broll": False,
-            "ai_voiceover": False,
+            "ai_broll": asset_status()["ai_broll"],
+            "ai_voiceover": asset_status()["ai_voiceover"],
             "local_signal_fallback": True,
+            **asset_status(),
         },
     })
 
