@@ -18,6 +18,7 @@ from .auth import login_required
 from .database import get_db
 from .clips.intelligence import update_creator_memory
 from .social_profiles import get_social_profile
+from .clips.distribution_intelligence import build_distribution_strategy
 from .social_connections import (
     connection_for,
     connection_status,
@@ -619,6 +620,14 @@ def disconnect_platform(platform):
         disconnect_connection(db, session["user_id"], platform)
         db.commit()
     return jsonify({"ok": True, "platform": platform}), 200
+
+
+@publisher_bp.get("/api/publisher/strategy")
+@login_required
+def strategy_api():
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        strategy = build_distribution_strategy(db, session["user_id"])
+    return jsonify({"ok": True, "strategy": strategy})
 
 
 @publisher_bp.get("/api/publisher/queue")
