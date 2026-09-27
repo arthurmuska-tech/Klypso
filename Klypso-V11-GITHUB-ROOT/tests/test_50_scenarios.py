@@ -354,3 +354,81 @@ def test_plan_and_product_scenarios(client, app, scenario):
         text = Path(app.root_path).parent.joinpath("templates", "account.html").read_text(encoding="utf-8")
         for palette in ["paper", "linen", "clay", "ocean", "forest", "plum", "graphite", "midnight"]:
             assert f'data-palette="{palette}"' in text
+
+
+V16_SCENARIOS = [
+    "profile_update_requires_csrf",
+    "profile_update_success",
+    "resend_without_pending",
+    "verify_page_has_resend",
+    "pricing_has_checkout",
+    "command_center_exists",
+    "clip_library_search_exists",
+    "theme_gallery_has_12",
+    "oauth_rejects_unverified",
+    "oauth_profile_refresh",
+]
+
+@pytest.mark.parametrize("scenario", V16_SCENARIOS, ids=V16_SCENARIOS)
+def test_v16_surface_scenarios(client, app, scenario):
+    if scenario == "profile_update_requires_csrf":
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            user = _create_email_user("profile@example.com")
+        with client.session_transaction() as sess:
+            sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
+        r = client.post("/account/profile", data={"display_name": "New Name"})
+        assert r.status_code == 400
+    elif scenario == "profile_update_success":
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            user = _create_email_user("profile2@example.com")
+        with client.session_transaction() as sess:
+            sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
+        r = client.post("/account/profile", data={"display_name": "New Name", "csrf_token": "csrf-ok"})
+        assert r.status_code == 302
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            row = db.execute("SELECT display_name FROM users WHERE id=?", (user["id"],)).fetchone()
+        assert row["display_name"] == "New Name"
+    elif scenario == "resend_without_pending":
+        r = client.post("/resend-code", data={"csrf_token": "csrf-ok"})
+        assert r.status_code == 302 and "/login" in r.headers["Location"]
+    elif scenario == "verify_page_has_resend":
+        r = client.get("/verify-email")
+        assert r.status_code == 302
+        with client.session_transaction() as sess:
+            sess["pending_email"] = "x@example.com"; sess["pending_purpose"] = "login"; sess["csrf_token"] = "csrf-ok"
+        r = client.get("/verify-email")
+        assert r.status_code == 200 and b"Renvoyer un code" in r.data
+    elif scenario == "pricing_has_checkout":
+        r = client.get("/pricing")
+        assert r.status_code == 200
+        assert b"Choisir Pro" in r.data and b"Choisir Ultra" in r.data
+    elif scenario == "command_center_exists":
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            user = _create_email_user("cmd@example.com")
+        with client.session_transaction() as sess:
+            sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
+        r = client.get("/dashboard")
+        assert r.status_code == 200 and b"COMMAND CENTER" in r.data
+    elif scenario == "clip_library_search_exists":
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            user = _create_email_user("clips@example.com")
+        with client.session_transaction() as sess:
+            sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
+        r = client.get("/clips")
+        assert r.status_code == 200 and b"data-clips-search-toggle" in r.data
+    elif scenario == "theme_gallery_has_12":
+        textv = Path(app.root_path).parent.joinpath("templates", "account.html").read_text(encoding="utf-8")
+        for palette in ["paper","linen","clay","ocean","forest","plum","graphite","midnight","sage","sand","lavender","slate"]:
+            assert f'data-palette="{palette}"' in textv
+    elif scenario == "oauth_rejects_unverified":
+        from klypso.auth import _oauth_user
+        with app.app_context(), pytest.raises(ValueError):
+            _oauth_user("google", "sub-unverified", "unverified@example.com", {"email_verified": False})
+    elif scenario == "oauth_profile_refresh":
+        from klypso.auth import _oauth_user
+        with app.app_context():
+            user = _oauth_user("google", "sub-refresh", "refresh@example.com", {"name": "Old Name", "picture": "https://example.com/old.png"})
+            updated = _oauth_user("google", "sub-refresh", "refresh@example.com", {"name": "New Name", "picture": "https://example.com/new.png"})
+        assert updated["id"] == user["id"]
+        assert updated["display_name"] == "New Name"
+        assert updated["avatar_url"] == "https://example.com/new.png"
