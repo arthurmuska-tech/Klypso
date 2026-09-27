@@ -41,6 +41,7 @@ PUBLIC_SCENARIOS = [
     ("login", "/login", 200),
     ("register", "/register", 200),
     ("health", "/healthz", 200),
+    ("ready", "/readyz", 200),
     ("dashboard_requires_auth", "/dashboard", 302),
     ("clips_requires_auth", "/clips", 302),
     ("studio_requires_auth", "/studio", 302),
