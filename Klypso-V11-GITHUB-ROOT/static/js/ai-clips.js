@@ -241,13 +241,40 @@
     const analyze = event.target.closest('.ai-run-job');
     if (analyze) {
       analyze.disabled = true;
-      analyze.textContent = 'Analyse en cours…';
+      analyze.textContent = 'Mise en file…';
+      const jobId = analyze.dataset.jobId;
       try {
-        const response = await fetch('/api/ai/analyze/' + analyze.dataset.jobId, {method:'POST', headers:{'X-CSRF-Token':csrf}, credentials:'same-origin'});
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || 'Analyse impossible.');
-        analyze.textContent = 'Analyse terminée ✓';
-        renderAnalysis(analyze.dataset.jobId, data);
+        const response = await fetch('/api/ai/analyze/' + jobId, {
+          method:'POST',
+          headers:{'X-CSRF-Token':csrf},
+          credentials:'same-origin'
+        });
+        const queued = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(queued.error || 'Analyse impossible.');
+        if (queued.status === 'completed' && queued.result) {
+          analyze.textContent = 'Analyse terminée ✓';
+          renderAnalysis(jobId, queued);
+          return;
+        }
+        analyze.textContent = 'Analyse en cours…';
+        let attempts = 0;
+        while (attempts++ < 900) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const statusResponse = await fetch('/api/ai/analyze/status/' + jobId, {
+            headers:{'X-CSRF-Token':csrf},
+            credentials:'same-origin'
+          });
+          const status = await statusResponse.json().catch(() => ({}));
+          if (status.status === 'completed' && status.result) {
+            analyze.textContent = 'Analyse terminée ✓';
+            renderAnalysis(jobId, status);
+            return;
+          }
+          if (status.status === 'failed') {
+            throw new Error(status.error || 'Analyse IA échouée.');
+          }
+        }
+        throw new Error('L’analyse prend trop de temps. Tu peux actualiser la page et reprendre le projet.');
       } catch (error) {
         analyze.disabled = false;
         analyze.textContent = 'Relancer l’IA';
