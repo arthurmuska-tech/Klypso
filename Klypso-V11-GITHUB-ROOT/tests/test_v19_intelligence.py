@@ -195,8 +195,8 @@ def test_v20_studio_project_lifecycle(tmp_path):
         from klypso.database import get_db
         with get_db(app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
-                "INSERT INTO users(email,display_name) VALUES(?,?)",
-                ("studio-v20@example.com", "Studio V20"),
+                "INSERT INTO users(email,password_hash,display_name) VALUES(?,?,?)",
+                ("studio-v20@example.com", "test-hash", "Studio V20"),
             )
             user_id = cur.lastrowid
             db.commit()
@@ -247,9 +247,9 @@ def test_v20_studio_rejects_foreign_project(tmp_path):
     with app.app_context():
         from klypso.database import get_db
         with get_db(app.config["DATABASE_PATH"]) as db:
-            cur = db.execute("INSERT INTO users(email,display_name) VALUES(?,?)", ("owner-v20@example.com", "Owner"))
+            cur = db.execute("INSERT INTO users(email,password_hash,display_name) VALUES(?,?,?)", ("owner-v20@example.com", "test-hash", "Owner"))
             owner_id = cur.lastrowid
-            cur = db.execute("INSERT INTO users(email,display_name) VALUES(?,?)", ("other-v20@example.com", "Other"))
+            cur = db.execute("INSERT INTO users(email,password_hash,display_name) VALUES(?,?,?)", ("other-v20@example.com", "test-hash", "Other"))
             other_id = cur.lastrowid
             cur = db.execute(
                 "INSERT INTO projects(user_id,name,timeline_json) VALUES(?,?,?)",
