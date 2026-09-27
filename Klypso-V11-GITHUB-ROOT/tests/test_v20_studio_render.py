@@ -25,6 +25,7 @@ def test_v20_studio_timeline_renders_to_mp4(tmp_path, monkeypatch):
                 "INSERT INTO users(email,password_hash,display_name) VALUES(?,?,?)",
                 ("studio-render@example.com", "hash", "Studio"),
             ).lastrowid
+            db.execute("UPDATE users SET plan='ultra',subscription_status='active' WHERE id=?", (user,))
             media = db.execute(
                 "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
                 (user, "source.mp4", str(source), "video/mp4", source.stat().st_size),
