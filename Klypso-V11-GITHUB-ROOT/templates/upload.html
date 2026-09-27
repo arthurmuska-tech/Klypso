@@ -14,7 +14,7 @@
 
   <form class="create-layout ai-create-layout" method="post" enctype="multipart/form-data" id="upload-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <input type="hidden" name="mode" id="project-mode" value="ai_clips">
+    <input type="hidden" name="mode" id="project-mode" value="{{ 'clip_only' if plan_key == 'free' else 'ai_clips' }}">
 
     <div class="upload-studio-card creator-engine-card">
       <label class="dropzone-v11 creator-dropzone" for="video">
@@ -29,28 +29,31 @@
           <span class="section-label-v11">MODE DE CRÉATION</span>
           <span class="mode-live" id="mode-live-label">IA · CLIPS</span>
         </div>
-        <div class="creation-mode-grid">
-          <label class="creation-mode-card active" data-creation-mode="ai_clips">
-            <input type="radio" name="mode_ui" value="ai_clips" checked hidden>
+        <div class="creation-mode-grid" data-plan-key="{{ plan_key or 'free' }}">
+          <label class="creation-mode-card {% if plan_key != 'free' %}active{% endif %}" data-creation-mode="ai_clips" data-locked="{{ 'false' if plan_key != 'free' else 'true' }}" tabindex="0">
+            <input type="radio" name="mode_ui" value="ai_clips" {% if plan_key == 'free' %}disabled{% endif %} hidden>
             <span class="creation-mode-icon">✦</span>
-            <span><b>Clips IA</b><small>Détecte, classe et fabrique les meilleurs moments sociaux.</small></span>
+            <span><b>Clips IA</b>{% if plan_key == 'free' %}<em class="mode-lock-badge">PRO</em>{% endif %}<small>Détecte, classe et fabrique les meilleurs moments sociaux.</small></span>
           </label>
-          <label class="creation-mode-card" data-creation-mode="clip_only">
-            <input type="radio" name="mode_ui" value="clip_only" hidden>
+          <label class="creation-mode-card active{% if plan_key == 'free' %} is-free-default{% endif %}" data-creation-mode="clip_only" data-locked="false" tabindex="0">
+            <input type="radio" name="mode_ui" value="clip_only" {% if plan_key == 'free' %}checked{% endif %} hidden>
             <span class="creation-mode-icon">◉</span>
-            <span><b>Clip seul</b><small>Workflow simple sans scoring sémantique avancé.</small></span>
+            <span><b>Clip seul</b><small>Workflow simple, disponible dès le plan Free.</small></span>
           </label>
-          <label class="creation-mode-card" data-creation-mode="ai_montage">
-            <input type="radio" name="mode_ui" value="ai_montage" hidden>
+          <label class="creation-mode-card" data-creation-mode="ai_montage" data-locked="{{ 'false' if plan_key != 'free' else 'true' }}" tabindex="0">
+            <input type="radio" name="mode_ui" value="ai_montage" {% if plan_key == 'free' %}disabled{% endif %} hidden>
             <span class="creation-mode-icon">◫</span>
-            <span><b>Montage IA</b><small>Construit une séquence cohérente à partir des scènes fortes.</small></span>
+            <span><b>Montage IA</b>{% if plan_key == 'free' %}<em class="mode-lock-badge">PRO</em>{% endif %}<small>Construit une séquence cohérente à partir des scènes fortes.</small></span>
           </label>
-          <label class="creation-mode-card" data-creation-mode="montage_only">
-            <input type="radio" name="mode_ui" value="montage_only" hidden>
+          <label class="creation-mode-card" data-creation-mode="montage_only" data-locked="{{ 'false' if plan_key != 'free' else 'true' }}" tabindex="0">
+            <input type="radio" name="mode_ui" value="montage_only" {% if plan_key == 'free' %}disabled{% endif %} hidden>
             <span class="creation-mode-icon">▤</span>
-            <span><b>Montage seul</b><small>Envoie la source dans Studio pour une édition manuelle.</small></span>
+            <span><b>Montage seul</b>{% if plan_key == 'free' %}<em class="mode-lock-badge">ULTRA</em>{% endif %}<small>Envoie la source dans Studio pour une édition manuelle.</small></span>
           </label>
         </div>
+        {% if plan_key == 'free' %}
+        <div class="mode-upgrade-note"><strong>Plan Free</strong><span>Le clip standard est disponible. Passe à Pro pour activer Clips IA et Montage IA.</span><a href="{{ url_for('billing.pricing') }}">Voir Pro →</a></div>
+        {% endif %}
         <div class="mode-explanation" id="mode-explanation">
           <strong>Le moteur va apprendre de tes projets précédents.</strong>
           <span>Historique, retours conserver/rejeter, durées et types de scènes servent à personnaliser la prochaine sélection.</span>
@@ -88,7 +91,7 @@
         </div>
       </div>
 
-      <button class="button button-xl full" type="submit" id="create-project-btn">Créer le projet IA <span>→</span></button>
+      <button class="button button-xl full" type="submit" id="create-project-btn">{{ 'Créer le projet clip' if plan_key == 'free' else 'Créer le projet IA' }} <span>→</span></button>
     </div>
 
     <aside class="workflow-side creator-engine-side">
