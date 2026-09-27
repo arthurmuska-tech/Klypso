@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}Clips IA — KLYPSO<script>
+{% block title %}Clips IA — KLYPSO{% endblock %}
+{% block scripts %}<script>
 document.addEventListener('click',async(e)=>{
  const b=e.target.closest('.ai-run-job'); if(!b)return;
  b.disabled=true;b.textContent='Analyse…';
@@ -10,8 +11,7 @@ document.addEventListener('click',async(e)=>{
   b.textContent='IA terminée ✓'; b.title=(d.result.ai?.titles||[]).join(' · ');
  }catch(err){b.disabled=false;b.textContent='IA avancée';alert(err.message);}
 });
-</script>
-{% endblock %}
+</script>{% endblock %}
 {% block crumb %}Clips IA{% endblock %}
 {% block content %}
 <section class="clips-page-v11">
