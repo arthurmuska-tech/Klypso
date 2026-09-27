@@ -72,7 +72,7 @@
       context: 'signin',
       ux_mode: 'popup',
       auto_select: false,
-      use_fedcm_for_prompt: true,
+      use_fedcm_for_button: true,
       callback: window.handleGoogleCredential
     });
     googleId.renderButton(googleButton, {
