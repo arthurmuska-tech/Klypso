@@ -1,4 +1,4 @@
-name: KLYPSO — 84 scenario tests
+name: KLYPSO — 87 scenario tests
 on:
   push:
     paths:
@@ -43,5 +43,5 @@ jobs:
           print("CSS structure OK")
           PY
 
-      - name: Run 84 scenarios
+      - name: Run 87 scenarios
         run: pytest -q tests/test_50_scenarios.py
