@@ -125,6 +125,21 @@ def create_app(test_config=None):
             ).fetchall()
         return render_template("account.html", user=user, oauth_identities=oauth_rows)
 
+    @app.post("/account/profile")
+    @login_required
+    def update_account_profile():
+        from flask import flash, request, session
+        name = " ".join(request.form.get("display_name", "").split())[:80]
+        if not name:
+            flash("Le nom affiché ne peut pas être vide.", "error")
+            return redirect(url_for("account"))
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            db.execute("UPDATE users SET display_name=?, updated_at=CURRENT_TIMESTAMP WHERE id=?", (name, session_user_id()))
+            db.commit()
+        session["user_name"] = name
+        flash("Profil mis à jour.", "success")
+        return redirect(url_for("account"))
+
     @app.route("/brand-kit")
     @login_required
     def brand_kit():
