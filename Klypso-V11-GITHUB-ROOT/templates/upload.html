@@ -82,6 +82,8 @@
             <label class="pref-control"><span>Style</span><select name="ai_style"><option value="auto">Auto · adapté à mon historique</option><option value="punchy">Punchy · hook très rapide</option><option value="story">Story · contexte + payoff</option></select></label>
             <label class="pref-control"><span>Scènes</span><select name="scene_priority"><option value="balanced">Équilibré</option><option value="reaction">Réactions & émotions</option><option value="gameplay">Gameplay & clutch</option><option value="conversation">Punchlines & conversations</option></select></label>
             <label class="pref-control"><span>Rythme</span><select name="pace"><option value="natural">Naturel</option><option value="fast">Rapide</option><option value="very_fast">Très rapide</option></select></label>
+            <label class="pref-control"><span>Rendu social</span><select name="social_preset"><option value="dynamic">Dynamic · punch-in</option><option value="gaming">Gaming · énergique</option><option value="story">Story · narratif</option><option value="clean">Clean · sobre</option></select></label>
+            <label class="pref-control"><span>Style captions</span><select name="caption_style"><option value="dynamic">Dynamic</option><option value="classic">Classic</option><option value="minimal">Minimal</option></select></label>
           </div>
         </div>
       </div>
@@ -115,5 +117,5 @@
 </section>
 {% endblock %}
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/project-create.js') }}?v=17.0" defer></script>
+<script src="{{ url_for('static', filename='js/project-create.js') }}?v=18.0" defer></script>
 {% endblock %}
