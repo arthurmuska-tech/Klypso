@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 import requests
+from flask import current_app
 from authlib.integrations.flask_client import OAuth
 from cryptography.fernet import Fernet, InvalidToken
 
@@ -21,7 +22,7 @@ oauth = OAuth()
 
 
 def _secret():
-    raw = str(os.getenv("SECRET_KEY") or "klypso-development-secret").encode("utf-8")
+    raw = str(current_app.config.get("SECRET_KEY") or os.getenv("SECRET_KEY") or "klypso-development-secret").encode("utf-8")
     return base64.urlsafe_b64encode(hashlib.sha256(raw).digest())
 
 
@@ -124,11 +125,11 @@ def youtube_authorize(redirect_uri):
     return _youtube_client(client_id, client_secret).authorize_redirect(redirect_uri)
 
 
-def youtube_callback(request_context):
+def youtube_callback():
     return _youtube_client(
         os.getenv("GOOGLE_CLIENT_ID", "").strip(),
         os.getenv("GOOGLE_CLIENT_SECRET", "").strip(),
-    ).authorize_access_token(request_context)
+    ).authorize_access_token()
 
 
 def tiktok_authorize_url(redirect_uri, state):
