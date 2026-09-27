@@ -998,7 +998,8 @@ def _render_ai_clips(job, result, requested_ids=None, social_preset=None, captio
         candidate = dict(available[clip_id])
         if profile:
             candidate = clamp_candidate_to_profile(candidate, profile)
-        output = folder / f"klypso-{job['id']}-clip-{index}" + (f"-{social_profile}" if social_profile else "") + ".mp4"
+        suffix = f"-{social_profile}" if social_profile else ""
+        output = folder / f"klypso-{job['id']}-clip-{index}{suffix}.mp4"
         preferences = result.get("preferences") or payload.get("preferences") or {}
         preset = social_preset or (profile["preset"] if profile else None) or preferences.get("social_preset", "dynamic")
         captions = caption_style or (profile["caption_style"] if profile else None) or preferences.get("caption_style") or (
