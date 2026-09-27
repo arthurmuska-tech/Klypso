@@ -33,7 +33,7 @@
       clips.map((clip, index) =>
         '<article class="ai-clip-row"><div class="ai-clip-rank">0' + (index + 1) + '</div><div class="ai-clip-main"><div class="ai-clip-head"><span class="ai-archetype">' + escapeHtml(clip.archetype || 'moment fort') + '</span><b>' + escapeHtml(clip.title) + '</b><strong>' + escapeHtml(clip.opportunity_score) + '/100</strong></div>' +
         '<p class="ai-clip-hook">“' + escapeHtml(clip.hook) + '”</p><p class="ai-clip-reason">' + escapeHtml(clip.reason) + '</p><div class="ai-score-grid">' + scoreBars(clip) + '</div>' +
-        '<div class="ai-clip-feedback"><button type="button" class="filter-btn" data-feedback="keep" data-job-id="' + jobId + '" data-candidate-id="' + escapeHtml(clip.id) + '">✓ Je garde</button><button type="button" class="filter-btn" data-feedback="reject" data-job-id="' + jobId + '" data-candidate-id="' + escapeHtml(clip.id) + '">× Je rejette</button><button type="button" class="filter-btn" data-performance-open="' + jobId + ':' + escapeHtml(clip.id) + '">↗ Performance</button><span>' + Number(clip.start || 0).toFixed(1) + 's → ' + Number(clip.end || 0).toFixed(1) + 's</span></div>' +
+        '<div class="ai-clip-feedback"><button type="button" class="filter-btn" data-broll="' + jobId + ':' + escapeHtml(clip.id) + '">✦ B-roll IA</button><button type="button" class="filter-btn" data-voiceover="' + jobId + ':' + escapeHtml(clip.id) + '">◉ Voiceover IA</button><button type="button" class="filter-btn" data-feedback="keep" data-job-id="' + jobId + '" data-candidate-id="' + escapeHtml(clip.id) + '">✓ Je garde</button><button type="button" class="filter-btn" data-feedback="reject" data-job-id="' + jobId + '" data-candidate-id="' + escapeHtml(clip.id) + '">× Je rejette</button><button type="button" class="filter-btn" data-performance-open="' + jobId + ':' + escapeHtml(clip.id) + '">↗ Performance</button><span>' + Number(clip.start || 0).toFixed(1) + 's → ' + Number(clip.end || 0).toFixed(1) + 's</span></div>' +
         '<div class="performance-panel" data-performance-panel="' + jobId + ':' + escapeHtml(clip.id) + '" hidden><div><span>APRÈS PUBLICATION</span><strong>Apprends à KLYPSO ce qui a vraiment marché.</strong></div><label>Plateforme<select data-performance-platform><option value="youtube">YouTube</option><option value="tiktok">TikTok</option><option value="instagram">Instagram</option><option value="x">X</option><option value="other">Autre</option></select></label><label>Vues<input type="number" min="0" value="0" data-performance-views></label><label>Likes<input type="number" min="0" value="0" data-performance-likes></label><label>Commentaires<input type="number" min="0" value="0" data-performance-comments></label><label>Partages<input type="number" min="0" value="0" data-performance-shares></label><label>Complétion %<input type="number" min="0" max="100" step="0.1" value="0" data-performance-completion></label><button class="button small" type="button" data-performance-save="' + jobId + ':' + escapeHtml(clip.id) + '">Enregistrer la performance</button><span data-performance-status></span></div></div></div></article>'
       ).join('') +
       '</div><div class="ai-render-output" data-ai-render-output="' + jobId + '"></div>';
@@ -89,6 +89,55 @@
   });
 
   document.addEventListener('click', async (event) => {
+    const broll = event.target.closest('[data-broll]');
+    if (broll) {
+      const [jobId, clipId] = broll.dataset.broll.split(':');
+      broll.disabled = true;
+      broll.textContent = 'B-roll…';
+      try {
+        const response = await fetch('/api/ai/broll/' + jobId, {
+          method:'POST',
+          headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},
+          body:JSON.stringify({clip_id:clipId, aspect_ratio:'9:16'}),
+          credentials:'same-origin'
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'B-roll indisponible.');
+        broll.textContent = 'B-roll prêt ✓';
+        window.open(data.download_url, '_blank');
+      } catch (error) {
+        broll.disabled = false;
+        broll.textContent = '✦ B-roll IA';
+        alert(error.message);
+      }
+      return;
+    }
+
+    const voiceover = event.target.closest('[data-voiceover]');
+    if (voiceover) {
+      const [jobId, clipId] = voiceover.dataset.voiceover.split(':');
+      voiceover.disabled = true;
+      voiceover.textContent = 'Voiceover…';
+      try {
+        const response = await fetch('/api/ai/voiceover/' + jobId, {
+          method:'POST',
+          headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},
+          body:JSON.stringify({clip_id:clipId}),
+          credentials:'same-origin'
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Voiceover indisponible.');
+        voiceover.textContent = 'Voiceover prêt ✓';
+        window.open(data.download_url, '_blank');
+      } catch (error) {
+        voiceover.disabled = false;
+        voiceover.textContent = '◉ Voiceover IA';
+        alert(error.message);
+      }
+      return;
+    }
+
+
     const performanceOpen = event.target.closest('[data-performance-open]');
     if (performanceOpen) {
       document.querySelector('[data-performance-panel="' + performanceOpen.dataset.performanceOpen + '"]')?.toggleAttribute('hidden');
