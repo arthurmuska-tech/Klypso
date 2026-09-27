@@ -26,6 +26,7 @@ from .social_connections import (
     tiktok_authorize_url,
     tiktok_exchange,
     tiktok_publish,
+    tiktok_publish_status,
     tiktok_user_info,
     upsert_connection,
     youtube_authorize,
@@ -40,12 +41,6 @@ publisher_bp = Blueprint("publisher", __name__)
 PLATFORMS = ("youtube", "tiktok", "instagram", "x")
 FREQUENCIES = ("daily", "weekly", "monthly")
 
-SOCIAL_PROFILES = {
-    "youtube": {"name": "YouTube Shorts", "ratio": "9:16", "recommended_max_seconds": 60, "hashtags": ["#shorts", "#gaming"]},
-    "tiktok": {"name": "TikTok", "ratio": "9:16", "recommended_max_seconds": 90, "hashtags": ["#tiktok", "#gaming"]},
-    "instagram": {"name": "Instagram Reels", "ratio": "9:16", "recommended_max_seconds": 90, "hashtags": ["#reels", "#gaming"]},
-    "x": {"name": "X", "ratio": "16:9", "recommended_max_seconds": 140, "hashtags": ["#gaming"]},
-}
 STATUS_LABELS = {
     "scheduled": "Programmé",
     "processing": "Publication…",
@@ -572,7 +567,7 @@ def disconnect_platform(platform):
 @publisher_bp.get("/api/publisher/queue")
 @login_required
 def queue_api():
-    return jsonify({"queue": _user_queue(session["user_id"]), "platforms": platform_status()})
+    return jsonify({"queue": _user_queue(session["user_id"]), "platforms": platform_status(session["user_id"])})
 
 
 @publisher_bp.post("/api/publisher/schedule")
