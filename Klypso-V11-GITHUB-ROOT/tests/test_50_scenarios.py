@@ -346,7 +346,7 @@ def test_plan_and_product_scenarios(client, app, scenario):
             promo_ends_at(datetime.now(timezone.utc).isoformat(), 0)
     elif scenario == "health_version":
         body = client.get("/healthz").get_json()
-        assert body["version"] == "19.0.0"
+        assert body["version"] == "20.0.0"
     elif scenario == "no_github_login":
         text = Path(app.root_path).parent.joinpath("templates", "login.html").read_text(encoding="utf-8").lower()
         assert "github" not in text
