@@ -72,7 +72,32 @@ def create_app(test_config=None):
     def healthz():
         version_file = Path(app.root_path).parent / "VERSION"
         version = version_file.read_text(encoding="utf-8").strip() if version_file.exists() else "unknown"
-        return {"status": "ok", "service": "klypso", "version": version}, 200
+        database = "postgresql" if str(app.config["DATABASE_PATH"]).startswith(("postgresql://", "postgres://")) else "sqlite"
+        try:
+            with get_db(app.config["DATABASE_PATH"]) as db:
+                db.execute("SELECT 1").fetchone()
+            db_status = "ok"
+        except Exception:
+            app.logger.exception("Health check database failure")
+            db_status = "error"
+        status = "ok" if db_status == "ok" else "degraded"
+        return {
+            "status": status,
+            "service": "klypso",
+            "version": version,
+            "database": database,
+            "database_status": db_status,
+        }, 200 if status == "ok" else 503
+
+    @app.route("/readyz")
+    def readyz():
+        try:
+            with get_db(app.config["DATABASE_PATH"]) as db:
+                db.execute("SELECT 1").fetchone()
+            return {"status": "ready"}, 200
+        except Exception:
+            app.logger.exception("Readiness check failed")
+            return {"status": "not_ready"}, 503
 
     @app.route("/demo")
     def public_demo():
