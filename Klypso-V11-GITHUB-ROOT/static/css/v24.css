@@ -291,7 +291,7 @@ html.v24-motion-ready .v24-reveal{opacity:0;transform:translate3d(0,38px,0)}html
   background:#fffefa!important;color:#251f19!important;padding:0 15px!important;font-size:16px!important;
   outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.5);
   transition:border-color .25s,box-shadow .25s,background .25s;
-  appearance:none;-webkit-appearance:none
+  appearance:none;-webkit-appearance:none;direction:ltr;text-align:left;unicode-bidi:plaintext
 }
 .v24-field input::placeholder{color:#aaa095}.v24-field input:focus{border-color:var(--v24-accent);box-shadow:0 0 0 4px rgba(154,101,57,.12);background:#fff!important}
 .v24-auth-form .button{margin-top:3px}
