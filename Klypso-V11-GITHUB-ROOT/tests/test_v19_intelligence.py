@@ -124,7 +124,7 @@ def test_v19_enriched_clip_persists_reframe_and_signal_scores():
 def test_v19_health_version(tmp_path):
     app = make_app(tmp_path)
     response = app.test_client().get("/healthz")
-    assert response.get_json()["version"] == "19.0.0"
+    assert response.get_json()["version"] == "20.0.0"
 
 
 def test_v19_face_tracking_focus_is_applied_when_present():
@@ -187,3 +187,79 @@ def test_v19_renderer_motion_graphics_progress_bar():
     from klypso.clips.renderer import _video_filter
     filters, _ = _video_filter((1080, 1920), progress_duration=30)
     assert any(item.startswith("drawbox=") for item in filters)
+
+
+def test_v20_studio_project_lifecycle(tmp_path):
+    app = make_app(tmp_path)
+    with app.app_context():
+        from klypso.database import get_db
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            cur = db.execute(
+                "INSERT INTO users(email,display_name) VALUES(?,?)",
+                ("studio-v20@example.com", "Studio V20"),
+            )
+            user_id = cur.lastrowid
+            db.commit()
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["user_id"] = user_id
+        sess["user_email"] = "studio-v20@example.com"
+        sess["csrf_token"] = "csrf-v20"
+
+    timeline = {
+        "clips": [{"start": 0, "duration": 12, "name": "Hook"}],
+        "audio_tracks": [{"name": "Main"}],
+        "markers": [{"time": 5, "label": "Payoff"}],
+        "settings": {"ratio": "9:16"},
+    }
+    created = client.post(
+        "/api/studio/projects",
+        json={"name": "V20 Studio", "timeline": timeline},
+        headers={"X-CSRF-Token": "csrf-v20"},
+    )
+    assert created.status_code == 201
+    project_id = created.get_json()["project_id"]
+
+    loaded = client.get(f"/api/studio/projects/{project_id}")
+    assert loaded.status_code == 200
+    assert loaded.get_json()["timeline"]["settings"]["ratio"] == "9:16"
+
+    timeline["settings"]["ratio"] = "16:9"
+    saved = client.post(
+        f"/api/studio/projects/{project_id}/save",
+        json={"name": "V20 Studio Updated", "timeline": timeline},
+        headers={"X-CSRF-Token": "csrf-v20"},
+    )
+    assert saved.status_code == 200
+    assert saved.get_json()["name"] == "V20 Studio Updated"
+
+    edited = client.post(
+        f"/api/studio/projects/{project_id}/edit",
+        json={"operation": {"type": "split", "clip_index": 0, "at": 5}},
+        headers={"X-CSRF-Token": "csrf-v20"},
+    )
+    assert edited.status_code == 200
+    assert len(edited.get_json()["timeline"]["clips"]) == 2
+
+
+def test_v20_studio_rejects_foreign_project(tmp_path):
+    app = make_app(tmp_path)
+    with app.app_context():
+        from klypso.database import get_db
+        with get_db(app.config["DATABASE_PATH"]) as db:
+            cur = db.execute("INSERT INTO users(email,display_name) VALUES(?,?)", ("owner-v20@example.com", "Owner"))
+            owner_id = cur.lastrowid
+            cur = db.execute("INSERT INTO users(email,display_name) VALUES(?,?)", ("other-v20@example.com", "Other"))
+            other_id = cur.lastrowid
+            cur = db.execute(
+                "INSERT INTO projects(user_id,name,timeline_json) VALUES(?,?,?)",
+                (other_id, "Private", json.dumps({"clips":[],"audio_tracks":[],"markers":[]}))
+            )
+            project_id = cur.lastrowid
+            db.commit()
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["user_id"] = owner_id
+        sess["user_email"] = "owner-v20@example.com"
+        sess["csrf_token"] = "csrf-v20"
+    assert client.get(f"/api/studio/projects/{project_id}").status_code == 404
