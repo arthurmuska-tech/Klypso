@@ -10,6 +10,7 @@ import requests
 from flask import Blueprint, current_app, jsonify, request, session
 
 from .auth import login_required
+from .credits import CreditError, consume_processing_credits, refund_processing_credits
 from .database import get_db
 from .promo import effective_plan_key
 from .clips.intelligence import (
@@ -1065,15 +1066,29 @@ def render_clips(job_id):
     requested_ids = body.get("clip_ids") if isinstance(body.get("clip_ids"), list) else None
     social_preset = str(body.get("social_preset") or "").strip().lower() or None
     caption_style = str(body.get("caption_style") or "").strip().lower() or None
+    charged = 0
     try:
         result = json.loads(job["result_json"])
+        available_ids = [str(c["id"]) for c in result.get("ai", {}).get("clips", [])[:5]]
+        render_ids = [str(v) for v in requested_ids if str(v) in available_ids] if requested_ids else available_ids
+        charged = max(1, (min(5, len(render_ids)) + 2) // 3)
+        consume_processing_credits(
+            session["user_id"],
+            effective_plan_key(user),
+            charged,
+            {"operation": "render_clips", "job_id": job_id, "count": len(render_ids)},
+        )
         rendered = _render_ai_clips(job, result, requested_ids, social_preset, caption_style)
         result["rendered_clips"] = rendered
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             db.execute("UPDATE jobs SET result_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?", (json.dumps(result, ensure_ascii=False), job_id))
             db.commit()
         return jsonify({"ok": True, "clips": rendered})
+    except CreditError as exc:
+        return jsonify({"error": str(exc)}), 402
     except Exception:
+        if charged:
+            refund_processing_credits(session["user_id"], charged, {"operation": "render_clips_failed", "job_id": job_id})
         current_app.logger.exception("AI clip render failed")
         return jsonify({"error": "Le rendu des clips a échoué. Vérifie que FFmpeg est disponible."}), 500
 
@@ -1098,8 +1113,19 @@ def render_social_variants(job_id):
         return jsonify({"error": "Aucun réseau social valide."}), 400
     requested_ids = body.get("clip_ids") if isinstance(body.get("clip_ids"), list) else None
 
+    charged = 0
     try:
         result = json.loads(job["result_json"])
+        available_ids = [str(c["id"]) for c in result.get("ai", {}).get("clips", [])[:5]]
+        render_ids = [str(v) for v in requested_ids if str(v) in available_ids] if requested_ids else available_ids
+        variant_count = max(1, min(20, len(render_ids) * len(platforms)))
+        charged = max(1, (variant_count + 2) // 3)
+        consume_processing_credits(
+            session["user_id"],
+            effective_plan_key(user),
+            charged,
+            {"operation": "render_social", "job_id": job_id, "variants": variant_count},
+        )
         variants = []
         for platform in platforms:
             rendered = _render_ai_clips(
@@ -1122,7 +1148,11 @@ def render_social_variants(job_id):
             "variants": variants,
             "count": len(variants),
         })
+    except CreditError as exc:
+        return jsonify({"error": str(exc)}), 402
     except Exception:
+        if charged:
+            refund_processing_credits(session["user_id"], charged, {"operation": "render_social_failed", "job_id": job_id})
         current_app.logger.exception("Social variant render failed")
         return jsonify({"error": "Les variantes sociales n'ont pas pu être rendues."}), 500
 
@@ -1152,6 +1182,13 @@ def render_montage(job_id):
         social_preset = director.get("social_preset") or (result.get("preferences") or {}).get("social_preset") or "story"
         caption_style = director.get("caption_style") or (result.get("preferences") or {}).get("caption_style") or "classic"
 
+        charged = max(1, (len(montage_ids) + 1) // 2)
+        consume_processing_credits(
+            session["user_id"],
+            effective_plan_key(user),
+            charged,
+            {"operation": "render_montage", "job_id": job_id, "count": len(montage_ids)},
+        )
         rendered = _render_ai_clips(
             job, result, montage_ids,
             social_preset=social_preset,
