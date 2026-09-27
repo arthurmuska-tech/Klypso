@@ -49,6 +49,45 @@
     box.scrollIntoView({behavior:'smooth', block:'center'});
   };
 
+  const parseChatFile = async (file) => {
+    const raw = await file.text();
+    if (file.name.toLowerCase().endsWith('.json')) {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : (parsed.messages || parsed.chat || parsed.items || []);
+    }
+    return raw.split(/\\r?\\n/).map((line) => {
+      const match = line.match(/^\\s*(\\d+(?:\\.\\d+)?)\\s*\\|\\s*([^|]*)\\|\\s*(.*)$/);
+      return match ? {timestamp:Number(match[1]), author:match[2].trim(), text:match[3].trim()} : null;
+    }).filter(Boolean);
+  };
+
+  document.addEventListener('change', async (event) => {
+    const input = event.target.closest('[data-chat-file]');
+    if (!input || !input.files?.[0]) return;
+    const file = input.files[0];
+    const jobId = input.dataset.chatFile;
+    input.disabled = true;
+    try {
+      const messages = await parseChatFile(file);
+      if (!Array.isArray(messages) || !messages.length) throw new Error('Aucun message exploitable dans ce fichier.');
+      const response = await fetch('/api/ai/chat/' + jobId, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},
+        body:JSON.stringify({messages}),
+        credentials:'same-origin'
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Import du chat impossible.');
+      input.closest('label')?.insertAdjacentHTML('beforeend', '<span style="margin-left:6px">✓</span>');
+      alert('Chat importé : ' + data.chat.message_count + ' messages. Relance l’analyse IA pour recalculer les clips.');
+    } catch (error) {
+      alert(error.message || 'Fichier chat invalide.');
+    } finally {
+      input.value = '';
+      input.disabled = false;
+    }
+  });
+
   document.addEventListener('click', async (event) => {
     const performanceOpen = event.target.closest('[data-performance-open]');
     if (performanceOpen) {
