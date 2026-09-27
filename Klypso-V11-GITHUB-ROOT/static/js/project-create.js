@@ -14,15 +14,28 @@
     montage_only: {label:'STANDARD · STUDIO', button:'Ouvrir le projet dans Studio', title:'Tu gardes le contrôle total.', body:'La source est enregistrée comme projet et pourra être reprise manuellement dans Studio.'}
   };
 
+  const setMode = (card) => {
+    if (!card) return;
+    const mode = card.dataset.creationMode;
+    if (card.dataset.locked === 'true') {
+      if (explanation) explanation.innerHTML = '<strong>Fonction réservée à Pro / Ultra.</strong><span>Le plan Free peut créer un clip standard. Passe à Pro pour débloquer l’analyse IA.</span>';
+      return;
+    }
+    if (modeInput) modeInput.value = mode;
+    document.querySelectorAll('[data-creation-mode]').forEach(item => item.classList.toggle('active', item === card));
+    const config = modes[mode] || modes.clip_only;
+    if (liveLabel) liveLabel.textContent = config.label;
+    if (createButton) createButton.innerHTML = config.button + ' <span>→</span>';
+    if (explanation) explanation.innerHTML = '<strong>' + config.title + '</strong><span>' + config.body + '</span>';
+  };
+
   document.querySelectorAll('[data-creation-mode]').forEach(card => {
-    card.addEventListener('click', () => {
-      const mode = card.dataset.creationMode;
-      if (modeInput) modeInput.value = mode;
-      document.querySelectorAll('[data-creation-mode]').forEach(item => item.classList.toggle('active', item === card));
-      const config = modes[mode] || modes.ai_clips;
-      if (liveLabel) liveLabel.textContent = config.label;
-      if (createButton) createButton.innerHTML = config.button + ' <span>→</span>';
-      if (explanation) explanation.innerHTML = '<strong>' + config.title + '</strong><span>' + config.body + '</span>';
+    card.addEventListener('click', () => setMode(card));
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        setMode(card);
+      }
     });
   });
 
