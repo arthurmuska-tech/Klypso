@@ -85,45 +85,132 @@
     reveal.forEach((el) => el.classList.add('v14-visible'));
   }
 
-  /* --- Landing page: vertical scroll drives a horizontal presentation rail --- */
+  /* --- Landing page: smart scroll choreography --- */
   const story = document.querySelector('[data-landing-story]');
   const track = document.querySelector('[data-story-track]');
   const slides = track ? $$('.landing-story-slide', track) : [];
   const storyCurrent = document.querySelector('[data-story-current]');
   const storyProgress = document.querySelector('[data-story-progress]');
-  const storyDots = $('[data-story-jump]');
+  const storyDots = $$('[data-story-jump]');
   let storyRaf = 0;
+  let storyActive = false;
+  let storyObserved = false;
+
+  const clamp01 = (value) => Math.max(0, Math.min(1, value));
+  const smoothstep = (value) => {
+    const t = clamp01(value);
+    return t * t * (3 - 2 * t);
+  };
+  const easeOut = (value) => 1 - Math.pow(1 - clamp01(value), 3);
+  const easeIn = (value) => Math.pow(clamp01(value), 3);
+
+  function prepareStoryWords() {
+    slides.forEach((slide) => {
+      const copy = slide.querySelector('.story-slide-copy');
+      if (!copy || copy.dataset.wordsReady === '1') return;
+      ['h3', 'p'].forEach((selector) => {
+        const element = copy.querySelector(selector);
+        if (!element) return;
+        const source = element.textContent.trim();
+        element.dataset.originalText = source;
+        element.setAttribute('aria-label', source);
+        element.innerHTML = source.split(/(\s+)/).map((part) => {
+          if (!part.trim()) return part;
+          return '<span class="story-word" aria-hidden="true">' + part.replace(/[&<>"]/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])) + '</span>';
+        }).join('');
+      });
+      copy.dataset.wordsReady = '1';
+    });
+  }
+
+  function storyCameraLocal(local) {
+    /* First 58% = reading/drawing zone. The camera barely moves while the copy marks in. */
+    if (local < 0.58) return 0.055 * easeOut(local / 0.58);
+    if (local < 0.74) return 0.055 + 0.105 * smoothstep((local - 0.58) / 0.16);
+    return 0.16 + 0.84 * easeIn((local - 0.74) / 0.26);
+  }
+
+  function updateStoryWords(slide, local) {
+    const words = $$('.story-word', slide);
+    if (!words.length) return;
+    const reveal = clamp01((local - 0.05) / 0.47);
+    const wave = words.length > 1 ? reveal * (words.length + 1) : reveal * 2;
+    words.forEach((word, index) => {
+      const p = clamp01(wave - index);
+      const lift = (1 - easeOut(p)) * 16;
+      const blur = (1 - p) * 1.8;
+      word.style.setProperty('--word-progress', p.toFixed(3));
+      word.style.transform = 'translate3d(0,' + lift.toFixed(2) + 'px,0)';
+      word.style.filter = 'blur(' + blur.toFixed(2) + 'px)';
+      word.style.opacity = Math.max(0.1, p).toFixed(3);
+    });
+  }
+
+  function updateStoryCard(slide, local, distance) {
+    const card = slide.querySelector('.story-slide-card');
+    if (!card) return;
+    const read = smoothstep(clamp01((local - 0.06) / 0.58));
+    const exit = easeIn(clamp01((local - 0.73) / 0.27));
+    const depth = (1 - Math.min(1, Math.abs(distance))) * 1;
+    card.style.setProperty('--story-read', read.toFixed(3));
+    card.style.setProperty('--story-exit', exit.toFixed(3));
+    card.style.setProperty('--story-depth', depth.toFixed(3));
+    card.style.transform = 'translate3d(0,' + ((1 - read) * 18 - exit * 10).toFixed(2) + 'px,0) rotateZ(' + (distance * -1.7).toFixed(2) + 'deg) scale(' + (0.975 + read * 0.025 - exit * 0.012).toFixed(4) + ')';
+  }
 
   function updateLandingStory() {
     if (!story || !track || !slides.length) return;
     const isMobile = window.matchMedia('(max-width: 900px)').matches;
     if (isMobile) {
       track.style.transform = 'none';
-      slides.forEach((slide, index) => slide.classList.toggle('is-active', index === 0));
+      slides.forEach((slide, index) => {
+        slide.classList.toggle('is-active', index === 0);
+        slide.style.removeProperty('--slide-distance');
+        slide.style.removeProperty('--slide-abs');
+        slide.style.removeProperty('--slide-opacity');
+        slide.style.removeProperty('--slide-tilt');
+      });
       if (storyCurrent) storyCurrent.textContent = '01';
       if (storyProgress) storyProgress.style.width = '25%';
       return;
     }
 
+    prepareStoryWords();
+
     const rect = story.getBoundingClientRect();
     const travel = Math.max(1, story.offsetHeight - window.innerHeight);
-    const progress = Math.max(0, Math.min(1, -rect.top / travel));
-    const phase = progress * (slides.length - 1);
-    const index = Math.min(slides.length - 1, Math.floor(phase + 0.5));
+    const progress = clamp01(-rect.top / travel);
+    const segment = 1 / slides.length;
+    const rawStep = Math.min(slides.length - 1, progress / Math.max(segment, 0.0001));
+    const activeIndex = Math.min(slides.length - 1, Math.floor(rawStep + 0.5));
+    const local = clamp01(rawStep - Math.floor(rawStep));
+    const cameraLocal = storyCameraLocal(local);
+    const phase = Math.min(slides.length - 1, Math.floor(rawStep) + cameraLocal);
 
-    /* The track travels exactly one slide-width per step. */
-    track.style.transform = 'translate3d(' + (-progress * 75) + '%, 0, 0)';
+    track.style.transform = 'translate3d(' + (-phase * (100 / slides.length)).toFixed(3) + '%,0,0)';
     slides.forEach((slide, i) => {
       const distance = i - phase;
-      const abs = Math.abs(distance);
-      slide.classList.toggle('is-active', abs < 0.62);
+      const abs = Math.min(1.4, Math.abs(distance));
+      const near = clamp01(1 - abs);
+      slide.classList.toggle('is-active', i === activeIndex || abs < 0.56);
       slide.style.setProperty('--slide-distance', distance.toFixed(3));
-      slide.style.setProperty('--slide-abs', Math.min(1.4, abs).toFixed(3));
-      slide.style.setProperty('--slide-opacity', Math.max(.28, 1 - abs * .5).toFixed(3));
-      slide.style.setProperty('--slide-tilt', Math.max(-4.5, Math.min(4.5, -distance * 3.2)).toFixed(2) + 'deg');
+      slide.style.setProperty('--slide-abs', abs.toFixed(3));
+      slide.style.setProperty('--slide-near', near.toFixed(3));
+      slide.style.setProperty('--slide-opacity', Math.max(.24, 1 - abs * .54).toFixed(3));
+      slide.style.setProperty('--slide-tilt', Math.max(-5, Math.min(5, -distance * 3.3)).toFixed(2) + 'deg');
+      updateStoryWords(slide, i === activeIndex ? local : (i < activeIndex ? 1 : 0));
+      updateStoryCard(slide, i === activeIndex ? local : (i < activeIndex ? 1 : 0), distance);
     });
 
-    /* A tiny parallax on the hero gives the first screen depth before the rail. */
+    storyActive = progress > 0.01 && progress < 0.99;
+    story.classList.toggle('is-live', storyActive);
+    if (storyCurrent) storyCurrent.textContent = String(activeIndex + 1).padStart(2, '0');
+    if (storyProgress) storyProgress.style.width = ((progress * 100).toFixed(2)) + '%';
+    storyDots.forEach((dot, dotIndex) => {
+      dot.classList.toggle('active', dotIndex === activeIndex);
+      dot.setAttribute('aria-selected', String(dotIndex === activeIndex));
+    });
+
     const heroArt = document.querySelector('.landing-v15-hero-art');
     if (heroArt) {
       const heroRect = heroArt.parentElement.getBoundingClientRect();
@@ -131,13 +218,6 @@
       heroArt.style.setProperty('--hero-depth-y', (heroProgress * -24).toFixed(2) + 'px');
       heroArt.style.setProperty('--hero-depth-r', (heroProgress * 1.8).toFixed(2) + 'deg');
     }
-
-    if (storyCurrent) storyCurrent.textContent = String(index + 1).padStart(2, '0');
-    if (storyProgress) storyProgress.style.width = ((progress * 100).toFixed(2)) + '%';
-    storyDots.forEach((dot, dotIndex) => {
-      dot.classList.toggle('active', dotIndex === index);
-      dot.setAttribute('aria-selected', String(dotIndex === index));
-    });
   }
 
   function requestLandingStoryUpdate() {
@@ -152,12 +232,20 @@
   storyDots.forEach((dot) => {
     dot.addEventListener('click', () => {
       if (!story) return;
-      const targetStep = Number(dot.dataset.storyJump || 0);
+      const targetStep = Math.max(0, Math.min(slides.length - 1, Number(dot.dataset.storyJump || 0)));
       const travel = Math.max(1, story.offsetHeight - window.innerHeight);
-      const target = story.getBoundingClientRect().top + window.scrollY + (travel * (targetStep / Math.max(1, slides.length - 1)));
+      const ratio = targetStep / Math.max(1, slides.length);
+      const target = story.getBoundingClientRect().top + window.scrollY + (travel * ratio);
       window.scrollTo({ top: target, behavior: motionEnabled ? 'smooth' : 'auto' });
     });
   });
+
+  if (story && 'IntersectionObserver' in window) {
+    const storyObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => { storyObserved = entry.isIntersecting; if (storyObserved) requestLandingStoryUpdate(); });
+    }, { threshold: 0.01 });
+    storyObserver.observe(story);
+  }
 
   addEventListener('scroll', requestLandingStoryUpdate, { passive: true });
   addEventListener('resize', requestLandingStoryUpdate, { passive: true });
