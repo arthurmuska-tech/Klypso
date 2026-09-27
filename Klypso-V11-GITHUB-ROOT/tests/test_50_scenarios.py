@@ -372,21 +372,22 @@ V16_SCENARIOS = [
 @pytest.mark.parametrize("scenario", V16_SCENARIOS, ids=V16_SCENARIOS)
 def test_v16_surface_scenarios(client, app, scenario):
     if scenario == "profile_update_requires_csrf":
-        with get_db(app.config["DATABASE_PATH"]) as db:
+        with app.app_context():
             user = _create_email_user("profile@example.com")
         with client.session_transaction() as sess:
             sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
         r = client.post("/account/profile", data={"display_name": "New Name"})
         assert r.status_code == 400
     elif scenario == "profile_update_success":
-        with get_db(app.config["DATABASE_PATH"]) as db:
+        with app.app_context():
             user = _create_email_user("profile2@example.com")
         with client.session_transaction() as sess:
             sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
         r = client.post("/account/profile", data={"display_name": "New Name", "csrf_token": "csrf-ok"})
         assert r.status_code == 302
-        with get_db(app.config["DATABASE_PATH"]) as db:
-            row = db.execute("SELECT display_name FROM users WHERE id=?", (user["id"],)).fetchone()
+        with app.app_context():
+            with get_db(app.config["DATABASE_PATH"]) as db:
+                row = db.execute("SELECT display_name FROM users WHERE id=?", (user["id"],)).fetchone()
         assert row["display_name"] == "New Name"
     elif scenario == "resend_without_pending":
         with client.session_transaction() as sess:
@@ -402,17 +403,22 @@ def test_v16_surface_scenarios(client, app, scenario):
         assert r.status_code == 200 and b"Renvoyer un code" in r.data
     elif scenario == "pricing_has_checkout":
         r = client.get("/pricing")
-        assert r.status_code == 200
+        assert r.status_code == 200 and b"Créer mon compte" in r.data
+        with app.app_context():
+            user = _create_email_user("pricing@example.com")
+        with client.session_transaction() as sess:
+            sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
+        r = client.get("/pricing")
         assert b"Choisir Pro" in r.data and b"Choisir Ultra" in r.data
     elif scenario == "command_center_exists":
-        with get_db(app.config["DATABASE_PATH"]) as db:
+        with app.app_context():
             user = _create_email_user("cmd@example.com")
         with client.session_transaction() as sess:
             sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
         r = client.get("/dashboard")
         assert r.status_code == 200 and b"COMMAND CENTER" in r.data
     elif scenario == "clip_library_search_exists":
-        with get_db(app.config["DATABASE_PATH"]) as db:
+        with app.app_context():
             user = _create_email_user("clips@example.com")
         with client.session_transaction() as sess:
             sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
