@@ -1128,11 +1128,21 @@ def render_social_variants(job_id):
     requested_ids = body.get("clip_ids") if isinstance(body.get("clip_ids"), list) else None
 
     charged = 0
+    quota_units = 0
     try:
         result = json.loads(job["result_json"])
         available_ids = [str(c["id"]) for c in result.get("ai", {}).get("clips", [])[:5]]
         render_ids = [str(v) for v in requested_ids if str(v) in available_ids] if requested_ids else available_ids
-        variant_count = max(1, min(20, len(render_ids) * len(platforms)))
+        quota_units = min(5, len(render_ids))
+        if quota_units <= 0:
+            raise ValueError("Aucun clip valide à rendre.")
+        consume_monthly_clip_units(
+            session["user_id"],
+            effective_plan_key(user),
+            quota_units,
+            {"operation": "render_social_quota", "job_id": job_id},
+        )
+        variant_count = max(1, min(20, quota_units * len(platforms)))
         charged = max(1, (variant_count + 2) // 3)
         consume_processing_credits(
             session["user_id"],
@@ -1163,10 +1173,14 @@ def render_social_variants(job_id):
             "count": len(variants),
         })
     except CreditError as exc:
+        if quota_units:
+            refund_monthly_clip_units(session["user_id"], quota_units, {"operation": "render_social_quota_failed", "job_id": job_id})
         return jsonify({"error": str(exc)}), 402
     except Exception:
         if charged:
             refund_processing_credits(session["user_id"], charged, {"operation": "render_social_failed", "job_id": job_id})
+        if quota_units:
+            refund_monthly_clip_units(session["user_id"], quota_units, {"operation": "render_social_quota_failed", "job_id": job_id})
         current_app.logger.exception("Social variant render failed")
         return jsonify({"error": "Les variantes sociales n'ont pas pu être rendues."}), 500
 
