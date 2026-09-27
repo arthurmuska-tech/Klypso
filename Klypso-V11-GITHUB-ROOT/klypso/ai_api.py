@@ -10,7 +10,7 @@ import requests
 from flask import Blueprint, current_app, jsonify, request, session
 
 from .auth import login_required
-from .credits import CreditError, consume_processing_credits, refund_processing_credits
+from .credits import CreditError, consume_processing_credits, refund_processing_credits, consume_monthly_clip_units, refund_monthly_clip_units
 from .database import get_db
 from .promo import effective_plan_key
 from .clips.intelligence import (
@@ -1067,11 +1067,21 @@ def render_clips(job_id):
     social_preset = str(body.get("social_preset") or "").strip().lower() or None
     caption_style = str(body.get("caption_style") or "").strip().lower() or None
     charged = 0
+    quota_units = 0
     try:
         result = json.loads(job["result_json"])
         available_ids = [str(c["id"]) for c in result.get("ai", {}).get("clips", [])[:5]]
         render_ids = [str(v) for v in requested_ids if str(v) in available_ids] if requested_ids else available_ids
-        charged = max(1, (min(5, len(render_ids)) + 2) // 3)
+        quota_units = min(5, len(render_ids))
+        if quota_units <= 0:
+            raise ValueError("Aucun clip valide à rendre.")
+        consume_monthly_clip_units(
+            session["user_id"],
+            effective_plan_key(user),
+            quota_units,
+            {"operation": "render_clips_quota", "job_id": job_id},
+        )
+        charged = max(1, (quota_units + 2) // 3)
         consume_processing_credits(
             session["user_id"],
             effective_plan_key(user),
