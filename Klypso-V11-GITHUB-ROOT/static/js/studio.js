@@ -187,11 +187,65 @@
   document.querySelectorAll('.play-btn').forEach(btn => btn.addEventListener('click', () => {
     btn.classList.toggle('playing');
     btn.textContent = btn.classList.contains('playing') ? 'Ⅱ' : '▶';
+    if (!previewVideo) return;
+    if (btn.classList.contains('playing')) previewVideo.play().catch(() => {});
+    else previewVideo.pause();
   }));
+  document.querySelector('.transport button:nth-child(2)')?.addEventListener('click', () => {
+    if (previewVideo) previewVideo.currentTime = Math.max(0, previewVideo.currentTime - 5);
+    syncTimecode();
+  });
+  document.querySelector('.transport button:nth-child(4)')?.addEventListener('click', () => {
+    if (previewVideo) previewVideo.currentTime = Math.min(previewVideo.duration || 0, previewVideo.currentTime + 5);
+    syncTimecode();
+  });
+  document.querySelector('.transport button:nth-child(1)')?.addEventListener('click', () => {
+    if (previewVideo) previewVideo.currentTime = 0;
+    syncTimecode();
+  });
+  document.querySelector('.transport button:nth-child(5)')?.addEventListener('click', () => {
+    if (previewVideo) previewVideo.currentTime = previewVideo.duration || 0;
+    syncTimecode();
+  });
+
+  let previewUrl = null;
+  let previewVideo = null;
+  const frame = document.getElementById('video-frame');
+  const timecode = document.querySelector('.timecode');
+  const formatTime = seconds => {
+    const value = Math.max(0, Number(seconds) || 0);
+    const minutes = Math.floor(value / 60);
+    const secs = value % 60;
+    return String(minutes).padStart(2, '0') + ':' + secs.toFixed(2).padStart(5, '0');
+  };
+  const syncTimecode = () => {
+    if (!timecode) return;
+    timecode.textContent = formatTime(previewVideo?.currentTime) + ' / ' + formatTime(previewVideo?.duration);
+  };
+  const mountPreview = file => {
+    if (!frame || !file) return;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = URL.createObjectURL(file);
+    frame.querySelector('.frame-placeholder')?.remove();
+    previewVideo?.remove();
+    previewVideo = document.createElement('video');
+    previewVideo.id = 'studio-preview';
+    previewVideo.controls = false;
+    previewVideo.playsInline = true;
+    previewVideo.preload = 'metadata';
+    previewVideo.src = previewUrl;
+    previewVideo.style.cssText = 'width:100%;height:100%;object-fit:contain;border-radius:inherit;background:#07070a;display:block;';
+    frame.prepend(previewVideo);
+    previewVideo.addEventListener('loadedmetadata', syncTimecode);
+    previewVideo.addEventListener('timeupdate', syncTimecode);
+    previewVideo.addEventListener('ended', () => document.querySelector('.main-play')?.classList.remove('playing'));
+    syncTimecode();
+  };
 
   input?.addEventListener('change', () => {
     const file = input.files?.[0];
     if (fileLabel) fileLabel.textContent = file ? file.name : 'Choisir une vidéo source';
+    if (file) mountPreview(file);
   });
 
   const setStep = (name) => document.querySelectorAll('[data-ai-step]').forEach(el => {
