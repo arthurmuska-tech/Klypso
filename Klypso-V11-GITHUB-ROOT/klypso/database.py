@@ -136,6 +136,12 @@ CREATE TABLE IF NOT EXISTS stripe_events (
     event_type TEXT NOT NULL,
     processed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS creator_ai_profiles (
+    user_id INTEGER PRIMARY KEY,
+    profile_json TEXT NOT NULL DEFAULT '{}',
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 """
 
 
