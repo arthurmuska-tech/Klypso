@@ -19,6 +19,8 @@ from .clips.intelligence import (
     update_creator_memory,
 )
 from .clips.agents import build_montage_directive, run_agent_suite
+from .clips.chat_intelligence import build_chat_signals, enrich_candidates_with_chat_signals, normalize_chat_messages
+from .clips.media_intelligence import analyze_media_signals, enrich_candidates_with_media_signals
 from .clips.renderer import concat_videos, render_candidate
 
 
@@ -124,8 +126,10 @@ def _prompt(duration, candidates, transcript_data=None, memory=None, mode="ai_cl
         f"SEGMENTS HORODATÉS: {json.dumps((transcript_data.get('segments') or [])[:500], ensure_ascii=False)}\n\n"
         "Réponds uniquement avec un objet JSON. Choisis uniquement des IDs présents dans CANDIDATS. "
         "Pour chaque clip: id,start,end,title,hook,reason,archetype,hook_score,payoff_score,emotion_score,novelty_score,"
-        "context_score,shareability_score,creator_fit_score,replay_score. Tous les scores 0-100. "
-        "Ajoute summary et montage avec clip_ids/opening_clip_id/closing_clip_id."
+        "context_score,shareability_score,creator_fit_score,replay_score,focus_x,focus_y,reframe_mode. "
+        "focus_x et focus_y sont des coordonnées normalisées 0-1 du sujet principal à conserver dans le cadrage vertical; "
+        "reframe_mode vaut smart_face, smart_gameplay, smart_center ou static_layout selon la preuve disponible. "
+        "Tous les scores vont de 0 à 100. Ajoute summary et montage avec clip_ids/opening_clip_id/closing_clip_id."
     )
 
 
@@ -161,11 +165,15 @@ def _text(provider, key, duration, candidates, transcript_data, memory, mode, pr
                                     "shareability_score": {"type": "number"},
                                     "creator_fit_score": {"type": "number"},
                                     "replay_score": {"type": "number"},
+                                    "focus_x": {"type": "number"},
+                                    "focus_y": {"type": "number"},
+                                    "reframe_mode": {"type": "string"},
                                 },
                                 "required": [
                                     "id", "start", "end", "title", "hook", "reason", "archetype",
                                     "hook_score", "payoff_score", "emotion_score", "novelty_score",
                                     "context_score", "shareability_score", "creator_fit_score", "replay_score",
+                                    "focus_x", "focus_y", "reframe_mode",
                                 ],
                                 "additionalProperties": False,
                             },
@@ -328,7 +336,19 @@ def status():
         "plan": effective_plan_key(user),
         "enabled": effective_plan_key(user) in {"pro", "ultra"} and bool(providers),
         "providers": providers,
-        "engine": "KLYPSO VIRAL ENGINE v2 · 15 agents",
+        "engine": "KLYPSO VIRAL ENGINE v3 · 15 agents + media/chat intelligence",
+        "capabilities": {
+            "ffmpeg_media_signals": True,
+            "chat_import": True,
+            "creator_dna": True,
+            "performance_memory": True,
+            "smart_reframe": True,
+            "social_renderer": True,
+            "scheduled_distribution": True,
+            "native_platform_posting": False,
+            "ai_broll": False,
+            "ai_voiceover": False,
+        },
     })
 
 
@@ -337,7 +357,11 @@ def status():
 def analyze_job(job_id):
     with get_db(current_app.config["DATABASE_PATH"]) as db:
         user = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
-        job = db.execute("SELECT * FROM jobs WHERE id=? AND user_id=?", (job_id, session["user_id"])).fetchone()
+        job = db.execute(
+            "SELECT * FROM jobs WHERE id=? AND user_id=?",
+            (job_id, session["user_id"]),
+        ).fetchone()
+
     denied = _assert_advanced(user)
     if denied:
         return denied
@@ -355,30 +379,62 @@ def analyze_job(job_id):
     preferences.setdefault("mode", mode)
     preferences.setdefault("output_format", output_format)
     preferences.setdefault("distribution_ready", False)
+
     try:
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             memory = build_creator_memory(db, session["user_id"])
+
         from .clips.analyzer import analyze_media
 
         analysis = analyze_media(path)
-        transcript_seed = []
-        # First evidence pass: broad candidate coverage + specialist agent consensus.
-        candidates = generate_intelligent_candidates(analysis["duration"], transcript_seed)
+
+        # Local media intelligence: scene changes, silence regions, audio peaks.
+        try:
+            media_signals = analyze_media_signals(path)
+        except Exception as signal_exc:
+            current_app.logger.warning("Media signal analysis unavailable: %s", type(signal_exc).__name__)
+            media_signals = {
+                "engine": "ffmpeg-media-signals-v1",
+                "scene_changes": [],
+                "scene_change_count": 0,
+                "silences": [],
+                "silence_count": 0,
+                "audio_peaks": [],
+                "audio_peak_count": 0,
+                "event_windows": [],
+            }
+
+        chat_messages = normalize_chat_messages(payload.get("chat_messages") or [])
+        chat_signals = build_chat_signals(chat_messages)
+
+        evidence_preferences = dict(preferences)
+        evidence_preferences["_media_signals"] = media_signals
+        evidence_preferences["_chat_signals"] = chat_signals
+
+        # Broad deterministic coverage first, then semantic model selection.
+        candidates = generate_intelligent_candidates(analysis["duration"], [])
+        candidates = enrich_candidates_with_media_signals(candidates, media_signals)
+        candidates = enrich_candidates_with_chat_signals(candidates, chat_signals)
         agent_report = run_agent_suite(
             analysis["duration"],
             analysis=analysis,
-            segments=transcript_seed,
+            segments=[],
             candidates=candidates,
             memory=memory,
             preferences=preferences,
-        )
-        result, router, transcript_data = _route(
-            path, analysis["duration"], candidates, memory, mode, preferences, agent_report
+            media_signals=media_signals,
+            chat_signals=chat_signals,
         )
 
-        # A timestamped transcript creates a richer second evidence pass.
+        result, router, transcript_data = _route(
+            path, analysis["duration"], candidates, memory, mode, evidence_preferences, agent_report
+        )
+
+        # Timestamped transcript creates a second, tighter semantic pass.
         if transcript_data.get("segments"):
             candidates = generate_intelligent_candidates(analysis["duration"], transcript_data["segments"])
+            candidates = enrich_candidates_with_media_signals(candidates, media_signals)
+            candidates = enrich_candidates_with_chat_signals(candidates, chat_signals)
             agent_report = run_agent_suite(
                 analysis["duration"],
                 analysis=analysis,
@@ -386,10 +442,16 @@ def analyze_job(job_id):
                 candidates=candidates,
                 memory=memory,
                 preferences=preferences,
+                media_signals=media_signals,
+                chat_signals=chat_signals,
             )
-            result = enrich_ai_result(result, candidates, memory, transcript_data.get("segments", []))
-        else:
-            result = enrich_ai_result(result, candidates, memory)
+
+        result = enrich_ai_result(
+            result,
+            candidates,
+            memory,
+            transcript_data.get("segments", []),
+        )
 
         director = build_montage_directive(
             result.get("clips", []),
@@ -405,6 +467,8 @@ def analyze_job(job_id):
         }
         result["montage_director"] = director
         result["agents"] = agent_report
+        result["media_intelligence"] = media_signals
+        result["chat_intelligence"] = chat_signals
 
         saved = {
             "mode": mode,
@@ -413,37 +477,12 @@ def analyze_job(job_id):
             "analysis": analysis,
             "candidates": candidates,
             "transcript": transcript_data,
+            "chat": chat_signals,
             "output_format": output_format,
             "preferences": preferences,
+            "media_signals": media_signals,
         }
-        with get_db(current_app.config["DATABASE_PATH"]) as db:
-            memory = build_creator_memory(db, session["user_id"])
-        from .clips.analyzer import analyze_media
 
-        analysis = analyze_media(path)
-        transcript_seed = []
-        # When Gemini is selected, candidates still need deterministic coverage.
-        candidates = generate_intelligent_candidates(analysis["duration"], transcript_seed)
-        result, router, transcript_data = _route(path, analysis["duration"], candidates, memory, mode, preferences)
-
-        # Groq transcription gives timestamped speech clusters; regenerate candidates
-        # with these richer anchors and make one final deterministic selection pass.
-        if transcript_data.get("segments"):
-            candidates = generate_intelligent_candidates(analysis["duration"], transcript_data["segments"])
-            result = enrich_ai_result(result, candidates, memory, transcript_data.get("segments", []))
-        else:
-            result = enrich_ai_result(result, candidates, memory)
-
-        saved = {
-            "mode": mode,
-            "router": router,
-            "ai": result,
-            "analysis": analysis,
-            "candidates": candidates,
-            "transcript": transcript_data,
-            "output_format": output_format,
-            "preferences": preferences,
-        }
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             db.execute(
                 "UPDATE jobs SET status=?,result_json=?,error_message=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?",
@@ -451,21 +490,64 @@ def analyze_job(job_id):
             )
             update_creator_memory(db, session["user_id"], result, output_format)
             db.commit()
+
         return jsonify({
             "ok": True,
             "job_id": job_id,
             "result": saved,
-            "message": "Analyse terminée: 15 agents ont croisé contexte, rythme, diversité, Creator DNA et distribution.",
+            "message": "Analyse terminée: signaux média, chat, Creator DNA, sélection IA et direction de montage croisés.",
         })
     except Exception:
-        current_app.logger.exception("AI router failed")
+        current_app.logger.exception("AI analysis failed")
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             db.execute(
                 "UPDATE jobs SET status=?,error_message=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
-                ("failed", "AI router exhausted", job_id),
+                ("failed", "AI analysis failed", job_id),
             )
             db.commit()
-        return jsonify({"error": "Toutes les IA configurées ont échoué ou atteint leurs limites."}), 500
+        return jsonify({"error": "L'analyse IA a échoué. Vérifie les moteurs IA et FFmpeg configurés."}), 500
+
+@ai_bp.post("/api/ai/chat/<int:job_id>")
+@login_required
+def import_chat(job_id):
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        job = db.execute(
+            "SELECT * FROM jobs WHERE id=? AND user_id=?",
+            (job_id, session["user_id"]),
+        ).fetchone()
+    if not job:
+        return jsonify({"error": "Projet introuvable."}), 404
+
+    body = request.get_json(silent=True) or {}
+    messages = normalize_chat_messages(body.get("messages") or [])
+    if not messages:
+        return jsonify({"error": "Aucun message de chat exploitable."}), 400
+
+    signals = build_chat_signals(messages)
+    payload = json.loads(job["payload_json"] or "{}")
+    payload["chat_messages"] = messages
+
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        db.execute(
+            "UPDATE jobs SET payload_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            (json.dumps(payload, ensure_ascii=False), job_id),
+        )
+        if job["result_json"]:
+            saved = json.loads(job["result_json"] or "{}")
+            saved["chat"] = signals
+            saved["chat_intelligence"] = signals
+            db.execute(
+                "UPDATE jobs SET result_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                (json.dumps(saved, ensure_ascii=False), job_id),
+            )
+        db.commit()
+
+    return jsonify({
+        "ok": True,
+        "job_id": job_id,
+        "chat": signals,
+        "message": "Chat importé. Relance l'analyse pour que la sélection IA recalcule les scores avec ces signaux.",
+    }), 200
 
 
 def _render_ai_clips(job, result, requested_ids=None, social_preset=None, caption_style=None, montage=False):
@@ -507,6 +589,11 @@ def _render_ai_clips(job, result, requested_ids=None, social_preset=None, captio
             caption_style=captions,
             zoom=directed_item.get("zoom"),
             fade_seconds=fade,
+            reframe_plan={
+                "focus_x": candidate.get("focus_x", 0.5),
+                "focus_y": candidate.get("focus_y", 0.5),
+                "mode": candidate.get("reframe_mode", "smart_center"),
+            },
         )
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
