@@ -10,9 +10,10 @@
   </small></div>
 </div>
 {% if config.GOOGLE_CLIENT_ID %}
-<div class="oauth-google-wrap" data-google-signin>
-  <div id="g_id_onload" data-client_id="{{ config.GOOGLE_CLIENT_ID }}" data-context="signin" data-ux_mode="popup" data-callback="handleGoogleCredential" data-auto_prompt="false"></div>
-  <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="continue_with" data-shape="rectangular" data-width="380"></div>
+<div class="oauth-google-wrap"
+     data-google-signin
+     data-google-client-id="{{ config.GOOGLE_CLIENT_ID }}">
+  <div data-google-button></div>
   <small class="google-inline-status" data-google-status></small>
 </div>
 {% else %}<div class="oauth-button oauth-button-disabled"><b class="google-mark">G</b> Google indisponible</div>{% endif %}
