@@ -3,7 +3,7 @@ import json
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 from .pipeline import create_analysis_job
 from ..auth import login_required
-from ..credits import CreditError, consume_clip_credits, credit_cost_from_request, refund_clip_credits
+from ..credits import CreditError, consume_clip_credits, credit_cost_from_request, refund_clip_credits, consume_monthly_clip_units, refund_monthly_clip_units
 from ..database import get_db
 from ..media.storage import safe_media_name, is_allowed_mime
 from ..promo import effective_plan_key
@@ -242,6 +242,14 @@ def render_standard_clip(job_id):
         if end - start < 1.0:
             raise ValueError("La durée du clip doit être positive.")
 
+        consume_monthly_clip_units(
+            session["user_id"],
+            effective_plan_key(user),
+            1,
+            {"operation": "render_standard_quota", "job_id": job_id},
+        )
+        quota_charged = True
+
         folder = user_storage(current_app.config["STORAGE_PATH"], session["user_id"]) / "standard"
         folder.mkdir(parents=True, exist_ok=True)
         output = folder / f"klypso-{job_id}-standard-{int(start * 10)}.mp4"
@@ -270,8 +278,12 @@ def render_standard_clip(job_id):
             "download_url": f"/studio/ai-download/{media_id}",
         }, 200
     except ValueError as exc:
+        if "quota_charged" in locals() and quota_charged:
+            refund_monthly_clip_units(session["user_id"], 1, {"operation": "render_standard_quota_failed", "job_id": job_id})
         return {"error": str(exc)}, 400
     except Exception:
+        if "quota_charged" in locals() and quota_charged:
+            refund_monthly_clip_units(session["user_id"], 1, {"operation": "render_standard_quota_failed", "job_id": job_id})
         current_app.logger.exception("Standard clip render failed")
         return {"error": "Le rendu du clip standard a échoué."}, 500
 
