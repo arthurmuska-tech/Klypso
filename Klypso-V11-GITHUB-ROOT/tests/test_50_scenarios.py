@@ -610,7 +610,7 @@ def test_v17_ai_engine_scenarios(client, app, scenario):
         with app.app_context():
             user = _create_email_user("free-ai@example.com")
             with get_db(app.config["DATABASE_PATH"]) as db:
-                cur = db.execute("INSERT INTO jobs(user_id,job_type,status,payload_json) VALUES(?,?,?,?,?)", (user["id"],"ai_clip_analysis","queued",'{"path":"/tmp/nope.mp4","mode":"ai_clips"}'))
+                cur = db.execute("INSERT INTO jobs(user_id,job_type,status,payload_json) VALUES(?,?,?,?)", (user["id"],"ai_clip_analysis","queued",'{"path":"/tmp/nope.mp4","mode":"ai_clips"}'))
                 db.commit()
                 job_id = cur.lastrowid
         with client.session_transaction() as sess:
@@ -624,7 +624,7 @@ def test_v17_ai_engine_scenarios(client, app, scenario):
             job_id = create_analysis_job(user["id"], 1, "/tmp/nope.mp4", app.config["DATABASE_PATH"], {"mode":"ai_clips"})
         with client.session_transaction() as sess:
             sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
-        r = client.post(f"/api/ai/render-clips/{job_id}")
+        r = client.post(f"/api/ai/render-clips/{job_id}", headers={"X-CSRF-Token":"csrf-ok"})
         assert r.status_code in {403, 409}
 
     elif scenario == "ai_montage_requires_analysis":
@@ -636,7 +636,7 @@ def test_v17_ai_engine_scenarios(client, app, scenario):
             job_id = create_analysis_job(user["id"], 1, "/tmp/nope.mp4", app.config["DATABASE_PATH"], {"mode":"ai_montage"})
         with client.session_transaction() as sess:
             sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
-        r = client.post(f"/api/ai/render-montage/{job_id}")
+        r = client.post(f"/api/ai/render-montage/{job_id}", headers={"X-CSRF-Token":"csrf-ok"})
         assert r.status_code in {409, 500}
 
     elif scenario == "upload_page_exposes_four_modes":
@@ -692,6 +692,7 @@ V17_EXTRA_SCENARIOS = [
 @pytest.mark.parametrize("scenario", V17_EXTRA_SCENARIOS, ids=V17_EXTRA_SCENARIOS)
 def test_v17_extra_scenarios(client, app, scenario):
     from klypso.clips.intelligence import enrich_ai_result, tighten_clip_boundaries
+    from klypso.clips.pipeline import create_analysis_job
 
     if scenario == "preferences_saved_in_project":
         with app.app_context():
