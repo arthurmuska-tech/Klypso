@@ -16,6 +16,7 @@ from flask import session
 from . import create_app
 from .ai_api import _run_analysis_job
 from .database import get_db
+from .media.object_storage import enabled as object_storage_enabled
 
 
 LOGGER = logging.getLogger("klypso.worker")
@@ -173,6 +174,11 @@ def _install_signal_handlers():
 
 def main():
     app = create_app()
+    database_path = str(app.config["DATABASE_PATH"])
+    if app.config.get("REQUIRE_POSTGRES") and not database_path.startswith(("postgresql://", "postgres://")):
+        raise RuntimeError("Worker production requires PostgreSQL via DATABASE_URL.")
+    if app.config.get("REQUIRE_OBJECT_STORAGE") and not object_storage_enabled():
+        raise RuntimeError("Worker production requires configured object storage.")
     _install_signal_handlers()
     poll_seconds = max(1, int(os.getenv("WORKER_POLL_SECONDS", "2")))
     once = str(os.getenv("WORKER_ONCE", "")).lower() in {"1", "true", "yes", "on"}
