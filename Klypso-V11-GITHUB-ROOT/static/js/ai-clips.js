@@ -25,7 +25,7 @@
     const clips = ai.clips || [];
     const memory = data?.result?.ai?.creator_memory_used || data?.result?.creator_memory_used || {};
     box.innerHTML =
-      '<div class="ai-result-title"><div><span class="eyebrow-v11">KLYPSO VIRAL ENGINE · V1</span><h3>Sélection éditoriale prête.</h3><p>' +
+      '<div class="ai-result-title"><div><span class="eyebrow-v11">KLYPSO VIRAL ENGINE · 15 AGENTS</span><h3>Sélection éditoriale prête.</h3><p>' +
       escapeHtml(ai.summary || data.message || 'Scènes classées.') +
       '</p></div><div class="ai-memory-chip">DNA · ' + escapeHtml(memory.projects_analyzed || 0) + ' projets appris</div></div>' +
       '<div class="ai-result-actions"><button class="button" type="button" data-render-clips="' + jobId + '">Rendre les clips avec ce preset →</button><button class="button ghost" type="button" data-render-montage="' + jobId + '">Créer le montage IA →</button></div>' +
