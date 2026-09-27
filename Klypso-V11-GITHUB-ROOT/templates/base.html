@@ -6,16 +6,18 @@
 <meta name="theme-color" content="#07080d">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <meta name="description" content="{% block meta_description %}KLYPSO — workspace vidéo pour transformer tes streams en clips et montages prêts à publier.{% endblock %}">
-<meta property="og:type" content="website"><meta property="og:site_name" content="KLYPSO">\n<meta property="og:url" content="{{ public_base_url }}{{ request.path }}">
+<meta property="og:type" content="website"><meta property="og:site_name" content="KLYPSO"><meta property="og:url" content="{{ public_base_url }}{{ request.path }}">
 <meta property="og:title" content="{% block og_title %}KLYPSO{% endblock %}">
 <meta property="og:description" content="{% block og_description %}KLYPSO Clips et Klypso Studio dans un workspace pensé pour les créateurs.{% endblock %}">
 <link rel="canonical" href="{{ public_base_url }}{{ request.path }}">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
 <link rel="icon" href="{{ url_for('static', filename='img/klypso-mark.svg') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=22.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v10.css') }}?v=22.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v11.css') }}?v=22.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v14.css') }}?v=22.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=24.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v10.css') }}?v=24.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v11.css') }}?v=24.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v14.css') }}?v=24.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v23.css') }}?v=24.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v24.css') }}?v=1.0">
 <title>{% block title %}KLYPSO{% endblock %}</title>
 {% block head_extra %}{% endblock %}
 </head>
@@ -102,9 +104,10 @@
 {% else %}
 <footer class="public-footer"><div><span class="klypso-logo-word">KLYPSO</span><span>Clips et montage vidéo pour créateurs.</span></div><nav><a href="{{ url_for('legal.mentions_legales') }}">Mentions légales</a><a href="{{ url_for('legal.confidentialite') }}">Confidentialité</a><a href="{{ url_for('legal.cgu') }}">CGU</a><a href="{{ url_for('legal.cgv') }}">CGV</a><a href="{{ url_for('legal.contact') }}">Contact</a></nav></footer>
 {% endif %}
-<script src="{{ url_for('static', filename='js/app.js') }}?v=22.0" defer></script>
-<script src="{{ url_for('static', filename='js/v11.js') }}?v=22.0" defer></script>
-<script src="{{ url_for('static', filename='js/v14.js') }}?v=22.0" defer></script>
+<script src="{{ url_for('static', filename='js/app.js') }}?v=24.0" defer></script>
+<script src="{{ url_for('static', filename='js/v11.js') }}?v=24.0" defer></script>
+<script src="{{ url_for('static', filename='js/v14.js') }}?v=24.0" defer></script>
+<script src="{{ url_for('static', filename='js/v24.js') }}?v=1.0" defer></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>
