@@ -529,7 +529,7 @@
         if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(); }
       });
     });
-    $('[data-spotlight-close]', spotlight).forEach((el) => el.addEventListener('click', closeSpotlight));
+    $$('[data-spotlight-close]', spotlight).forEach((el) => el.addEventListener('click', closeSpotlight));
     addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && !spotlight.hidden) closeSpotlight();
     });
@@ -542,7 +542,7 @@
     '03': '/studio',
     '04': '/publisher'
   };
-  $('.workspace-flow-steps > div').forEach((step) => {
+  $$('.workspace-flow-steps > div').forEach((step) => {
     const number = step.querySelector('span');
     if (!number) return;
     const target = flowRoutes[number.textContent.trim()];
