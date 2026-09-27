@@ -280,7 +280,7 @@ def create_schedule_entry(user_id, media_id, platform, scheduled_for, job_id=Non
         package = _social_copy(job, candidate_id, platform)
         cur = db.execute(
             "INSERT INTO publish_queue(user_id,media_id,job_id,candidate_id,platform,scheduled_for,status,title,caption,hashtags,metadata_json) "
-            "VALUES(?,?,?,?,?,'scheduled',?,?,?,?,?,?)",
+            "VALUES(?,?,?,?,?,?, 'scheduled',?,?,?,?)",
             (
                 user_id, media_id, job_id, candidate_id, platform, _iso(when),
                 title or package["title"], caption or package["caption"], hashtags or package["hashtags"],
