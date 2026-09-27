@@ -13,7 +13,7 @@ def env_bool(name, default=False):
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-change-me")
-    DATABASE_PATH = os.environ.get("DATABASE_PATH", str(BASE_DIR / "data" / "klypso.sqlite3"))
+    DATABASE_PATH = os.environ.get("DATABASE_URL") or os.environ.get("DATABASE_PATH", str(BASE_DIR / "data" / "klypso.sqlite3"))
     STORAGE_PATH = os.environ.get("STORAGE_PATH", str(BASE_DIR / "storage"))
     MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH_MB", "4096")) * 1024 * 1024
 
