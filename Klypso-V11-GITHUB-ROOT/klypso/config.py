@@ -87,6 +87,8 @@ class Config:
     EMAIL_SMTP_FROM = os.environ.get("EMAIL_SMTP_FROM", "")
     EMAIL_SMTP_TLS = env_bool("EMAIL_SMTP_TLS", True)
     EMAIL_OTP_MINUTES = int(os.environ.get("EMAIL_OTP_MINUTES", "10"))
+    EMAIL_OTP_COOLDOWN_SECONDS = int(os.environ.get("EMAIL_OTP_COOLDOWN_SECONDS", "45"))
+    EMAIL_OTP_MAX_PER_HOUR = int(os.environ.get("EMAIL_OTP_MAX_PER_HOUR", "8"))
     EMAIL_OTP_DEV_LOG_CODE = env_bool("EMAIL_OTP_DEV_LOG_CODE", False)
 
     AI_API_BASE_URL = os.environ.get("AI_API_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
