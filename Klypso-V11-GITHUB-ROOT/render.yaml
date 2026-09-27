@@ -92,6 +92,12 @@ services:
         sync: false
       - key: OPENROUTER_API_KEY_2
         sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_VOICE_ID
+        sync: false
+      - key: ELEVENLABS_MODEL
+        value: eleven_multilingual_v2
       - key: KLYPSO_CRON_SECRET
         sync: false
       - key: AI_PROVIDER_ORDER
