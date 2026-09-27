@@ -28,7 +28,7 @@
       '<div class="ai-result-title"><div><span class="eyebrow-v11">KLYPSO VIRAL ENGINE · V1</span><h3>Sélection éditoriale prête.</h3><p>' +
       escapeHtml(ai.summary || data.message || 'Scènes classées.') +
       '</p></div><div class="ai-memory-chip">DNA · ' + escapeHtml(memory.projects_analyzed || 0) + ' projets appris</div></div>' +
-      '<div class="ai-result-actions"><button class="button" type="button" data-render-clips="' + jobId + '">Rendre les 5 meilleurs clips →</button><button class="button ghost" type="button" data-render-montage="' + jobId + '">Créer le montage IA →</button></div>' +
+      '<div class="ai-result-actions"><button class="button" type="button" data-render-clips="' + jobId + '">Rendre les clips avec ce preset →</button><button class="button ghost" type="button" data-render-montage="' + jobId + '">Créer le montage IA →</button></div>' +
       '<div class="ai-clip-list">' +
       clips.map((clip, index) =>
         '<article class="ai-clip-row"><div class="ai-clip-rank">0' + (index + 1) + '</div><div class="ai-clip-main"><div class="ai-clip-head"><span class="ai-archetype">' + escapeHtml(clip.archetype || 'moment fort') + '</span><b>' + escapeHtml(clip.title) + '</b><strong>' + escapeHtml(clip.opportunity_score) + '/100</strong></div>' +
@@ -37,6 +37,14 @@
         '<div class="performance-panel" data-performance-panel="' + jobId + ':' + escapeHtml(clip.id) + '" hidden><div><span>APRÈS PUBLICATION</span><strong>Apprends à KLYPSO ce qui a vraiment marché.</strong></div><label>Plateforme<select data-performance-platform><option value="youtube">YouTube</option><option value="tiktok">TikTok</option><option value="instagram">Instagram</option><option value="x">X</option><option value="other">Autre</option></select></label><label>Vues<input type="number" min="0" value="0" data-performance-views></label><label>Likes<input type="number" min="0" value="0" data-performance-likes></label><label>Commentaires<input type="number" min="0" value="0" data-performance-comments></label><label>Partages<input type="number" min="0" value="0" data-performance-shares></label><label>Complétion %<input type="number" min="0" max="100" step="0.1" value="0" data-performance-completion></label><button class="button small" type="button" data-performance-save="' + jobId + ':' + escapeHtml(clip.id) + '">Enregistrer la performance</button><span data-performance-status></span></div></div></div></article>'
       ).join('') +
       '</div><div class="ai-render-output" data-ai-render-output="' + jobId + '"></div>';
+    const agents = ai.agents || {};
+    const agentItems = (agents.agents || []).map(agent =>
+      '<span class="agent-chip"><span title="' + escapeHtml(agent.note || '') + '">' + escapeHtml(agent.name || 'agent') + '</span><b>' + Number(agent.score || 0) + '</b></span>'
+    ).join('');
+    box.querySelector('.ai-result-actions')?.insertAdjacentHTML('afterend',
+      '<div class="agent-grid-v18"><div class="agent-grid-head"><b>15 agents ont croisé le dossier</b><span>CONSENSUS ' + Number(agents.consensus_score || 0) + '/100</span></div><div class="agent-grid-list">' + agentItems + '</div></div>' +
+      '<div class="social-render-controls"><span>RENDU SOCIAL</span><label>Preset<select data-social-preset><option value="dynamic">Dynamic</option><option value="gaming">Gaming</option><option value="story">Story</option><option value="clean">Clean</option></select></label><label>Captions<select data-caption-style><option value="dynamic">Dynamic</option><option value="classic">Classic</option><option value="minimal">Minimal</option></select></label></div>'
+    );
     box.hidden = false;
     box.scrollIntoView({behavior:'smooth', block:'center'});
   };
@@ -143,7 +151,14 @@
       const box = resultBox(renderClips.dataset.renderClips);
       const output = box?.querySelector('[data-ai-render-output]');
       try {
-        const response = await fetch('/api/ai/render-clips/' + renderClips.dataset.renderClips, {method:'POST', headers:{'X-CSRF-Token':csrf}, credentials:'same-origin'});
+        const socialPreset = box?.querySelector('[data-social-preset]')?.value || 'dynamic';
+        const captionStyle = box?.querySelector('[data-caption-style]')?.value || 'dynamic';
+        const response = await fetch('/api/ai/render-clips/' + renderClips.dataset.renderClips, {
+          method:'POST',
+          headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},
+          body:JSON.stringify({social_preset:socialPreset,caption_style:captionStyle}),
+          credentials:'same-origin'
+        });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || 'Rendu impossible.');
         if (output) output.innerHTML = '<div class="ai-download-grid">' + (data.clips || []).map(clip => '<a class="ai-download-card" href="' + clip.download_url + '"><span>MP4</span><b>' + escapeHtml(clip.title) + '</b><small>' + clip.score + '/100 · Télécharger →</small></a>').join('') + '</div>';
