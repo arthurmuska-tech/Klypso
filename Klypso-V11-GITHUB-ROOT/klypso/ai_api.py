@@ -531,10 +531,12 @@ def generate_broll(job_id):
         folder = Path(current_app.config["STORAGE_PATH"]) / "users" / str(session["user_id"]) / "ai-assets"
         output = folder / f"klypso-{job_id}-broll-{clip_id}.png"
         generate_broll_image(prompt, output, aspect_ratio=aspect_ratio)
+        size_bytes = output.stat().st_size
+        stored_output = persist_file(output, session["user_id"], output.name, "image/png")
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
                 "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
-                (session["user_id"], output.name, str(output), "image/png", output.stat().st_size),
+                (session["user_id"], output.name, stored_output, "image/png", size_bytes),
             )
             media_id = cur.lastrowid
             db.commit()
@@ -589,10 +591,12 @@ def generate_clip_voiceover(job_id):
         folder = Path(current_app.config["STORAGE_PATH"]) / "users" / str(session["user_id"]) / "ai-assets"
         output = folder / f"klypso-{job_id}-voiceover-{clip_id or 'summary'}.mp3"
         generate_voiceover(text_value, output, voice_id=body.get("voice_id"))
+        size_bytes = output.stat().st_size
+        stored_output = persist_file(output, session["user_id"], output.name, "audio/mpeg")
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
                 "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
-                (session["user_id"], output.name, str(output), "audio/mpeg", output.stat().st_size),
+                (session["user_id"], output.name, stored_output, "audio/mpeg", size_bytes),
             )
             media_id = cur.lastrowid
             db.commit()
@@ -1258,7 +1262,7 @@ def render_montage(job_id):
             for item in rendered:
                 row = db.execute("SELECT stored_path FROM media_files WHERE id=? AND user_id=?", (item["media_id"], session["user_id"])).fetchone()
                 if row:
-                    paths.append(row["stored_path"])
+                    paths.append(materialize_media_path(row["stored_path"]))
         if not paths:
             raise RuntimeError("Aucun clip à concaténer.")
 
@@ -1266,11 +1270,13 @@ def render_montage(job_id):
         folder.mkdir(parents=True, exist_ok=True)
         output = folder / f"klypso-{job['id']}-montage-ia.mp4"
         concat_videos(paths, str(output))
+        size_bytes = output.stat().st_size
+        stored_output = persist_file(output, session["user_id"], output.name, "video/mp4")
 
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
                 "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
-                (session["user_id"], f"Montage IA #{job['id']}.mp4", str(output), "video/mp4", output.stat().st_size),
+                (session["user_id"], f"Montage IA #{job['id']}.mp4", stored_output, "video/mp4", size_bytes),
             )
             media_id = cur.lastrowid
             result["rendered_montage"] = {
