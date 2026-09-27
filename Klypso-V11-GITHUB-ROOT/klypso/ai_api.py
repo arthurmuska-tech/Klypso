@@ -25,6 +25,7 @@ from .clips.renderer import concat_videos, render_candidate
 from .clips.vision_tracking import analyze_face_tracking, enrich_candidates_with_face_tracking
 from .clips.gameplay_intelligence import classify_game_context, enrich_gameplay_candidates
 from .clips.audio_intelligence import analyze_audio_quality, enrich_candidates_with_audio_quality
+from .social_connections import connection_status
 from .social_profiles import clamp_candidate_to_profile, get_social_profile
 from .ai_assets import asset_status, compose_assets, generate_broll_image, generate_voiceover
 
@@ -124,7 +125,8 @@ def _prompt(duration, candidates, transcript_data=None, memory=None, mode="ai_cl
         f"Media: {json.dumps(preferences.get('_media_signals', {}), ensure_ascii=False)[:12000]}\n"
         f"Vision/tracking: {json.dumps(preferences.get('_vision_tracking', {}), ensure_ascii=False)[:8000]}\n"
         f"Chat: {json.dumps(preferences.get('_chat_signals', {}), ensure_ascii=False)[:12000]}\n"
-        f"Gameplay: {json.dumps(preferences.get('_game_context', {}), ensure_ascii=False)[:4000]}\n\n"
+        f"Gameplay: {json.dumps(preferences.get('_game_context', {}), ensure_ascii=False)[:4000]}\n"
+        f"Audio quality: {json.dumps(preferences.get('_audio_quality', {}), ensure_ascii=False)[:4000]}\n\n"
         "DOSSIER DES 15 AGENTS KLYPSO:\n"
         f"{json.dumps({'consensus_score': (agent_report or {}).get('consensus_score', 0), 'priority_archetypes': (agent_report or {}).get('priority_archetypes', []), 'agents': [{'name': a.get('name'), 'score': a.get('score'), 'signals': a.get('signals')} for a in (agent_report or {}).get('agents', [])]}, ensure_ascii=False)}\n\n"
         "RUBRIQUE DE SÉLECTION:\n"
@@ -621,6 +623,9 @@ def status():
     with get_db(current_app.config["DATABASE_PATH"]) as db:
         user = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
     providers = []
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        social = connection_status(db, session["user_id"])
+    native_platforms = [platform for platform, item in social.items() if item.get("connected") and item.get("adapter") == "oauth"]
     if _keys("GEMINI_API_KEY"):
         providers.append("gemini")
     if _keys("GROQ_API_KEY"):
@@ -643,7 +648,8 @@ def status():
             "gameplay_intelligence": True,
             "social_renderer": True,
             "scheduled_distribution": True,
-            "native_platform_posting": False,
+            "native_platform_posting": bool(native_platforms),
+            "native_platforms": native_platforms,
             "social_multi_render": True,
             "ai_broll": asset_status()["ai_broll"],
             "ai_voiceover": asset_status()["ai_voiceover"],
@@ -725,6 +731,7 @@ def analyze_job(job_id):
         evidence_preferences["_media_signals"] = media_signals
         evidence_preferences["_chat_signals"] = chat_signals
         evidence_preferences["_vision_tracking"] = face_tracking
+        evidence_preferences["_audio_quality"] = audio_profile if "audio_profile" in locals() else {}
 
         # Broad deterministic coverage first, augmented by non-verbal media/chat events.
         candidates = generate_intelligent_candidates(analysis["duration"], [])
