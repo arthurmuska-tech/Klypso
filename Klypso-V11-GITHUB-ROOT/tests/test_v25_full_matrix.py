@@ -64,7 +64,7 @@ def test_v25_full_reliability_matrix(case, tmp_path):
         suffix = "" if case % 2 == 0 else "?utm_source=matrix"
         response = app.test_client().get(path + suffix)
         assert response.status_code < 500, (path, response.status_code)
-        if path not in {"/robots.txt", "/sitemap.xml"}:
+        if path not in {"/robots.txt", "/sitemap.xml", "/healthz"}:
             assert "text/html" in response.content_type
             assert response.data
         else:
