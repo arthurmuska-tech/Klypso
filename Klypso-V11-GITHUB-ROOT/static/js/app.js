@@ -105,6 +105,73 @@
   $('[data-setting-group="palette"] [data-palette]').forEach((button) => button.addEventListener('click', () => applyPalette(button.dataset.palette)));
   $$('[data-caption]').forEach((button) => button.addEventListener('click', () => applyCaption(button.dataset.caption)));
 
+  /* V16 Command Center */
+  const commandPalette = $('[data-command-palette]');
+  const commandInput = $('[data-command-input]', commandPalette || document);
+  const commandItems = $('[data-command-item]', commandPalette || document);
+  let commandIndex = 0;
+  function commandOpen() {
+    if (!commandPalette) return;
+    commandPalette.classList.add('open');
+    commandPalette.setAttribute('aria-hidden', 'false');
+    commandIndex = 0;
+    if (commandInput) {
+      commandInput.value = '';
+      commandItems.forEach((item) => { item.hidden = false; item.classList.remove('is-active'); });
+      requestAnimationFrame(() => commandInput.focus());
+    }
+    document.body.classList.add('command-open');
+  }
+  function commandClose() {
+    if (!commandPalette) return;
+    commandPalette.classList.remove('open');
+    commandPalette.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('command-open');
+  }
+  function visibleCommandItems() { return commandItems.filter((item) => !item.hidden); }
+  function setCommandIndex(next) {
+    const items = visibleCommandItems();
+    if (!items.length) return;
+    commandIndex = (next + items.length) % items.length;
+    items.forEach((item, i) => item.classList.toggle('is-active', i === commandIndex));
+    items[commandIndex].scrollIntoView({ block: 'nearest' });
+  }
+  function filterCommands(value) {
+    const query = (value || '').trim().toLowerCase();
+    commandItems.forEach((item) => {
+      const haystack = ((item.dataset.commandTitle || '') + ' ' + item.textContent).toLowerCase();
+      item.hidden = query && !haystack.includes(query);
+      item.classList.remove('is-active');
+    });
+    commandIndex = 0;
+    setCommandIndex(0);
+  }
+  $('[data-search-open]')?.addEventListener('click', commandOpen);
+  $('[data-command-close]').forEach((el) => el.addEventListener('click', commandClose));
+  commandInput?.addEventListener('input', () => filterCommands(commandInput.value));
+  commandInput?.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown') { event.preventDefault(); setCommandIndex(commandIndex + 1); }
+    if (event.key === 'ArrowUp') { event.preventDefault(); setCommandIndex(commandIndex - 1); }
+    if (event.key === 'Enter') {
+      const items = visibleCommandItems();
+      if (items[commandIndex]) items[commandIndex].click();
+    }
+    if (event.key === 'Escape') { event.preventDefault(); commandClose(); }
+  });
+  document.addEventListener('keydown', (event) => {
+    const mod = event.ctrlKey || event.metaKey;
+    if (mod && event.key.toLowerCase() === 'k') { event.preventDefault(); commandOpen(); return; }
+    if (event.key === 'Escape' && commandPalette?.classList.contains('open')) commandClose();
+    if (mod && event.key.toLowerCase() === 's' && document.querySelector('[data-save-project]')) {
+      event.preventDefault();
+      document.querySelector('[data-save-project]')?.click();
+    }
+  });
+  commandItems.forEach((item) => item.addEventListener('mousemove', () => {
+    const items = visibleCommandItems(); const index = items.indexOf(item);
+    if (index >= 0) setCommandIndex(index);
+  }));
+
   /* Sidebar */
   const path = location.pathname;
   $$('.sidebar-nav a[data-nav]').forEach((a) => {
@@ -157,12 +224,63 @@
   $('[data-brand-reset]')?.addEventListener('click', resetAppearance);
   $('[data-appearance-reset]')?.addEventListener('click', resetAppearance);
 
+  /* V16 Clips library: search + sort */
+  const clipsGrid = $('.clip-project-grid');
+  const clipsSearch = $('[data-clips-search]');
+  const clipsSearchToggle = $('[data-clips-search-toggle]');
+  const clipsSort = $('[data-clips-sort]');
+  const clipsResultCount = $('[data-clips-result-count]');
+  const clipsEmpty = $('[data-clips-no-results]');
+  const clipCards = clipsGrid ? $('.clip-project-card', clipsGrid) : [];
+  let activeClipTab = 'all';
+  let activeClipQuery = '';
+  let activeClipSort = 'recent';
+
+  function syncClipLibrary() {
+    if (!clipCards.length) return;
+    const query = activeClipQuery.toLowerCase();
+    const filtered = clipCards.filter((card) => {
+      const status = card.dataset.status || '';
+      const title = (card.textContent || '').toLowerCase();
+      const stateOK = activeClipTab === 'all' ||
+        (activeClipTab === 'ready' && /completed|done|ready/.test(status)) ||
+        (activeClipTab === 'processing' && /processing|running|queued/.test(status));
+      return stateOK && (!query || title.includes(query));
+    });
+    const sorted = [...filtered].sort((a, b) => {
+      const aa = a.dataset.created || '';
+      const bb = b.dataset.created || '';
+      if (activeClipSort === 'oldest') return aa.localeCompare(bb);
+      if (activeClipSort === 'status') return (a.dataset.status || '').localeCompare(b.dataset.status || '') || bb.localeCompare(aa);
+      return bb.localeCompare(aa);
+    });
+    sorted.forEach((card) => { card.style.display = ''; clipsGrid.appendChild(card); });
+    clipCards.forEach((card) => { if (!sorted.includes(card)) card.style.display = 'none'; });
+    if (clipsResultCount) clipsResultCount.textContent = String(filtered.length);
+    if (clipsEmpty) clipsEmpty.hidden = filtered.length !== 0;
+  }
+  clipsSearchToggle?.addEventListener('click', () => {
+    const visible = clipsSearch?.classList.toggle('is-open');
+    if (visible) clipsSearch?.querySelector('input')?.focus();
+  });
+  clipsSearch?.querySelector('input')?.addEventListener('input', (event) => {
+    activeClipQuery = event.target.value || '';
+    syncClipLibrary();
+  });
+  clipsSort?.addEventListener('click', () => {
+    const modes = ['recent','oldest','status'];
+    activeClipSort = modes[(modes.indexOf(activeClipSort) + 1) % modes.length];
+    clipsSort.textContent = activeClipSort === 'recent' ? '⇅ Récent' : activeClipSort === 'oldest' ? '⇅ Plus ancien' : '⇅ Statut';
+    syncClipLibrary();
+  });
+
   /* Clips filters */
   $$('.tab-btn').forEach((button) => {
     button.addEventListener('click', () => {
       $$('.tab-btn').forEach((item) => item.classList.remove('active'));
       button.classList.add('active');
       const state = button.dataset.listTab || 'all';
+      activeClipTab = state;
       $$('.clip-project-card').forEach((card) => {
         const status = card.dataset.status || '';
         const visible =
@@ -173,6 +291,45 @@
       });
     });
   });
+
+  /* V16 draft save */
+  const saveProjectButton = $('[data-save-project]');
+  saveProjectButton?.addEventListener('click', () => {
+    const state = {
+      savedAt: new Date().toISOString(),
+      ratio: $('[data-format-button]')?.textContent?.trim() || '9:16',
+      zoom: $('#zoom-label')?.textContent?.trim() || '100%',
+      tool: $('.editor-tool.active')?.dataset.tool || 'select'
+    };
+    set('klypso.studio.draft', JSON.stringify(state));
+    const previous = saveProjectButton.textContent;
+    saveProjectButton.textContent = 'Enregistré ✓';
+    saveProjectButton.classList.add('saved');
+    setTimeout(() => { saveProjectButton.textContent = previous; saveProjectButton.classList.remove('saved'); }, 1600);
+  });
+
+  /* V16 OTP countdown */
+  const otpCard = $('[data-otp-card]');
+  const otpCountdown = $('[data-otp-countdown]');
+  const resendButton = $('[data-resend-code]');
+  if (otpCard && resendButton) {
+    let remaining = Number(otpCard.dataset.otpCooldown || 0);
+    const tick = () => {
+      if (remaining > 0) {
+        resendButton.disabled = true;
+        resendButton.textContent = 'Renvoyer dans ' + remaining + 's';
+        if (otpCountdown) otpCountdown.textContent = 'Nouvelle demande bientôt disponible';
+        remaining -= 1;
+      } else {
+        resendButton.disabled = false;
+        resendButton.textContent = 'Renvoyer un code';
+        if (otpCountdown) otpCountdown.textContent = 'Tu peux demander un nouveau code';
+        clearInterval(timer);
+      }
+    };
+    const timer = setInterval(tick, 1000);
+    tick();
+  }
 
   /* Quick studio controls */
   $$('.editor-tool').forEach((button) => {
@@ -222,6 +379,7 @@
 
   /* Motion preference fallback for old V11 pages */
   root.dataset.motion = get('klypso.motion', '1') === '0' ? 'off' : 'on';
+  syncClipLibrary();
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('/static/sw.js').catch(() => {}));
