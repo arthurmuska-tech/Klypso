@@ -22,6 +22,7 @@ from .clips.agents import build_montage_directive, run_agent_suite
 from .clips.chat_intelligence import build_chat_signals, enrich_candidates_with_chat_signals, generate_chat_candidates, normalize_chat_messages
 from .clips.media_intelligence import analyze_media_signals, enrich_candidates_with_media_signals, generate_signal_candidates
 from .clips.renderer import concat_videos, render_candidate
+from .social_profiles import clamp_candidate_to_profile, get_social_profile
 
 
 ai_bp = Blueprint("ai_api", __name__)
@@ -346,6 +347,7 @@ def status():
             "social_renderer": True,
             "scheduled_distribution": True,
             "native_platform_posting": False,
+            "social_multi_render": True,
             "ai_broll": False,
             "ai_voiceover": False,
         },
@@ -568,13 +570,16 @@ def import_chat(job_id):
     }), 200
 
 
-def _render_ai_clips(job, result, requested_ids=None, social_preset=None, caption_style=None, montage=False):
+def _render_ai_clips(job, result, requested_ids=None, social_preset=None, caption_style=None, montage=False, social_profile=None):
     payload = json.loads(job["payload_json"] or "{}")
     source = Path(payload.get("path", ""))
     if not source.is_file():
         raise FileNotFoundError("Vidéo source introuvable.")
 
     output_format = payload.get("output_format", result.get("output_format", "9:16"))
+    profile = get_social_profile(social_profile) if social_profile else None
+    if profile:
+        output_format = profile["output_format"]
     transcript = result.get("transcript", {}).get("segments", [])
     available = {str(c["id"]): c for c in result.get("ai", {}).get("clips", [])}
     ids = [str(value) for value in (requested_ids or []) if str(value) in available]
@@ -585,11 +590,13 @@ def _render_ai_clips(job, result, requested_ids=None, social_preset=None, captio
     folder.mkdir(parents=True, exist_ok=True)
     rendered = []
     for index, clip_id in enumerate(ids[:5], start=1):
-        candidate = available[clip_id]
-        output = folder / f"klypso-{job['id']}-clip-{index}.mp4"
+        candidate = dict(available[clip_id])
+        if profile:
+            candidate = clamp_candidate_to_profile(candidate, profile)
+        output = folder / f"klypso-{job['id']}-clip-{index}" + (f"-{social_profile}" if social_profile else "") + ".mp4"
         preferences = result.get("preferences") or payload.get("preferences") or {}
-        preset = social_preset or preferences.get("social_preset", "dynamic")
-        captions = caption_style or preferences.get("caption_style") or (
+        preset = social_preset or (profile["preset"] if profile else None) or preferences.get("social_preset", "dynamic")
+        captions = caption_style or (profile["caption_style"] if profile else None) or preferences.get("caption_style") or (
             (result.get("ai", {}).get("montage_director") or {}).get("caption_style")
             if montage else None
         )
@@ -627,6 +634,8 @@ def _render_ai_clips(job, result, requested_ids=None, social_preset=None, captio
             "hook": candidate["hook"],
             "score": candidate["opportunity_score"],
             "download_url": f"/studio/ai-download/{media_id}",
+            "platform": social_profile or "custom",
+            "output_format": output_format,
         })
     return rendered
 
@@ -660,6 +669,55 @@ def render_clips(job_id):
     except Exception:
         current_app.logger.exception("AI clip render failed")
         return jsonify({"error": "Le rendu des clips a échoué. Vérifie que FFmpeg est disponible."}), 500
+
+@ai_bp.post("/api/ai/render-social/<int:job_id>")
+@login_required
+def render_social_variants(job_id):
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        user = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
+        job = db.execute("SELECT * FROM jobs WHERE id=? AND user_id=?", (job_id, session["user_id"])).fetchone()
+    denied = _assert_advanced(user)
+    if denied:
+        return denied
+    if not job:
+        return jsonify({"error": "Projet introuvable."}), 404
+    if not job["result_json"]:
+        return jsonify({"error": "Lance d'abord l'analyse IA."}), 409
+
+    body = request.get_json(silent=True) or {}
+    platforms = [str(value).strip().lower() for value in (body.get("platforms") or ["youtube", "tiktok", "instagram", "x"])]
+    platforms = [value for value in dict.fromkeys(platforms) if value in {"youtube", "tiktok", "instagram", "x"}]
+    if not platforms:
+        return jsonify({"error": "Aucun réseau social valide."}), 400
+    requested_ids = body.get("clip_ids") if isinstance(body.get("clip_ids"), list) else None
+
+    try:
+        result = json.loads(job["result_json"])
+        variants = []
+        for platform in platforms:
+            rendered = _render_ai_clips(
+                job,
+                result,
+                requested_ids=requested_ids,
+                social_profile=platform,
+            )
+            variants.extend(rendered)
+        result["social_variants"] = variants
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            db.execute(
+                "UPDATE jobs SET result_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                (json.dumps(result, ensure_ascii=False), job_id),
+            )
+            db.commit()
+        return jsonify({
+            "ok": True,
+            "platforms": platforms,
+            "variants": variants,
+            "count": len(variants),
+        })
+    except Exception:
+        current_app.logger.exception("Social variant render failed")
+        return jsonify({"error": "Les variantes sociales n'ont pas pu être rendues."}), 500
 
 
 @ai_bp.post("/api/ai/render-montage/<int:job_id>")
