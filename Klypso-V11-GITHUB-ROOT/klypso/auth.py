@@ -21,6 +21,8 @@ oauth = OAuth()
 
 
 def init_oauth(app):
+    # Authlib OAuth client registry must be attached to this Flask app before clients are created.
+    oauth.init_app(app)
     if app.config["GOOGLE_CLIENT_ID"] and app.config["GOOGLE_CLIENT_SECRET"]:
         oauth.register(
             name="google",
