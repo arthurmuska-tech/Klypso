@@ -25,7 +25,7 @@
     const wood = woods.includes(value) ? value : 'oak';
     root.dataset.wood = wood;
     set('klypso.wood', wood);
-    $('[data-wood]').forEach((el) => {
+    $$('[data-wood]').forEach((el) => {
       const selected = el.dataset.wood === wood;
       el.classList.toggle('selected', selected);
       el.setAttribute('aria-pressed', String(selected));
@@ -43,7 +43,7 @@
     set('klypso.palette', palette);
     const themeMeta = document.querySelector('meta[name="theme-color"]');
     if (themeMeta) themeMeta.content = getComputedStyle(root).getPropertyValue('--k-bg').trim() || '#f7f4ef';
-    $('[data-setting-group="palette"] [data-palette]').forEach((el) => {
+    $$('[data-setting-group="palette"] [data-palette]').forEach((el) => {
       const selected = el.dataset.palette === palette;
       el.classList.toggle('selected', selected);
       el.setAttribute('aria-pressed', String(selected));
@@ -120,11 +120,11 @@
   applyRadius(get('klypso.radius', 'round'));
   applyCaption(get('klypso.caption', 'dynamic'));
 
-  $('[data-wood]').forEach((button) => button.addEventListener('click', () => applyWood(button.dataset.wood)));
-  $('[data-accent]').forEach((button) => button.addEventListener('click', () => applyAccent(button.dataset.accent)));
+  $$('[data-wood]').forEach((button) => button.addEventListener('click', () => applyWood(button.dataset.wood)));
+  $$('[data-accent]').forEach((button) => button.addEventListener('click', () => applyAccent(button.dataset.accent)));
   $$('[data-setting-group="density"] button').forEach((button) => button.addEventListener('click', () => applyDensity(button.dataset.value)));
-  $('[data-setting-group="radius"] button').forEach((button) => button.addEventListener('click', () => applyRadius(button.dataset.value)));
-  $('[data-setting-group="palette"] [data-palette]').forEach((button) => button.addEventListener('click', () => applyPalette(button.dataset.palette)));
+  $$('[data-setting-group="radius"] button').forEach((button) => button.addEventListener('click', () => applyRadius(button.dataset.value)));
+  $$('[data-setting-group="palette"] [data-palette]').forEach((button) => button.addEventListener('click', () => applyPalette(button.dataset.palette)));
   $$('[data-caption]').forEach((button) => button.addEventListener('click', () => applyCaption(button.dataset.caption)));
 
 
@@ -179,7 +179,7 @@
     setCommandIndex(0);
   }
   $('[data-search-open]')?.addEventListener('click', commandOpen);
-  $('[data-command-close]').forEach((el) => el.addEventListener('click', commandClose));
+  $$('[data-command-close]').forEach((el) => el.addEventListener('click', commandClose));
   commandInput?.addEventListener('input', () => filterCommands(commandInput.value));
   commandInput?.addEventListener('keydown', (event) => {
     if (event.key === 'ArrowDown') { event.preventDefault(); setCommandIndex(commandIndex + 1); }
