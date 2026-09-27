@@ -68,7 +68,7 @@ class CompatConnection:
         if statement.upper() == "BEGIN IMMEDIATE":
             statement = "BEGIN"
         params = tuple(params or ())
-        match = re.match(r"INSERT\\s+INTO\\s+([A-Za-z_][A-Za-z0-9_]*)", statement, re.I)
+        match = re.match(r"INSERT\s+INTO\s+([A-Za-z_][A-Za-z0-9_]*)", statement, re.I)
         buffered = []
         lastrowid = None
         if match and match.group(1).lower() in POSTGRES_ID_TABLES and " RETURNING " not in statement.upper():
