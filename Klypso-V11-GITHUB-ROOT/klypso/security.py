@@ -1,5 +1,6 @@
 import os
 import secrets
+import time
 from functools import wraps
 from flask import request, session
 from werkzeug.exceptions import BadRequest
@@ -29,9 +30,56 @@ def validate_csrf():
         raise BadRequest("CSRF token invalide")
 
 
+
+
+def enforce_rate_limit():
+    """Apply small endpoint-specific limits to protect auth and expensive AI work."""
+    if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+        return
+    path = request.path
+    rules = [
+        ("/login", 10, 60),
+        ("/register", 5, 60),
+        ("/oauth/google/credential", 10, 60),
+        ("/api/ai/analyze/", 5, 60),
+        ("/api/ai/render-clips/", 10, 60),
+        ("/api/ai/render-social/", 10, 60),
+        ("/api/ai/render-montage/", 10, 60),
+        ("/studio/ai-edit", 5, 60),
+        ("/api/ai/broll/", 5, 60),
+        ("/api/ai/voiceover/", 5, 60),
+        ("/api/ai/compose-assets/", 5, 60),
+    ]
+    rule = next(((limit, window) for prefix, limit, window in rules if path == prefix or path.startswith(prefix)), None)
+    if not rule:
+        return
+    limit, window = rule
+    actor = session.get("user_id") or request.headers.get("X-Forwarded-For", request.remote_addr or "unknown").split(",")[0].strip()
+    key = f"{path}:{actor}"
+    now = int(time.time())
+    from .database import get_db
+    with get_db(request.app.config["DATABASE_PATH"] if hasattr(request, "app") else __import__("flask").current_app.config["DATABASE_PATH"]) as db:
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute("SELECT window_start,hit_count FROM rate_limit_buckets WHERE rate_key=?", (key,)).fetchone()
+        if not row or now - int(row["window_start"]) >= window:
+            db.execute(
+                "INSERT INTO rate_limit_buckets(rate_key,window_start,hit_count) VALUES(?,?,1) ON CONFLICT(rate_key) DO UPDATE SET window_start=excluded.window_start,hit_count=1",
+                (key, now),
+            )
+            db.commit()
+            return
+        if int(row["hit_count"]) >= limit:
+            db.commit()
+            from werkzeug.exceptions import TooManyRequests
+            raise TooManyRequests("Trop de requêtes. Réessaie dans un instant.")
+        db.execute("UPDATE rate_limit_buckets SET hit_count=hit_count+1 WHERE rate_key=?", (key,))
+        db.commit()
+
+
 def register_security(app):
     @app.before_request
-    def csrf_protection():
+    def security_protection():
+        enforce_rate_limit()
         validate_csrf()
 
     @app.after_request
