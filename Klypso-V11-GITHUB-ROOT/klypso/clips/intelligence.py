@@ -405,6 +405,7 @@ def enrich_ai_result(result, candidates, memory, transcript_segments=None):
         "base_score": 0.08,
         "media_signal_score": 0.07,
         "chat_signal_score": 0.03,
+        "audio_quality_score": 0.05,
     }
 
     for raw in raw_clips[:8]:
@@ -424,6 +425,8 @@ def enrich_ai_result(result, candidates, memory, transcript_segments=None):
                 value = _number(candidate.get(key), 0.5) * 100.0
             elif key == "chat_signal_score":
                 value = _number(candidate.get(key), 0.0)
+            elif key == "audio_quality_score":
+                value = _number(candidate.get(key), 72.0)
             else:
                 fallback = 60 if key != "base_score" else candidate["base_score"]
                 value = _number(raw.get(key), fallback)
