@@ -198,63 +198,64 @@
 
   function updateLandingStory() {
     if (!story || !track || !slides.length) return;
-    const isMobile = window.matchMedia('(max-width: 900px)').matches;
-    if (isMobile) {
-      track.style.transform = 'none';
-      slides.forEach((slide, index) => {
-        slide.classList.toggle('is-active', index === 0);
-        slide.style.removeProperty('--slide-distance');
-        slide.style.removeProperty('--slide-abs');
-        slide.style.removeProperty('--slide-opacity');
-        slide.style.removeProperty('--slide-tilt');
-      });
-      if (storyCurrent) storyCurrent.textContent = '01';
-      if (storyProgress) storyProgress.style.width = '25%';
-      return;
-    }
 
-    prepareStoryWords();
+    /* Natural vertical storytelling: the browser owns scrolling.
+       Each scene reacts to its viewport position without hijacking the wheel. */
+    track.style.transform = 'none';
 
-    const rect = story.getBoundingClientRect();
-    const travel = Math.max(1, story.offsetHeight - window.innerHeight);
-    const progress = clamp01(-rect.top / travel);
-    const scaled = progress * slides.length;
-    const activeIndex = Math.min(slides.length - 1, Math.floor(scaled));
-    const local = clamp01(scaled - activeIndex);
-    const cameraLocal = storyCameraLocal(local);
-    const phase = Math.min(slides.length - 1, activeIndex + cameraLocal);
+    let bestIndex = 0;
+    let bestFocus = -1;
 
-    track.style.transform = 'translate3d(' + (-phase * (100 / slides.length)).toFixed(3) + '%,0,0)';
     slides.forEach((slide, i) => {
-      const distance = i - phase;
-      const abs = Math.min(1.4, Math.abs(distance));
-      const near = clamp01(1 - abs);
-      slide.classList.toggle('is-active', i === activeIndex || abs < 0.56);
-      slide.style.setProperty('--slide-distance', distance.toFixed(3));
-      slide.style.setProperty('--slide-abs', abs.toFixed(3));
-      slide.style.setProperty('--slide-near', near.toFixed(3));
-      slide.style.setProperty('--slide-opacity', Math.max(.24, 1 - abs * .54).toFixed(3));
-      slide.style.setProperty('--slide-tilt', Math.max(-5, Math.min(5, -distance * 3.3)).toFixed(2) + 'deg');
-      updateStoryWords(slide, i === activeIndex ? local : (i < activeIndex ? 1 : 0));
-      updateStoryCard(slide, i === activeIndex ? local : (i < activeIndex ? 1 : 0), distance);
+      const rect = slide.getBoundingClientRect();
+      const center = rect.top + rect.height / 2;
+      const viewport = window.innerHeight || 800;
+      const distance = Math.abs(center - viewport * 0.55);
+      const focus = clamp01(1 - distance / Math.max(viewport * 0.78, 1));
+      const reveal = clamp01(1 - Math.max(0, rect.top - viewport * 0.9) / Math.max(rect.height * 1.5, 1));
+
+      if (focus > bestFocus) {
+        bestFocus = focus;
+        bestIndex = i;
+      }
+
+      slide.classList.toggle('is-active', focus > 0.22);
+      slide.classList.toggle('is-focused', focus > 0.58);
+      slide.style.setProperty('--slide-distance', ((center - viewport * 0.55) / Math.max(viewport, 1)).toFixed(3));
+      slide.style.setProperty('--slide-abs', Math.min(1.4, distance / Math.max(viewport, 1)).toFixed(3));
+      slide.style.setProperty('--slide-near', focus.toFixed(3));
+      slide.style.setProperty('--slide-opacity', Math.max(0.56, 0.58 + focus * 0.42).toFixed(3));
+      slide.style.setProperty('--story-viewport-focus', focus.toFixed(3));
+
+      const local = clamp01(reveal);
+      updateStoryWords(slide, local);
+      updateStoryCard(slide, local, (center - viewport * 0.55) / Math.max(viewport, 1));
     });
 
-    storyActive = progress > 0.01 && progress < 0.99;
-    story.classList.toggle('is-live', storyActive);
-    if (storyCurrent) storyCurrent.textContent = String(activeIndex + 1).padStart(2, '0');
-    if (storyProgress) storyProgress.style.width = ((progress * 100).toFixed(2)) + '%';
+    if (storyCurrent) storyCurrent.textContent = String(bestIndex + 1).padStart(2, '0');
+
+    const storyRect = story.getBoundingClientRect();
+    const storyVisible = clamp01(1 - Math.max(0, storyRect.top - viewportHeightSafe()) / Math.max(story.offsetHeight, 1));
+    if (storyProgress) storyProgress.style.width = (storyVisible * 100).toFixed(2) + '%';
     storyDots.forEach((dot, dotIndex) => {
-      dot.classList.toggle('active', dotIndex === activeIndex);
-      dot.setAttribute('aria-selected', String(dotIndex === activeIndex));
+      dot.classList.toggle('active', dotIndex === bestIndex);
+      dot.setAttribute('aria-selected', String(dotIndex === bestIndex));
     });
+
+    storyActive = bestFocus > 0.08;
+    story.classList.toggle('is-live', storyActive);
 
     const heroArt = document.querySelector('.landing-v15-hero-art');
     if (heroArt) {
       const heroRect = heroArt.parentElement.getBoundingClientRect();
       const heroProgress = Math.max(-1, Math.min(1, -heroRect.top / Math.max(1, window.innerHeight)));
-      heroArt.style.setProperty('--hero-depth-y', (heroProgress * -24).toFixed(2) + 'px');
-      heroArt.style.setProperty('--hero-depth-r', (heroProgress * 1.8).toFixed(2) + 'deg');
+      heroArt.style.setProperty('--hero-depth-y', (heroProgress * -12).toFixed(2) + 'px');
+      heroArt.style.setProperty('--hero-depth-r', (heroProgress * 0.9).toFixed(2) + 'deg');
     }
+  }
+
+  function viewportHeightSafe() {
+    return window.innerHeight || 800;
   }
 
   function requestLandingStoryUpdate() {
