@@ -1095,10 +1095,14 @@ def render_clips(job_id):
             db.commit()
         return jsonify({"ok": True, "clips": rendered})
     except CreditError as exc:
+        if quota_units:
+            refund_monthly_clip_units(session["user_id"], quota_units, {"operation": "render_clips_quota_failed", "job_id": job_id})
         return jsonify({"error": str(exc)}), 402
     except Exception:
         if charged:
             refund_processing_credits(session["user_id"], charged, {"operation": "render_clips_failed", "job_id": job_id})
+        if quota_units:
+            refund_monthly_clip_units(session["user_id"], quota_units, {"operation": "render_clips_quota_failed", "job_id": job_id})
         current_app.logger.exception("AI clip render failed")
         return jsonify({"error": "Le rendu des clips a échoué. Vérifie que FFmpeg est disponible."}), 500
 
