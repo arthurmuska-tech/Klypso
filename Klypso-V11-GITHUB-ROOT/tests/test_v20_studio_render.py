@@ -49,7 +49,7 @@ def test_v20_studio_timeline_renders_to_mp4(tmp_path, monkeypatch):
         f"/api/studio/projects/{project}/render",
         json={"timeline": {"clips": [{"media_id": media, "start": 0, "source_start": 0, "duration": 2}], "audio_tracks": [], "markers": [], "settings": {"ratio": "9:16"}}},
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, response.get_json()
     payload = response.get_json()
     assert payload["ok"] is True
     assert payload["clip_count"] == 1
