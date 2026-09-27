@@ -1,4 +1,5 @@
 (() => {
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
   const input = document.getElementById('ai-video-input');
   const fileLabel = document.getElementById('ai-file-label');
   const runButton = document.getElementById('run-ai-edit');
