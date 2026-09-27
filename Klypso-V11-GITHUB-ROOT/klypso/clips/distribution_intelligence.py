@@ -13,10 +13,11 @@ def _num(value, default=0.0):
 def _performance(row):
     views = max(0.0, _num(row["views"]))
     interactions = max(0.0, _num(row["likes"])) + max(0.0, _num(row["comments"])) + max(0.0, _num(row["shares"]))
-    engagement = min(100.0, interactions / max(1.0, views) * 1000.0)
+    engagement_pct = interactions / max(1.0, views) * 100.0
+    engagement_signal = min(50.0, engagement_pct * 3.0)
     completion = max(0.0, min(100.0, _num(row["completion_rate"])))
     view_signal = min(100.0, views / 1000.0)
-    return round(0.55 * view_signal + 0.25 * engagement + 0.20 * completion, 2)
+    return round(0.60 * view_signal + 0.15 * engagement_signal + 0.25 * completion, 2)
 
 
 def _group(rows, key_fn):
