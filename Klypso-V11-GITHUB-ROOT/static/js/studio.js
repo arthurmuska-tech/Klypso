@@ -125,7 +125,7 @@
     } catch (error) {
       alert(error.message || 'Modification impossible.');
     }
-  });
+  }));
 
   const saveProject = async (showFeedback = true) => {
     if (saveState) saveState.textContent = 'Enregistrement…';
