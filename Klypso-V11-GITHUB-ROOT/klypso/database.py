@@ -142,6 +142,22 @@ CREATE TABLE IF NOT EXISTS creator_ai_profiles (
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+CREATE TABLE IF NOT EXISTS clip_metrics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    job_id INTEGER,
+    candidate_id TEXT,
+    platform TEXT NOT NULL DEFAULT 'unknown',
+    views INTEGER NOT NULL DEFAULT 0,
+    likes INTEGER NOT NULL DEFAULT 0,
+    comments INTEGER NOT NULL DEFAULT 0,
+    shares INTEGER NOT NULL DEFAULT 0,
+    avg_watch_seconds REAL,
+    completion_rate REAL,
+    recorded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(job_id) REFERENCES jobs(id) ON DELETE SET NULL
+);
 """
 
 
