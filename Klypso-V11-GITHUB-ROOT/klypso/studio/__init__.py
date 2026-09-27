@@ -3,6 +3,8 @@ import json
 import secrets
 from flask import Blueprint, current_app, jsonify, render_template, request, send_file, session
 from ..auth import login_required
+from ..plans import get_plan
+from ..promo import effective_plan_key
 from ..database import get_db
 from ..media.ffprobe import probe
 from ..media.ffmpeg import run
@@ -14,8 +16,21 @@ from ..utils.validation import validate_upload
 studio_bp = Blueprint("studio", __name__)
 
 
+def studio_required(view):
+    from functools import wraps
+    def wrapped(*args, **kwargs):
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            user = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
+        if not user or not get_plan(effective_plan_key(user)).studio:
+            from flask import redirect, url_for
+            return redirect(url_for("billing.pricing", studio_required=1))
+        return view(*args, **kwargs)
+    return wraps(view)(wrapped)
+
+
 @studio_bp.get("/studio")
 @login_required
+@studio_required
 def studio():
     project = None
     project_id = request.args.get("project_id")
@@ -55,9 +70,16 @@ def studio():
 
 @studio_bp.post("/api/studio/projects")
 @login_required
+@studio_required
 def create_studio_project():
     body = request.get_json(silent=True) or {}
     name = " ".join(str(body.get("name") or "Projet Klypso").split())[:120] or "Projet Klypso"
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        user = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
+        plan = get_plan(effective_plan_key(user)) if user else get_plan("free")
+        project_count = db.execute("SELECT COUNT(*) AS n FROM projects WHERE user_id=?", (session["user_id"],)).fetchone()["n"]
+    if int(project_count) >= plan.max_projects:
+        return jsonify({"error": f"Limite de {plan.max_projects} projets atteinte."}), 403
     timeline = body.get("timeline") if isinstance(body.get("timeline"), dict) else {"clips": [], "audio_tracks": [], "markers": []}
     from .timeline import validate_timeline
     try:
@@ -75,6 +97,7 @@ def create_studio_project():
 
 @studio_bp.get("/api/studio/projects/<int:project_id>")
 @login_required
+@studio_required
 def get_studio_project(project_id):
     with get_db(current_app.config["DATABASE_PATH"]) as db:
         row = db.execute(
@@ -92,6 +115,7 @@ def get_studio_project(project_id):
 
 @studio_bp.post("/api/studio/projects/<int:project_id>/save")
 @login_required
+@studio_required
 def save_studio_project(project_id):
     body = request.get_json(silent=True) or {}
     timeline = body.get("timeline")
@@ -117,6 +141,7 @@ def save_studio_project(project_id):
 
 @studio_bp.post("/api/studio/projects/<int:project_id>/edit")
 @login_required
+@studio_required
 def edit_studio_project(project_id):
     body = request.get_json(silent=True) or {}
     operation = body.get("operation")
@@ -148,6 +173,7 @@ def edit_studio_project(project_id):
 
 @studio_bp.post("/api/studio/projects/<int:project_id>/render")
 @login_required
+@studio_required
 def render_studio_project(project_id):
     body = request.get_json(silent=True) or {}
     timeline = body.get("timeline") if isinstance(body.get("timeline"), dict) else None
