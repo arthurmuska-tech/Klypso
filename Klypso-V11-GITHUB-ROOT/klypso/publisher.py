@@ -476,6 +476,99 @@ def analytics_api():
     })
 
 
+@publisher_bp.get("/publisher/connect/youtube")
+@login_required
+def connect_youtube():
+    try:
+        return youtube_authorize(url_for("publisher.youtube_callback", _external=True))
+    except Exception as exc:
+        return redirect(url_for("publisher.publisher_page", connection_error=str(exc)))
+
+
+@publisher_bp.get("/publisher/connect/youtube/callback")
+@login_required
+def youtube_callback():
+    try:
+        token = youtube_callback()
+        channel_id, channel_name = youtube_channel(token["access_token"])
+        expires_at = _now() + timedelta(seconds=int(token.get("expires_in", 3600)))
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            upsert_connection(
+                db,
+                session["user_id"],
+                "youtube",
+                token.get("access_token", ""),
+                token.get("refresh_token", ""),
+                expires_at,
+                channel_id,
+                channel_name,
+                token.get("scope", ""),
+                {"token_type": token.get("token_type", "Bearer")},
+            )
+            db.commit()
+        return redirect(url_for("publisher.publisher_page"))
+    except Exception:
+        current_app.logger.exception("YouTube publishing OAuth failed")
+        return redirect(url_for("publisher.publisher_page", connection_error="Connexion YouTube impossible."))
+
+
+@publisher_bp.get("/publisher/connect/tiktok")
+@login_required
+def connect_tiktok():
+    import secrets
+    state = secrets.token_urlsafe(32)
+    session["tiktok_oauth_state"] = state
+    try:
+        return redirect(tiktok_authorize_url(url_for("publisher.tiktok_callback", _external=True), state))
+    except Exception as exc:
+        return redirect(url_for("publisher.publisher_page", connection_error=str(exc)))
+
+
+@publisher_bp.get("/publisher/connect/tiktok/callback")
+@login_required
+def tiktok_callback():
+    import hmac
+    expected = session.pop("tiktok_oauth_state", "")
+    state = request.args.get("state", "")
+    if not expected or not state or not hmac.compare_digest(expected, state):
+        return redirect(url_for("publisher.publisher_page", connection_error="État OAuth TikTok invalide."))
+    if request.args.get("error") or not request.args.get("code"):
+        return redirect(url_for("publisher.publisher_page", connection_error="Autorisation TikTok refusée."))
+    try:
+        token = tiktok_exchange(request.args["code"], url_for("publisher.tiktok_callback", _external=True))
+        info = tiktok_user_info(token.get("access_token", ""))
+        expires_at = _now() + timedelta(seconds=int(token.get("expires_in", 86400)))
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            upsert_connection(
+                db,
+                session["user_id"],
+                "tiktok",
+                token.get("access_token", ""),
+                token.get("refresh_token", ""),
+                expires_at,
+                info.get("open_id", ""),
+                info.get("display_name", "TikTok"),
+                token.get("scope", ""),
+                {"avatar_url": info.get("avatar_url", "")},
+            )
+            db.commit()
+        return redirect(url_for("publisher.publisher_page"))
+    except Exception:
+        current_app.logger.exception("TikTok publishing OAuth failed")
+        return redirect(url_for("publisher.publisher_page", connection_error="Connexion TikTok impossible."))
+
+
+@publisher_bp.post("/api/publisher/disconnect/<platform>")
+@login_required
+def disconnect_platform(platform):
+    if platform not in PLATFORMS:
+        return jsonify({"error": "Plateforme invalide."}), 400
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        disconnect_connection(db, session["user_id"], platform)
+        db.commit()
+    return jsonify({"ok": True, "platform": platform}), 200
+
+
 @publisher_bp.get("/api/publisher/queue")
 @login_required
 def queue_api():
