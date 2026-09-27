@@ -1,4 +1,4 @@
-/* KLYPSO V14.4 — stable cinematic home scroll */
+/* KLYPSO V15.0 — stable workspace + cinematic home */
 (() => {
   'use strict';
   const root=document.documentElement, body=document.body;
@@ -11,7 +11,19 @@
   function applyWood(value){
     if(!woods.includes(value)) value='oak';
     root.dataset.wood=value; storage.set('klypso.wood',value);
-    $$('[data-wood]').forEach(el=>{const on=el.dataset.wood===value;el.classList.toggle('selected',on);el.setAttribute('aria-pressed',String(on));});
+    const savedAccent=storage.get('klypso.accent','');
+    if(/^#[0-9a-fA-F]{6}$/.test(savedAccent)){
+      root.style.setProperty('--accent',savedAccent);
+      root.style.setProperty('--k-accent',savedAccent);
+      const a2={ '#9b7bff':'#c5b7ff','#63a4ff':'#9dc6ff','#59e6df':'#8af4ed','#ff76c8':'#ff9edb','#d59a62':'#efbdad' }[savedAccent] || savedAccent;
+      root.style.setProperty('--k-accent-2',a2);
+      root.style.setProperty('--k-accent-soft','color-mix(in srgb, '+savedAccent+' 14%, transparent)');
+    } else {
+      root.style.removeProperty('--k-accent');
+      root.style.removeProperty('--k-accent-2');
+      root.style.removeProperty('--k-accent-soft');
+    }
+    $('[data-wood]').forEach(el=>{const on=el.dataset.wood===value;el.classList.toggle('selected',on);el.setAttribute('aria-pressed',String(on));});
     const meta=document.querySelector('meta[name="theme-color"]');
     if(meta) meta.content={oak:'#f3efe8',walnut:'#241c18',birch:'#f7f5ef',cherry:'#f5e8e2',ebony:'#111315'}[value];
   }
@@ -47,10 +59,12 @@
       const active=i===index;
       el.classList.toggle('is-active',active);
       const local=Math.max(0,Math.min(1,(p*steps.length)-i));
-      const x=(i-index)*22;
-      const scale=active?1:0.86;
-      const opacity=active?1:Math.max(.08,1-Math.abs(i-index)*.48);
-      el.style.transform='translate3d('+x+'px,'+((1-local)*18)+'px,0) rotate('+(i<index?-7:i>index?7:0)+'deg) scale('+scale+')';
+      const phase=p*(steps.length-1);
+      const distance=(i-phase)*128;
+      const scale=active?1:0.9;
+      const opacity=Math.max(.06,1-Math.abs(i-phase)*.72);
+      const tilt=i<phase?-5:i>phase?5:0;
+      el.style.transform='translate3d('+distance+'%, '+((1-local)*22)+'px, 0) rotate('+tilt+'deg) scale('+scale+')';
       el.style.opacity=opacity;
     });
     story.style.setProperty('--story-progress',(p*100).toFixed(2)+'%');
