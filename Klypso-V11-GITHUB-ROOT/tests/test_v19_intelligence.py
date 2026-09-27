@@ -8,7 +8,7 @@ from klypso.clips.intelligence import enrich_ai_result
 from klypso.clips.media_intelligence import enrich_candidates_with_media_signals
 from klypso.clips.vision_tracking import enrich_candidates_with_face_tracking
 from klypso.social_profiles import clamp_candidate_to_profile, get_social_profile
-from klypso.clips.renderer import _video_filter
+from klypso.clips.renderer import _video_filter, build_audio_filter
 from klypso.clips.audio_intelligence import analyze_audio_quality, enrich_candidates_with_audio_quality
 
 
@@ -290,5 +290,7 @@ def test_v20_audio_quality_enriches_candidates():
 
 
 def test_v20_renderer_broadcast_audio_mode():
-    filters, _ = _video_filter((1080, 1920), audio_cleanup="broadcast")
-    assert "highpass" not in ",".join(filters)
+    audio_filter = build_audio_filter(True, "broadcast")
+    assert "highpass=f=70" in audio_filter
+    assert "acompressor" in audio_filter
+    assert "loudnorm" in audio_filter
