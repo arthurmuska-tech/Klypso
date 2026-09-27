@@ -71,6 +71,36 @@ def create_app(test_config=None):
             return redirect(url_for("dashboard"))
         return render_template("index.html")
 
+    @app.get("/robots.txt")
+    def robots_txt():
+        from flask import Response
+        sitemap_url = f"{app.config['PUBLIC_BASE_URL']}/sitemap.xml"
+        return Response(
+            f"User-agent: *\\nAllow: /\\nDisallow: /dashboard\\nDisallow: /account\\nDisallow: /api/\\nSitemap: {sitemap_url}\\n",
+            mimetype="text/plain",
+        )
+
+    @app.get("/sitemap.xml")
+    def sitemap_xml():
+        from flask import Response
+        public = app.config["PUBLIC_BASE_URL"].rstrip("/")
+        urls = [
+            f"{public}/",
+            f"{public}/demo",
+            f"{public}/pricing",
+            f"{public}/mentions-legales",
+            f"{public}/confidentialite",
+            f"{public}/cgu",
+            f"{public}/cgv",
+            f"{public}/contact",
+        ]
+        body = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        body += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        for loc in urls:
+            body += f"<url><loc>{loc}</loc></url>"
+        body += "</urlset>"
+        return Response(body, mimetype="application/xml")
+
     @app.route("/healthz")
     def healthz():
         version_file = Path(app.root_path).parent / "VERSION"
