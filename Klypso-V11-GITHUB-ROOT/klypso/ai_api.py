@@ -731,7 +731,6 @@ def analyze_job(job_id):
         evidence_preferences["_media_signals"] = media_signals
         evidence_preferences["_chat_signals"] = chat_signals
         evidence_preferences["_vision_tracking"] = face_tracking
-        evidence_preferences["_audio_quality"] = audio_profile if "audio_profile" in locals() else {}
 
         # Broad deterministic coverage first, augmented by non-verbal media/chat events.
         candidates = generate_intelligent_candidates(analysis["duration"], [])
@@ -746,6 +745,7 @@ def analyze_job(job_id):
                 candidates.append(item)
                 seen_windows.add(key)
         audio_profile = analyze_audio_quality(analysis["duration"], [], media_signals.get("silences", []))
+        evidence_preferences["_audio_quality"] = audio_profile
         candidates = enrich_candidates_with_media_signals(candidates, media_signals)
         candidates = enrich_candidates_with_chat_signals(candidates, chat_signals)
         candidates = enrich_candidates_with_audio_quality(candidates, audio_profile)
