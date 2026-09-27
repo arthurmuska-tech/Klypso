@@ -150,6 +150,7 @@ def _send_code(email, code):
 
 
 def _issue_code(email, purpose):
+    """Create and send an OTP without destroying a previously usable code on send failure."""
     with get_db(current_app.config["DATABASE_PATH"]) as db:
         latest = db.execute(
             "SELECT created_at FROM email_codes WHERE email=? AND purpose=? ORDER BY id DESC LIMIT 1",
@@ -170,19 +171,35 @@ def _issue_code(email, purpose):
         ).fetchone()
         if recent["count"] >= current_app.config["EMAIL_OTP_MAX_PER_HOUR"]:
             raise RuntimeError("Trop de demandes de code. Réessaie plus tard.")
+
     code = f"{secrets.randbelow(1000000):06d}"
     expires = _now() + timedelta(minutes=current_app.config["EMAIL_OTP_MINUTES"])
+    code_hash = _hash_code(code)
+
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        cur = db.execute(
+            "INSERT INTO email_codes(email,purpose,code_hash,expires_at) VALUES(?,?,?,?)",
+            (email, purpose, code_hash, expires.isoformat()),
+        )
+        code_id = cur.lastrowid
+        db.commit()
+
+    try:
+        _send_code(email, code)
+    except Exception:
+        # Keep an older code valid if the provider failed. The failed code is removed.
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            db.execute("DELETE FROM email_codes WHERE id=?", (code_id,))
+            db.commit()
+        raise
+
+    # Only invalidate older codes after the new code was actually accepted by the mail provider.
     with get_db(current_app.config["DATABASE_PATH"]) as db:
         db.execute(
-            "UPDATE email_codes SET used_at=? WHERE email=? AND purpose=? AND used_at IS NULL",
-            (_iso(), email, purpose),
-        )
-        db.execute(
-            "INSERT INTO email_codes(email,purpose,code_hash,expires_at) VALUES(?,?,?,?)",
-            (email, purpose, _hash_code(code), expires.isoformat()),
+            "UPDATE email_codes SET used_at=? WHERE email=? AND purpose=? AND id<>? AND used_at IS NULL",
+            (_iso(), email, purpose, code_id),
         )
         db.commit()
-    _send_code(email, code)
 
 
 def _verify_code(email, purpose, code):
@@ -339,8 +356,9 @@ def login():
     with get_db(current_app.config["DATABASE_PATH"]) as db:
         user = db.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
     if not EMAIL_RE.match(email) or not user:
-        flash("Aucun compte trouvé avec cette adresse.", "error")
-        return render_template("login.html"), 404
+        # Do not reveal whether an account exists.
+        flash("Adresse e-mail ou mot de passe incorrect.", "error")
+        return render_template("login.html"), 401
 
     if password:
         if not user["password_hash"] or not check_password_hash(user["password_hash"], password):
@@ -397,6 +415,13 @@ def google_credential():
         info = response.json()
         if info.get("aud") != client_id:
             raise ValueError("Google Client ID incorrect.")
+        if info.get("iss") not in {"accounts.google.com", "https://accounts.google.com"}:
+            raise ValueError("Émetteur Google invalide.")
+        try:
+            if int(info.get("exp", 0)) <= int(_now().timestamp()):
+                raise ValueError("Jeton Google expiré.")
+        except (TypeError, ValueError):
+            raise ValueError("Expiration du jeton Google invalide.")
         if str(info.get("email_verified", "")).lower() != "true":
             raise ValueError("Adresse Google non vérifiée.")
         user = _oauth_user(
