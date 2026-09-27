@@ -103,6 +103,23 @@
       return;
     }
 
+    const disconnect = event.target.closest('[data-disconnect-platform]');
+    if (disconnect) {
+      const platform = disconnect.dataset.disconnectPlatform;
+      if (!confirm('Déconnecter ' + platform + ' de KLYPSO ?')) return;
+      disconnect.disabled = true;
+      try {
+        const response = await api('/api/publisher/disconnect/' + platform, {method:'POST'});
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Déconnexion impossible.');
+        window.location.reload();
+      } catch (error) {
+        disconnect.disabled = false;
+        alert(error.message);
+      }
+      return;
+    }
+
     const publish = event.target.closest('[data-publish-now]');
     if (publish) {
       publish.disabled = true;
