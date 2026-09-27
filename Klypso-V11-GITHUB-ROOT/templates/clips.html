@@ -1,32 +1,158 @@
 {% extends 'base.html' %}
 {% block title %}Clips IA — KLYPSO{% endblock %}
-{% block scripts %}<script>
-document.addEventListener('click',async(e)=>{
- const b=e.target.closest('.ai-run-job'); if(!b)return;
- b.disabled=true;b.textContent='Analyse…';
- const token=document.querySelector('meta[name="csrf-token"]')?.content||'';
- try{
-  const r=await fetch('/api/ai/analyze/'+b.dataset.jobId,{method:'POST',headers:{'X-CSRF-Token':token}});
-  const d=await r.json(); if(!r.ok)throw new Error(d.error||'Erreur');
-  b.textContent='IA terminée ✓'; b.title=(d.result.ai?.titles||[]).join(' · ');
- }catch(err){b.disabled=false;b.textContent='IA avancée';alert(err.message);}
-});
-</script>{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+  const scoreBars = (clip) => {
+    const scores = clip.scores || {};
+    const rows = [
+      ['Hook', scores.hook_score],
+      ['Payoff', scores.payoff_score],
+      ['Émotion', scores.emotion_score],
+      ['Partage', scores.shareability_score],
+      ['Style créateur', scores.creator_fit_score],
+      ['Replay', scores.replay_score]
+    ];
+    return rows.map(([label, value]) => '<div class="ai-score-row"><span>' + label + '</span><div><i style="width:' + Math.max(0, Math.min(100, Number(value) || 0)) + '%"></i></div><b>' + (Number(value) || 0) + '</b></div>').join('');
+  };
+
+  const resultBox = (jobId) => document.querySelector('[data-ai-result="' + jobId + '"]');
+  const renderAnalysis = (jobId, data) => {
+    const box = resultBox(jobId);
+    if (!box) return;
+    const ai = data?.result?.ai || {};
+    const clips = ai.clips || [];
+    const memory = data?.result?.creator_memory_used || {};
+    box.innerHTML = '<div class="ai-result-title"><div><span class="eyebrow-v11">KLYPSO VIRAL ENGINE · V1</span><h3>Sélection éditoriale prête.</h3><p>' +
+      escapeHtml(ai.summary || data.message || 'Scènes classées.') + '</p></div><div class="ai-memory-chip">DNA · ' + escapeHtml(memory.projects_analyzed || 0) + ' projets appris</div></div>' +
+      '<div class="ai-result-actions"><button class="button" type="button" data-render-clips="' + jobId + '">Rendre les 5 meilleurs clips →</button><button class="button ghost" type="button" data-render-montage="' + jobId + '">Créer le montage IA →</button></div>' +
+      '<div class="ai-clip-list">' + clips.map((clip, index) =>
+        '<article class="ai-clip-row">' +
+          '<div class="ai-clip-rank">0' + (index + 1) + '</div>' +
+          '<div class="ai-clip-main"><div class="ai-clip-head"><span class="ai-archetype">' + escapeHtml(clip.archetype || 'moment fort') + '</span><b>' + escapeHtml(clip.title) + '</b><strong>' + escapeHtml(clip.opportunity_score) + '/100</strong></div>' +
+          '<p class="ai-clip-hook">“' + escapeHtml(clip.hook) + '”</p><p class="ai-clip-reason">' + escapeHtml(clip.reason) + '</p>' +
+          '<div class="ai-score-grid">' + scoreBars(clip) + '</div>' +
+          '<div class="ai-clip-feedback"><button type="button" class="filter-btn" data-feedback="keep" data-job-id="' + jobId + '" data-candidate-id="' + escapeHtml(clip.id) + '">✓ Je garde</button><button type="button" class="filter-btn" data-feedback="reject" data-job-id="' + jobId + '" data-candidate-id="' + escapeHtml(clip.id) + '">× Je rejette</button><span>' + Number(clip.start || 0).toFixed(1) + 's → ' + Number(clip.end || 0).toFixed(1) + 's</span></div>' +
+          '</div></article>'
+      ).join('') + '</div><div class="ai-render-output" data-ai-render-output="' + jobId + '"></div>';
+    box.hidden = false;
+    box.scrollIntoView({behavior:'smooth', block:'center'});
+  };
+
+  document.addEventListener('click', async (event) => {
+    const analyze = event.target.closest('.ai-run-job');
+    if (analyze) {
+      analyze.disabled = true;
+      analyze.textContent = 'Analyse en cours…';
+      try {
+        const response = await fetch('/api/ai/analyze/' + analyze.dataset.jobId, {method:'POST', headers:{'X-CSRF-Token':csrf}, credentials:'same-origin'});
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Analyse impossible.');
+        analyze.textContent = 'Analyse terminée ✓';
+        renderAnalysis(analyze.dataset.jobId, data);
+      } catch (error) {
+        analyze.disabled = false;
+        analyze.textContent = 'Relancer l’IA';
+        alert(error.message);
+      }
+      return;
+    }
+
+    const renderClips = event.target.closest('[data-render-clips]');
+    if (renderClips) {
+      renderClips.disabled = true;
+      renderClips.textContent = 'Rendu des clips…';
+      const box = resultBox(renderClips.dataset.renderClips);
+      const output = box?.querySelector('[data-ai-render-output]');
+      try {
+        const response = await fetch('/api/ai/render-clips/' + renderClips.dataset.renderClips, {method:'POST', headers:{'X-CSRF-Token':csrf}, credentials:'same-origin'});
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Rendu impossible.');
+        if (output) output.innerHTML = '<div class="ai-download-grid">' + (data.clips || []).map(clip => '<a class="ai-download-card" href="' + clip.download_url + '"><span>MP4</span><b>' + escapeHtml(clip.title) + '</b><small>' + clip.score + '/100 · Télécharger →</small></a>').join('') + '</div>';
+        renderClips.textContent = 'Clips rendus ✓';
+      } catch (error) {
+        renderClips.disabled = false;
+        renderClips.textContent = 'Rendre les 5 meilleurs clips →';
+        alert(error.message);
+      }
+      return;
+    }
+
+    const renderMontage = event.target.closest('[data-render-montage]');
+    if (renderMontage) {
+      renderMontage.disabled = true;
+      renderMontage.textContent = 'Montage en cours…';
+      const box = resultBox(renderMontage.dataset.renderMontage);
+      const output = box?.querySelector('[data-ai-render-output]');
+      try {
+        const response = await fetch('/api/ai/render-montage/' + renderMontage.dataset.renderMontage, {method:'POST', headers:{'X-CSRF-Token':csrf}, credentials:'same-origin'});
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Montage impossible.');
+        if (output) output.innerHTML = '<div class="ai-download-grid"><a class="ai-download-card featured" href="' + data.montage.download_url + '"><span>MONTAGE IA</span><b>Exporter la séquence complète</b><small>' + data.montage.clip_count + ' scènes · Télécharger →</small></a></div>';
+        renderMontage.textContent = 'Montage IA prêt ✓';
+      } catch (error) {
+        renderMontage.disabled = false;
+        renderMontage.textContent = 'Créer le montage IA →';
+        alert(error.message);
+      }
+      return;
+    }
+
+    const feedback = event.target.closest('[data-feedback]');
+    if (feedback) {
+      const form = new URLSearchParams();
+      form.set('csrf_token', csrf);
+      form.set('job_id', feedback.dataset.jobId);
+      form.set('candidate_id', feedback.dataset.candidateId);
+      form.set('decision', feedback.dataset.feedback);
+      feedback.disabled = true;
+      try {
+        const response = await fetch('/clips/feedback', {method:'POST', body:form, credentials:'same-origin'});
+        if (!response.ok) throw new Error('Feedback non enregistré.');
+        feedback.textContent = feedback.dataset.feedback === 'keep' ? '✓ Gardé' : '× Rejeté';
+      } catch (error) {
+        feedback.disabled = false;
+        alert(error.message);
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}
 {% block crumb %}Clips IA{% endblock %}
 {% block content %}
-<section class="clips-page-v11">
-  <div class="page-title-row"><div><span class="eyebrow-v11">KLYPSO CLIPS</span><h1>Une bibliothèque de moments, pas une liste de jobs.</h1><p>Chaque analyse doit te mener vers une sélection que tu peux corriger, rejeter ou reprendre dans Studio.</p></div><a class="button button-lg" href="{{ url_for('clips.create_clips') }}">＋ Nouvelle analyse</a></div>
+<section class="clips-page-v11 clips-ai-command-page">
+  <div class="page-title-row">
+    <div><span class="eyebrow-v11">KLYPSO CLIPS · VIRAL ENGINE</span><h1>Chaque VOD devient une décision éditoriale.</h1><p>Analyse sémantique, mémoire du créateur, diversité des scènes et rendu social sont séparés en étapes claires.</p></div>
+    <a class="button button-lg" href="{{ url_for('clips.create_clips') }}">＋ Nouveau projet</a>
+  </div>
+
+  <section class="ai-engine-banner">
+    <div><span class="ai-engine-orb">✦</span><div><span class="eyebrow-v11">MOTEUR ACTIF</span><h2>KLYPSO VIRAL ENGINE <em>v1</em></h2><p>Hook · payoff · émotion · nouveauté · partage · replay · adéquation à ton historique.</p></div></div>
+    <div class="ai-engine-note"><b>Pas de promesse magique.</b><span>Le score mesure une opportunité éditoriale à partir des signaux disponibles.</span></div>
+  </section>
+
   <div class="clips-toolbar"><div class="tab-group"><button class="tab-btn active" type="button" data-list-tab="all">Tous</button><button class="tab-btn" type="button" data-list-tab="ready">Prêts</button><button class="tab-btn" type="button" data-list-tab="processing">En cours</button></div><div class="toolbar-right clips-library-tools"><span class="clips-library-count"><strong data-clips-result-count>{{ jobs|length }}</strong> projet(s)</span><button class="filter-btn" type="button" data-clips-search-toggle>⌕ Rechercher</button><label class="clips-search"><span>⌕</span><input data-clips-search type="search" placeholder="Projet #, type, statut…" aria-label="Rechercher un projet"></label><button class="filter-btn" type="button">≡ Filtrer</button><button class="filter-btn" type="button" data-clips-sort>⇅ Récent</button></div></div>
+
   {% if jobs %}
   <div class="clip-project-grid">
     {% for job in jobs %}
-    <article class="clip-project-card" data-status="{{ job.status|lower }}" data-created="{{ job.created_at }}" data-job-id="{{ job.id }}"><div class="clip-project-visual"><div class="video-shape"><span>{{ '✦' if loop.index % 2 else '◫' }}</span></div><div class="visual-badge">{{ job.status|upper }}</div><button class="visual-play" type="button">▶</button></div><div class="clip-project-body"><div><span class="project-type">{{ job.job_type|replace('_',' ')|title }}</span><h3>Projet #{{ job.id }}</h3></div><span class="status-pill"><i class="status-led {{ job.status|lower }}"></i>{{ job.status }}</span></div><div class="clip-project-meta"><span>Créé {{ job.created_at }}</span><div style="display:flex;gap:8px;align-items:center"><a href="#feedback" data-feedback-open>Feedback →</a>{% if current_plan.key in ['pro','ultra'] %}<button class="filter-btn ai-run-job" type="button" data-job-id="{{ job.id }}">IA avancée</button>{% endif %}</div></div></article>
+    {% set payload = (job.payload_json|fromjson if job.payload_json else {}) %}
+    <article class="clip-project-card" data-status="{{ job.status|lower }}" data-created="{{ job.created_at }}" data-job-id="{{ job.id }}">
+      <div class="clip-project-visual"><div class="video-shape"><span>{{ '✦' if loop.index % 2 else '◫' }}</span></div><div class="visual-badge">{{ job.status|upper }}</div><button class="visual-play" type="button">▶</button></div>
+      <div class="clip-project-body"><div><span class="project-type">{{ payload.get('mode','clip_only')|replace('_',' ')|title }}</span><h3>Projet #{{ job.id }}</h3></div><span class="status-pill"><i class="status-led {{ job.status|lower }}"></i>{{ job.status }}</span></div>
+      <div class="clip-project-meta"><span>Créé {{ job.created_at }}</span><div style="display:flex;gap:8px;align-items:center">{% if current_plan.key in ['pro','ultra'] and payload.get('mode','clip_only') in ['ai_clips','ai_montage'] %}<button class="filter-btn ai-run-job" type="button" data-job-id="{{ job.id }}">Analyser avec l'IA</button>{% elif payload.get('mode','clip_only') == 'clip_only' %}<span class="ai-standard-chip">STANDARD</span>{% else %}<a class="filter-btn" href="{{ url_for('studio.studio') }}">Ouvrir Studio</a>{% endif %}<a href="#feedback" data-feedback-open>Feedback →</a></div></div>
+      <div class="clip-project-ai" data-ai-result="{{ job.id }}" hidden></div>
+    </article>
     {% endfor %}
   </div>
   {% else %}
-  <div class="empty-state-v11 large"><div class="empty-grid"><div></div><div></div><div></div><div></div><div></div><div></div></div><div class="empty-copy"><span class="empty-icon-big">✦</span><h2>Aucun clip pour le moment</h2><p>Importe une VOD et KLYPSO va créer ton premier projet d'analyse.</p><a class="button button-lg" href="{{ url_for('clips.create_clips') }}">Importer une vidéo →</a></div></div>
+  <div class="empty-state-v11 large"><div class="empty-grid"><div></div><div></div><div></div><div></div><div></div><div></div></div><div class="empty-copy"><span class="empty-icon-big">✦</span><h2>Aucun projet pour le moment</h2><p>Importe une VOD et choisis Clips IA ou Montage IA pour lancer le moteur.</p><a class="button button-lg" href="{{ url_for('clips.create_clips') }}">Créer mon premier projet →</a></div></div>
   {% endif %}
+
   <div class="clip-no-results" data-clips-no-results hidden><div><strong>Aucun projet ne correspond.</strong><span>Essaie un autre terme ou remets le filtre sur « Tous ».</span></div><button type="button" class="filter-btn" data-clips-clear>Effacer la recherche</button></div>
-  <section class="clip-insight-strip"><div><span>WORKFLOW</span><strong>Analyse → candidats → sélection</strong></div><div><span>FORMATS</span><strong>9:16 · 4:5 · 1:1 · 16:9</strong></div><div><span>FEEDBACK</span><strong>Conserver / Rejeter</strong></div><div><span>IDENTITÉ</span><strong>Brand Kit réutilisable</strong></div></section>
+  <section class="clip-insight-strip"><div><span>INTELLIGENCE</span><strong>Média + transcript + historique</strong></div><div><span>DIVERSITÉ</span><strong>Anti-doublons de scène</strong></div><div><span>RENDU</span><strong>9:16 · captions · MP4</strong></div><div><span>APPRENTISSAGE</span><strong>Conserver / Rejeter</strong></div></section>
 </section>
 {% endblock %}
