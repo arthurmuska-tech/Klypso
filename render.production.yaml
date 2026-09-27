@@ -36,6 +36,8 @@ services:
         value: "true"
       - key: REQUIRE_OBJECT_STORAGE
         value: "true"
+      - key: REQUIRE_LEGAL_CONFIG
+        value: "true"
       - key: JOB_STALE_SECONDS
         value: "1800"
       - key: JOB_MAX_ATTEMPTS
@@ -160,6 +162,8 @@ services:
       - key: REQUIRE_POSTGRES
         value: "true"
       - key: REQUIRE_OBJECT_STORAGE
+        value: "true"
+      - key: REQUIRE_LEGAL_CONFIG
         value: "true"
       - key: JOB_STALE_SECONDS
         value: "1800"
