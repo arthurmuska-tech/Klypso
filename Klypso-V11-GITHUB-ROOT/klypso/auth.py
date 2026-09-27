@@ -315,6 +315,8 @@ def register():
         return redirect(url_for("auth.login"))
 
     password = request.form.get("password", "")
+    if request.form.get("passwordless") == "1":
+        password = ""
     if len(password) >= 8:
         user = _create_email_user(email, password)
         _login(user)
