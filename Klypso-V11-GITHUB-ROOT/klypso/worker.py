@@ -135,6 +135,18 @@ def process_job(app, job):
             with app.test_request_context("/"):
                 session["user_id"] = job["user_id"]
                 _run_analysis_job(job["id"])
+                with get_db(app.config["DATABASE_PATH"]) as db:
+                    current = db.execute(
+                        "SELECT status FROM jobs WHERE id=? AND user_id=?",
+                        (job["id"], job["user_id"]),
+                    ).fetchone()
+                    if current and current["status"] == "processing":
+                        db.execute(
+                            "UPDATE jobs SET status='failed',error_message=?,heartbeat_at=NULL,"
+                            "locked_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                            ("Le worker a terminé sans finaliser le job.", job["id"]),
+                        )
+                        db.commit()
     except Exception:
         LOGGER.exception("Job %s failed", job["id"])
         with app.app_context():
