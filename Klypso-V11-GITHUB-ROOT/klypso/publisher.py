@@ -94,8 +94,9 @@ def platform_status(user_id=None):
             item.update({"adapter": None, "connected": False, "account_name": None})
         item["native_supported"] = platform in {"youtube", "tiktok"}
         item["connect_url"] = (
-            url_for("publisher.connect_youtube" if platform == "youtube" else "publisher.connect_tiktok")
-            if platform in {"youtube", "tiktok"} else None
+            "/publisher/connect/youtube" if platform == "youtube"
+            else "/publisher/connect/tiktok" if platform == "tiktok"
+            else None
         )
         out[platform] = item
     return out
