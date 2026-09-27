@@ -18,6 +18,11 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from .database import get_db
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+
+def _normalize_email(value):
+    """Return one canonical email representation for registration and login."""
+    return " ".join(str(value or "").strip().split()).lower()
 auth_bp = Blueprint("auth", __name__)
 oauth = OAuth()
 
@@ -355,7 +360,7 @@ def verify_email():
 def login():
     if request.method == "GET":
         return render_template("login.html")
-    email = request.form.get("email", "").strip().lower()
+    email = _normalize_email(request.form.get("email", ""))
     password = request.form.get("password", "")
     with get_db(current_app.config["DATABASE_PATH"]) as db:
         user = db.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
