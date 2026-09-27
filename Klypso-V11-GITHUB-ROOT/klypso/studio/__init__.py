@@ -10,6 +10,7 @@ from ..database import get_db
 from ..media.ffprobe import probe
 from ..media.ffmpeg import run
 from ..media.storage import safe_media_name, is_allowed_mime
+from ..media.object_storage import materialize_media_path, persist_file, send_stored_file
 from ..clips.renderer import render_candidate, concat_videos
 from ..utils.paths import user_storage
 from ..utils.validation import validate_upload
@@ -243,7 +244,10 @@ def render_studio_project(project_id):
                     "SELECT stored_path,original_name FROM media_files WHERE id=? AND user_id=?",
                     (int(media_id), session["user_id"]),
                 ).fetchone()
-                if not media or not Path(media["stored_path"]).is_file():
+                if not media:
+                    raise ValueError(f"Média du clip {index + 1} introuvable.")
+                media_path = materialize_media_path(media["stored_path"])
+                if not Path(media_path).is_file():
                     raise ValueError(f"Média du clip {index + 1} introuvable.")
                 source_start = float(clip.get("source_start", clip.get("start", 0)) or 0)
                 duration = float(clip.get("duration", 0) or 0)
@@ -251,7 +255,7 @@ def render_studio_project(project_id):
                     raise ValueError(f"Durée/source invalide pour le clip {index + 1}.")
                 output = temp_folder / f"segment-{index:03d}.mp4"
                 render_candidate(
-                    media["stored_path"],
+                    media_path,
                     output,
                     {"start": source_start, "end": source_start + duration},
                     output_format=output_format,
@@ -370,10 +374,12 @@ def ai_edit():
         args += ["-movflags", "+faststart", str(output)]
         run(args)
 
+        size_bytes = output.stat().st_size
+        stored_output = persist_file(output, session["user_id"], original_name, "video/mp4")
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             cur = db.execute(
                 "INSERT INTO media_files(user_id,original_name,stored_path,mime_type,size_bytes) VALUES(?,?,?,?,?)",
-                (session["user_id"], original_name, str(output), "video/mp4", output.stat().st_size),
+                (session["user_id"], original_name, stored_output, "video/mp4", size_bytes),
             )
             media_id = cur.lastrowid
             db.commit()
