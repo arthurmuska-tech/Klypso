@@ -897,6 +897,16 @@ def analyze_job(job_id):
         return jsonify({"ok": True, "job_id": job_id, "status": "completed", "result": json.loads(job["result_json"])}), 200
     if job["status"] == "processing":
         return jsonify({"ok": True, "job_id": job_id, "status": "processing"}), 202
+    worker_mode = current_app.config.get("AI_WORKER_MODE", "in_process")
+    if worker_mode == "external":
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            db.execute(
+                "UPDATE jobs SET status='queued',error_message=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?",
+                (job_id, session["user_id"]),
+            )
+            db.commit()
+        return jsonify({"ok": True, "job_id": job_id, "status": "queued"}), 202
+
     with get_db(current_app.config["DATABASE_PATH"]) as db:
         db.execute(
             "UPDATE jobs SET status='processing',error_message=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?",
