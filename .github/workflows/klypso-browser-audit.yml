@@ -1,0 +1,64 @@
+name: Klypso Browser Audit
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  browser-audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Klypso-V11-GITHUB-ROOT
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install app dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install playwright
+
+      - name: Install browser
+        run: python -m playwright install --with-deps chromium
+
+      - name: Start Klypso
+        env:
+          FLASK_ENV: testing
+          TESTING: '1'
+          SESSION_COOKIE_SECURE: 'false'
+          AI_WORKER_MODE: in_process
+          PUBLIC_BASE_URL: http://127.0.0.1:5000
+        run: |
+          nohup python web_app.py > /tmp/klypso.log 2>&1 &
+          python - <<'PY'
+          import time, urllib.request
+          for _ in range(60):
+              try:
+                  urllib.request.urlopen("http://127.0.0.1:5000/healthz", timeout=2)
+                  print("Klypso is ready")
+                  break
+              except Exception:
+                  time.sleep(1)
+          else:
+              print(open("/tmp/klypso.log").read())
+              raise SystemExit("Klypso did not start")
+          PY
+
+      - name: Run browser audit and capture screenshots
+        run: python tests/browser_audit.py
+
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: klypso-browser-audit
+          path: |
+            Klypso-V11-GITHUB-ROOT/test-artifacts/browser/
+            /tmp/klypso.log
+          if-no-files-found: warn
