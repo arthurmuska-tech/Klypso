@@ -23,6 +23,8 @@
     const palette = palettes.includes(value) ? value : 'paper';
     root.dataset.palette = palette;
     set('klypso.palette', palette);
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) themeMeta.content = getComputedStyle(root).getPropertyValue('--k-bg').trim() || '#f7f4ef';
     $('[data-setting-group="palette"] [data-palette]').forEach((el) => {
       const selected = el.dataset.palette === palette;
       el.classList.toggle('selected', selected);
