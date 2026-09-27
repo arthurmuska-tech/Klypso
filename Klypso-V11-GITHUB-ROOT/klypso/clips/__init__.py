@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 from .pipeline import create_analysis_job
 from ..auth import login_required
@@ -35,6 +36,10 @@ def handle_upload():
 
     user_id = session["user_id"]
     file = request.files.get("video")
+    mode = request.form.get("mode", "clip_only").strip()
+    allowed_modes = {"ai_clips", "clip_only", "ai_montage", "montage_only"}
+    if mode not in allowed_modes:
+        mode = "clip_only"
     credit_cost = credit_cost_from_request(request)
     charged = False
 
@@ -74,12 +79,50 @@ def handle_upload():
             media_id = cur.lastrowid
             db.commit()
 
-        job_id = create_analysis_job(user_id, media_id, str(destination), current_app.config["DATABASE_PATH"])
+        project_names = {
+            "ai_clips": "Clips IA",
+            "clip_only": "Clip seul",
+            "ai_montage": "Montage IA",
+            "montage_only": "Montage seul",
+        }
+        project_name = f"{project_names[mode]} · {Path(file.filename or 'vidéo').stem[:55]}"
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            cur = db.execute(
+                "INSERT INTO projects(user_id,name,timeline_json) VALUES(?,?,?)",
+                (user_id, project_name, json.dumps({
+                    "mode": mode,
+                    "output_format": request.form.get("output_format", "9:16"),
+                    "preferences": {
+                        "spoken": request.form.get("spoken") == "on",
+                        "subtitles": request.form.get("subtitles") == "on",
+                        "brand_kit": request.form.get("brand_kit") == "on",
+                        "clean_audio": request.form.get("clean_audio") == "on",
+                    },
+                }, ensure_ascii=False)),
+            )
+            project_id = cur.lastrowid
+            db.commit()
+
+        job_id = create_analysis_job(
+            user_id,
+            media_id,
+            str(destination),
+            current_app.config["DATABASE_PATH"],
+            metadata={
+                "project_id": project_id,
+                "mode": mode,
+                "output_format": request.form.get("output_format", "9:16"),
+                "goal": "clips" if mode in {"ai_clips", "clip_only"} else "studio",
+            },
+        )
+        target = url_for("clips.clips")
+        if mode == "montage_only":
+            target = url_for("studio.studio")
         flash(
-            f"Vidéo reçue. Analyse créée (job #{job_id}). {credit_cost} crédits utilisés.",
+            f"Projet « {project_name} » créé (#{job_id}). {credit_cost} crédits utilisés.",
             "success",
         )
-        return redirect(url_for("clips.clips"))
+        return redirect(target)
 
     except CreditError as exc:
         flash(str(exc), "error")
