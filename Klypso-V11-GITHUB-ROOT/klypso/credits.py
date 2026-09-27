@@ -157,3 +157,43 @@ def get_credit_state(user_id, plan_key):
             "monthly_clip_count": count,
             "monthly_clip_limit": plan.clips_per_month,
         }
+
+
+def consume_processing_credits(user_id, plan_key, cost, metadata=None):
+    """Reserve processing credits without incrementing the monthly clip quota."""
+    cost = max(1, int(cost))
+    now = _now()
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        db.execute("BEGIN IMMEDIATE")
+        balance, _, plan = _sync_balance(db, user_id, plan_key, now)
+        if balance < cost:
+            raise CreditError(f"Crédits insuffisants : il te faut {cost} crédits et tu en as {balance}.")
+        new_balance = balance - cost
+        db.execute(
+            "UPDATE users SET credit_balance=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            (new_balance, user_id),
+        )
+        db.execute(
+            "INSERT INTO credit_transactions(user_id,amount,balance_after,transaction_type,metadata_json) VALUES(?,?,?,?,?)",
+            (user_id, -cost, new_balance, "processing", json.dumps(metadata or {}, ensure_ascii=False)),
+        )
+        db.commit()
+        return {"balance": new_balance, "cost": cost, "plan": plan.key}
+
+
+def refund_processing_credits(user_id, cost, metadata=None):
+    cost = max(0, int(cost))
+    if not cost:
+        return
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute("SELECT credit_balance FROM users WHERE id=?", (user_id,)).fetchone()
+        if not row:
+            return
+        new_balance = int(row["credit_balance"] or 0) + cost
+        db.execute("UPDATE users SET credit_balance=?,updated_at=CURRENT_TIMESTAMP WHERE id=?", (new_balance, user_id))
+        db.execute(
+            "INSERT INTO credit_transactions(user_id,amount,balance_after,transaction_type,metadata_json) VALUES(?,?,?,?,?)",
+            (user_id, cost, new_balance, "processing_refund", json.dumps(metadata or {}, ensure_ascii=False)),
+        )
+        db.commit()
