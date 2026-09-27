@@ -109,6 +109,9 @@ def _prompt(duration, candidates, transcript_data=None, memory=None, mode="ai_cl
         f"DURÉE SOURCE: {duration:.2f}s\n\n"
         "ADN DU CRÉATEUR (apprendre des projets précédents):\n"
         f"{memory_text}\n\n"
+        "PRÉFÉRENCES DE CETTE PRODUCTION:\n"
+        f"- style: {style}; priorité: {scene_priority}; rythme: {pace}\n"
+        "Respecte ces préférences sans jamais inventer un événement.\n\n"
         "RUBRIQUE DE SÉLECTION:\n"
         "1) hook compréhensible très vite; 2) payoff ou révélation; 3) émotion/réaction/changement de dynamique; "
         "4) nouveauté; 5) contexte suffisant sans intro inutile; 6) partageabilité/replay; 7) adéquation au style précédent; "
@@ -345,6 +348,7 @@ def analyze_job(job_id):
 
     mode = payload.get("mode", "ai_clips")
     output_format = payload.get("output_format", "9:16")
+    preferences = payload.get("preferences") or {}
     try:
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             memory = build_creator_memory(db, session["user_id"])
