@@ -1,7 +1,7 @@
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 from .auth import login_required
 from .database import get_db
-from .plans import get_plan
+from .plans import get_plan, trial_ends_at
 from .promo import effective_plan_key
 
 billing_bp = Blueprint("billing", __name__)
@@ -27,7 +27,8 @@ def subscription():
     with get_db(current_app.config["DATABASE_PATH"]) as db:
         user = db.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
     plan_key = effective_plan_key(user)
-    return render_template("subscription.html", user=user, plan=get_plan(plan_key), effective_plan_key=plan_key)
+    trial_end = trial_ends_at(user["trial_started_at"])
+    return render_template("subscription.html", user=user, plan=get_plan(plan_key), effective_plan_key=plan_key, trial_end=trial_end)
 
 
 @billing_bp.post("/billing/checkout")
