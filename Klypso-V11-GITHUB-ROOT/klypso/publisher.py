@@ -1,10 +1,8 @@
-"""KLYPSO Distribution Center: scheduling, publishing adapters and feedback loop.
+"""KLYPSO Distribution Center: scheduling, native OAuth publishing, adapters and feedback loop.
 
-Direct network posting is intentionally adapter-based. A configured platform webhook
-receives a signed, short-lived media URL plus the post package. This keeps platform
-credentials out of KLYPSO's SQLite database and lets an owner connect an approved
-publisher (Make, n8n, a private adapter, etc.) without pretending that a post was
-published when no platform adapter is configured.
+YouTube and TikTok can use first-party OAuth connections when their developer
+credentials are configured. Instagram and X remain adapter-based until their
+platform app credentials are configured. End-user tokens are encrypted at rest.
 """
 import calendar
 import json
@@ -13,13 +11,28 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
-from flask import Blueprint, current_app, jsonify, render_template, request, send_file, session
+from flask import Blueprint, current_app, jsonify, redirect, render_template, request, send_file, session, url_for
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from .auth import login_required
 from .database import get_db
 from .clips.intelligence import update_creator_memory
 from .social_profiles import get_social_profile
+from .social_connections import (
+    connection_for,
+    connection_status,
+    disconnect_connection,
+    ensure_fresh_token,
+    tiktok_authorize_url,
+    tiktok_exchange,
+    tiktok_publish,
+    tiktok_user_info,
+    upsert_connection,
+    youtube_authorize,
+    youtube_callback,
+    youtube_channel,
+    youtube_upload,
+)
 
 
 publisher_bp = Blueprint("publisher", __name__)
@@ -67,14 +80,28 @@ def _platform_webhook(platform):
     return os.getenv(key, "").strip()
 
 
-def platform_status():
-    return {
-        platform: {
-            "connected": bool(_platform_webhook(platform)),
-            "adapter": "webhook" if _platform_webhook(platform) else None,
-        }
-        for platform in PLATFORMS
-    }
+def platform_status(user_id=None):
+    native = {}
+    if user_id is not None:
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            native = connection_status(db, user_id)
+    out = {}
+    for platform in PLATFORMS:
+        item = dict(native.get(platform) or {})
+        webhook = bool(_platform_webhook(platform))
+        if item.get("connected"):
+            item.update({"adapter": "oauth", "connected": True})
+        elif webhook:
+            item.update({"adapter": "webhook", "connected": True, "account_name": None})
+        else:
+            item.update({"adapter": None, "connected": False, "account_name": None})
+        item["native_supported"] = platform in {"youtube", "tiktok"}
+        item["connect_url"] = (
+            url_for("publisher.connect_youtube" if platform == "youtube" else "publisher.connect_tiktok")
+            if platform in {"youtube", "tiktok"} else None
+        )
+        out[platform] = item
+    return out
 
 
 def _serializer():
