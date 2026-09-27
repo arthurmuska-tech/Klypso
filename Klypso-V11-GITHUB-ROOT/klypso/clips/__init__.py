@@ -81,6 +81,8 @@ def handle_upload():
                 "ai_style": request.form.get("ai_style", "auto"),
                 "scene_priority": request.form.get("scene_priority", "balanced"),
                 "pace": request.form.get("pace", "natural"),
+                "social_preset": request.form.get("social_preset", "dynamic"),
+                "caption_style": request.form.get("caption_style", "dynamic"),
             },
         )
         charged = True
@@ -125,6 +127,8 @@ def handle_upload():
                         "ai_style": request.form.get("ai_style", "auto"),
                         "scene_priority": request.form.get("scene_priority", "balanced"),
                         "pace": request.form.get("pace", "natural"),
+                        "social_preset": request.form.get("social_preset", "dynamic"),
+                        "caption_style": request.form.get("caption_style", "dynamic"),
                     },
                 }, ensure_ascii=False)),
             )
