@@ -41,6 +41,8 @@ def enforce_rate_limit():
         ("/login", 10, 60),
         ("/register", 5, 60),
         ("/oauth/google/credential", 10, 60),
+        ("/resend-code", 4, 300),
+        ("/verify-email", 8, 300),
         ("/api/ai/analyze/", 5, 60),
         ("/api/ai/render-clips/", 10, 60),
         ("/api/ai/render-social/", 10, 60),
