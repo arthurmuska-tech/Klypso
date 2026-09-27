@@ -48,6 +48,8 @@ def create_app(test_config=None):
                 app.logger.exception("Unable to load workspace context")
         return {
             "current_user": session.get("user_email"),
+            "current_display_name": session.get("user_name"),
+            "current_auth_provider": session.get("auth_provider"),
             "csrf_token": csrf_token,
             "public_base_url": app.config["PUBLIC_BASE_URL"],
             "current_plan": plan,
