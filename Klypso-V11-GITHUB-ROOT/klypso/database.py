@@ -2,6 +2,11 @@ import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 import re
+import os
+from threading import Lock
+
+_POSTGRES_POOLS = {}
+_POSTGRES_POOL_LOCK = Lock()
 
 POSTGRES_ID_TABLES = {
     "users", "oauth_identities", "email_codes", "credit_transactions",
@@ -290,11 +295,28 @@ CREATE TABLE IF NOT EXISTS rate_limit_buckets (
 """
 
 
+def _postgres_pool(url):
+    with _POSTGRES_POOL_LOCK:
+        pool = _POSTGRES_POOLS.get(url)
+        if pool is None:
+            from psycopg_pool import ConnectionPool
+            max_size = max(2, int(os.getenv("POSTGRES_POOL_MAX_SIZE", "8")))
+            pool = ConnectionPool(
+                conninfo=str(url),
+                min_size=1,
+                max_size=max_size,
+                timeout=20,
+                open=True,
+                kwargs={"row_factory": __import__("psycopg.rows", fromlist=["dict_row"]).dict_row},
+            )
+            _POSTGRES_POOLS[url] = pool
+        return pool
+
+
 def connect(path):
     if str(path).startswith(("postgresql://", "postgres://")):
-        import psycopg
         from psycopg.rows import dict_row
-        return CompatConnection(psycopg.connect(str(path), connect_timeout=20, row_factory=dict_row))
+        return CompatConnection(_postgres_pool(str(path)).getconn())
     conn = sqlite3.connect(path, timeout=20)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
@@ -339,6 +361,20 @@ def init_db(path):
 
 @contextmanager
 def get_db(path):
+    path = str(path)
+    if path.startswith(("postgresql://", "postgres://")):
+        pool = _postgres_pool(path)
+        raw = pool.getconn()
+        conn = CompatConnection(raw)
+        try:
+            yield conn
+        finally:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            pool.putconn(raw)
+        return
     conn = connect(path)
     try:
         yield conn
