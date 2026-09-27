@@ -96,7 +96,7 @@ def test_v25_full_reliability_matrix(case, tmp_path):
         assert "klypso.wood" in js
         assert "localStorage" in js
         assert "data-wood" in js
-        assert "data-setting-group="palette"" in account
+        assert 'data-setting-group="palette"' in account
         assert "data-palette" in js
 
     else:
@@ -116,10 +116,10 @@ def test_v25_full_reliability_matrix(case, tmp_path):
             "data-google-signin", "g_id_onload", "handleGoogleCredential",
             'type="email"', 'type="password"', 'autocomplete="new-password"',
             "data-save-settings", "data-appearance-reset", "data-brand-reset",
-            "data-setting="watermark"", "data-setting="motion"",
-            "data-setting="displayName"", "data-setting-group="accent"",
-            "data-setting-group="density"", "data-setting-group="radius"",
-            "data-setting-group="palette"", "data-caption",
+            'data-setting="watermark"', 'data-setting="motion"',
+            'data-setting="displayName"', 'data-setting-group="accent"',
+            'data-setting-group="density"', 'data-setting-group="radius"',
+            'data-setting-group="palette"', "data-caption",
             "applyAccent", "applyDensity", "applyRadius", "applyCaption",
             "applyPalette", "applyWood", "klypso.wood",
             "window.addEventListener('storage'",
