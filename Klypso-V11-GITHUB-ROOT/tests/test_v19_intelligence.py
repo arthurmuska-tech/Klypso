@@ -197,6 +197,7 @@ def test_v20_studio_project_lifecycle(tmp_path):
                 ("studio-v20@example.com", "test-hash", "Studio V20"),
             )
             user_id = cur.lastrowid
+            db.execute("UPDATE users SET plan='ultra',subscription_status='active' WHERE id=?", (user_id,))
             db.commit()
     client = app.test_client()
     with client.session_transaction() as sess:
@@ -247,6 +248,7 @@ def test_v20_studio_rejects_foreign_project(tmp_path):
         with get_db(app.config["DATABASE_PATH"]) as db:
             cur = db.execute("INSERT INTO users(email,password_hash,display_name) VALUES(?,?,?)", ("owner-v20@example.com", "test-hash", "Owner"))
             owner_id = cur.lastrowid
+            db.execute("UPDATE users SET plan='ultra',subscription_status='active' WHERE id=?", (owner_id,))
             cur = db.execute("INSERT INTO users(email,password_hash,display_name) VALUES(?,?,?)", ("other-v20@example.com", "test-hash", "Other"))
             other_id = cur.lastrowid
             cur = db.execute(
