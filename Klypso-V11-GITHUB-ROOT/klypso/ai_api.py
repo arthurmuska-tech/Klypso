@@ -19,8 +19,8 @@ from .clips.intelligence import (
     update_creator_memory,
 )
 from .clips.agents import build_montage_directive, run_agent_suite
-from .clips.chat_intelligence import build_chat_signals, enrich_candidates_with_chat_signals, normalize_chat_messages
-from .clips.media_intelligence import analyze_media_signals, enrich_candidates_with_media_signals
+from .clips.chat_intelligence import build_chat_signals, enrich_candidates_with_chat_signals, generate_chat_candidates, normalize_chat_messages
+from .clips.media_intelligence import analyze_media_signals, enrich_candidates_with_media_signals, generate_signal_candidates
 from .clips.renderer import concat_videos, render_candidate
 
 
@@ -411,8 +411,18 @@ def analyze_job(job_id):
         evidence_preferences["_media_signals"] = media_signals
         evidence_preferences["_chat_signals"] = chat_signals
 
-        # Broad deterministic coverage first, then semantic model selection.
+        # Broad deterministic coverage first, augmented by non-verbal media/chat events.
         candidates = generate_intelligent_candidates(analysis["duration"], [])
+        signal_candidates = (
+            generate_signal_candidates(analysis["duration"], media_signals)
+            + generate_chat_candidates(analysis["duration"], chat_signals)
+        )
+        seen_windows = {(round(float(item.get("start", 0)), 1), round(float(item.get("end", 0)), 1)) for item in candidates}
+        for item in signal_candidates:
+            key = (round(float(item.get("start", 0)), 1), round(float(item.get("end", 0)), 1))
+            if key not in seen_windows and len(candidates) < 90:
+                candidates.append(item)
+                seen_windows.add(key)
         candidates = enrich_candidates_with_media_signals(candidates, media_signals)
         candidates = enrich_candidates_with_chat_signals(candidates, chat_signals)
         agent_report = run_agent_suite(
@@ -433,6 +443,14 @@ def analyze_job(job_id):
         # Timestamped transcript creates a second, tighter semantic pass.
         if transcript_data.get("segments"):
             candidates = generate_intelligent_candidates(analysis["duration"], transcript_data["segments"])
+            for item in (
+                generate_signal_candidates(analysis["duration"], media_signals)
+                + generate_chat_candidates(analysis["duration"], chat_signals)
+            ):
+                key = (round(float(item.get("start", 0)), 1), round(float(item.get("end", 0)), 1))
+                existing = {(round(float(candidate.get("start", 0)), 1), round(float(candidate.get("end", 0)), 1)) for candidate in candidates}
+                if key not in existing and len(candidates) < 90:
+                    candidates.append(item)
             candidates = enrich_candidates_with_media_signals(candidates, media_signals)
             candidates = enrich_candidates_with_chat_signals(candidates, chat_signals)
             agent_report = run_agent_suite(
