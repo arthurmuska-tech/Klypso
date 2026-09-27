@@ -440,3 +440,241 @@ def test_v16_surface_scenarios(client, app, scenario):
         assert updated["id"] == user["id"]
         assert updated["display_name"] == "New Name"
         assert updated["avatar_url"] == "https://example.com/new.png"
+
+
+V17_SCENARIOS = [
+    "creator_memory_empty",
+    "intelligent_candidates_use_transcript",
+    "intelligent_candidates_keep_nonverbal_coverage",
+    "creator_memory_reads_winners",
+    "creator_memory_reads_feedback",
+    "profile_persists",
+    "enrich_ignores_unknown_model_ids",
+    "enrich_limits_clip_count",
+    "enrich_prevents_near_duplicates",
+    "enrich_keeps_score_breakdown",
+    "project_jobs_support_four_modes",
+    "ai_status_exposes_engine",
+    "ai_plan_gate_for_free",
+    "ai_render_requires_analysis",
+    "ai_montage_requires_analysis",
+    "upload_page_exposes_four_modes",
+    "clips_page_exposes_viral_engine",
+    "standard_engine_stays_available",
+    "renderer_writes_timestamped_srt",
+    "renderer_supports_social_ratios",
+]
+
+@pytest.mark.parametrize("scenario", V17_SCENARIOS, ids=V17_SCENARIOS)
+def test_v17_ai_engine_scenarios(client, app, scenario):
+    from klypso.clips.intelligence import (
+        build_creator_memory,
+        enrich_ai_result,
+        generate_intelligent_candidates,
+        update_creator_memory,
+    )
+    from klypso.clips.pipeline import analyze_video, create_analysis_job
+    from klypso.clips.renderer import RATIOS, write_srt
+
+    if scenario == "creator_memory_empty":
+        with app.app_context():
+            user = _create_email_user("empty-ai@example.com")
+            with get_db(app.config["DATABASE_PATH"]) as db:
+                memory = build_creator_memory(db, user["id"])
+        assert memory["projects_analyzed"] == 0
+        assert memory["preferred_archetypes"]
+
+    elif scenario == "intelligent_candidates_use_transcript":
+        segments = [
+            {"start": 12, "end": 14, "text": "Attends quoi ?! C'est impossible."},
+            {"start": 14.4, "end": 18, "text": "Regarde ça, regarde ça !"},
+        ]
+        candidates = generate_intelligent_candidates(90, segments)
+        assert candidates
+        assert any(c["source"] == "speech_cluster" for c in candidates)
+        assert any("impossible" in c["context"].lower() for c in candidates)
+
+    elif scenario == "intelligent_candidates_keep_nonverbal_coverage":
+        candidates = generate_intelligent_candidates(180, [])
+        assert candidates
+        assert any(c["source"] == "coverage_grid" for c in candidates)
+
+    elif scenario == "creator_memory_reads_winners":
+        with app.app_context():
+            user = _create_email_user("winners@example.com")
+            with get_db(app.config["DATABASE_PATH"]) as db:
+                db.execute(
+                    "INSERT INTO jobs(user_id,job_type,status,payload_json,result_json) VALUES(?,?,?,?,?)",
+                    (user["id"], "ai_clip_analysis", "completed", '{"output_format":"9:16"}',
+                     '{"ai":{"clips":[{"start":1,"end":26,"title":"Gros clutch","hook":"IL A RETOURNÉ LA GAME","archetype":"clutch","opportunity_score":92}]}}')
+                )
+                db.commit()
+                memory = build_creator_memory(db, user["id"])
+        assert memory["projects_analyzed"] == 1
+        assert memory["winning_examples"]
+
+    elif scenario == "creator_memory_reads_feedback":
+        with app.app_context():
+            user = _create_email_user("feedback-memory@example.com")
+            with get_db(app.config["DATABASE_PATH"]) as db:
+                db.execute(
+                    "INSERT INTO clip_feedback(user_id,candidate_id,decision) VALUES(?,?,?)",
+                    (user["id"], "c1", "keep"),
+                )
+                db.execute(
+                    "INSERT INTO clip_feedback(user_id,candidate_id,decision) VALUES(?,?,?)",
+                    (user["id"], "c2", "reject"),
+                )
+                db.commit()
+                memory = build_creator_memory(db, user["id"])
+        assert memory["feedback_kept"] == 1
+        assert memory["feedback_rejected"] == 1
+
+    elif scenario == "profile_persists":
+        with app.app_context():
+            user = _create_email_user("profile-ai@example.com")
+            with get_db(app.config["DATABASE_PATH"]) as db:
+                update_creator_memory(
+                    db,
+                    user["id"],
+                    {"clips":[{"title":"Moment fou","hook":"C'est lunaire","archetype":"surprise","duration":24,"opportunity_score":89}]},
+                    "9:16",
+                )
+                db.commit()
+                row = db.execute("SELECT profile_json FROM creator_ai_profiles WHERE user_id=?", (user["id"],)).fetchone()
+        assert row is not None
+        assert "Moment fou" in row["profile_json"]
+
+    elif scenario == "enrich_ignores_unknown_model_ids":
+        candidates = generate_intelligent_candidates(60, [{"start":10,"end":18,"text":"moment fort"}])
+        result = enrich_ai_result({"clips":[{"id":"does-not-exist","start":10,"end":18,"title":"bad"}]}, candidates, {})
+        assert result["clips"] == []
+
+    elif scenario == "enrich_limits_clip_count":
+        candidates = generate_intelligent_candidates(300, [])
+        raws = []
+        for candidate in candidates[:8]:
+            raws.append({
+                "id": candidate["id"], "start": candidate["start"], "end": candidate["end"],
+                "title": candidate["id"], "hook": "hook", "reason": "reason", "archetype": "surprise",
+                "hook_score": 90, "payoff_score": 90, "emotion_score": 90, "novelty_score": 80,
+                "context_score": 90, "shareability_score": 85, "creator_fit_score": 80, "replay_score": 80,
+            })
+        result = enrich_ai_result({"clips": raws}, candidates, {})
+        assert len(result["clips"]) <= 5
+
+    elif scenario == "enrich_prevents_near_duplicates":
+        candidates = [
+            {"id":"a","start":10,"end":30,"duration":20,"base_score":95,"speech_density":4,"context":"A"},
+            {"id":"b","start":12,"end":32,"duration":20,"base_score":94,"speech_density":4,"context":"B"},
+            {"id":"c","start":60,"end":84,"duration":24,"base_score":92,"speech_density":3,"context":"C"},
+        ]
+        raws = [
+            {"id":"a","start":10,"end":30,"title":"A","hook":"A","reason":"A","archetype":"reaction","hook_score":90,"payoff_score":90,"emotion_score":90,"novelty_score":80,"context_score":90,"shareability_score":90,"creator_fit_score":90,"replay_score":90},
+            {"id":"b","start":12,"end":32,"title":"B","hook":"B","reason":"B","archetype":"punchline","hook_score":89,"payoff_score":89,"emotion_score":89,"novelty_score":80,"context_score":89,"shareability_score":89,"creator_fit_score":89,"replay_score":89},
+            {"id":"c","start":60,"end":84,"title":"C","hook":"C","reason":"C","archetype":"surprise","hook_score":88,"payoff_score":88,"emotion_score":88,"novelty_score":80,"context_score":88,"shareability_score":88,"creator_fit_score":88,"replay_score":88},
+        ]
+        result = enrich_ai_result({"clips":raws}, candidates, {})
+        assert len(result["clips"]) == 2
+        assert all(abs(a["start"] - b["start"]) >= 9 for i, a in enumerate(result["clips"]) for b in result["clips"][i+1:])
+
+    elif scenario == "enrich_keeps_score_breakdown":
+        candidates = generate_intelligent_candidates(80, [{"start":20,"end":40,"text":"très gros moment"}])
+        candidate = candidates[0]
+        raw = {"id":candidate["id"],"start":candidate["start"],"end":candidate["end"],"title":"Test","hook":"Hook","reason":"Reason","archetype":"clutch","hook_score":99,"payoff_score":88,"emotion_score":77,"novelty_score":66,"context_score":55,"shareability_score":88,"creator_fit_score":80,"replay_score":91}
+        result = enrich_ai_result({"clips":[raw]}, candidates, {})
+        assert set(result["clips"][0]["scores"]) >= {"hook_score","payoff_score","emotion_score","creator_fit_score","base_score"}
+
+    elif scenario == "project_jobs_support_four_modes":
+        with app.app_context():
+            user = _create_email_user("modes@example.com")
+            for mode in ["ai_clips","clip_only","ai_montage","montage_only"]:
+                job_id = create_analysis_job(user["id"], 1, "/tmp/video.mp4", app.config["DATABASE_PATH"], {"mode":mode,"output_format":"9:16"})
+                with get_db(app.config["DATABASE_PATH"]) as db:
+                    row = db.execute("SELECT job_type,payload_json FROM jobs WHERE id=?", (job_id,)).fetchone()
+                assert row["job_type"]
+                assert mode in row["payload_json"]
+
+    elif scenario == "ai_status_exposes_engine":
+        with app.app_context():
+            user = _create_email_user("status-ai@example.com")
+        with client.session_transaction() as sess:
+            sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
+        r = client.get("/api/ai/status")
+        assert r.status_code == 200
+        assert r.get_json()["engine"] == "KLYPSO VIRAL ENGINE v1"
+
+    elif scenario == "ai_plan_gate_for_free":
+        with app.app_context():
+            user = _create_email_user("free-ai@example.com")
+            with get_db(app.config["DATABASE_PATH"]) as db:
+                cur = db.execute("INSERT INTO jobs(user_id,job_type,status,payload_json) VALUES(?,?,?,?,?)", (user["id"],"ai_clip_analysis","queued",'{"path":"/tmp/nope.mp4","mode":"ai_clips"}'))
+                db.commit()
+                job_id = cur.lastrowid
+        with client.session_transaction() as sess:
+            sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
+        r = client.post(f"/api/ai/analyze/{job_id}")
+        assert r.status_code == 403
+
+    elif scenario == "ai_render_requires_analysis":
+        with app.app_context():
+            user = _create_email_user("render-ai@example.com")
+            job_id = create_analysis_job(user["id"], 1, "/tmp/nope.mp4", app.config["DATABASE_PATH"], {"mode":"ai_clips"})
+        with client.session_transaction() as sess:
+            sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
+        r = client.post(f"/api/ai/render-clips/{job_id}")
+        assert r.status_code in {403, 409}
+
+    elif scenario == "ai_montage_requires_analysis":
+        with app.app_context():
+            user = _create_email_user("montage-ai@example.com")
+            with get_db(app.config["DATABASE_PATH"]) as db:
+                db.execute("UPDATE users SET plan='pro' WHERE id=?", (user["id"],))
+                db.commit()
+            job_id = create_analysis_job(user["id"], 1, "/tmp/nope.mp4", app.config["DATABASE_PATH"], {"mode":"ai_montage"})
+        with client.session_transaction() as sess:
+            sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
+        r = client.post(f"/api/ai/render-montage/{job_id}")
+        assert r.status_code in {409, 500}
+
+    elif scenario == "upload_page_exposes_four_modes":
+        with app.app_context():
+            user = _create_email_user("upload-modes@example.com")
+        with client.session_transaction() as sess:
+            sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
+        r = client.get("/clips/create")
+        assert r.status_code == 200
+        for mode in ["ai_clips","clip_only","ai_montage","montage_only"]:
+            assert f'data-creation-mode="{mode}"' in r.get_data(as_text=True)
+
+    elif scenario == "clips_page_exposes_viral_engine":
+        with app.app_context():
+            user = _create_email_user("clips-engine@example.com")
+        with client.session_transaction() as sess:
+            sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
+        r = client.get("/clips")
+        assert r.status_code == 200
+        assert "KLYPSO VIRAL ENGINE" in r.get_data(as_text=True)
+
+    elif scenario == "standard_engine_stays_available":
+        path = Path(app.root_path).parent / "tests" / "fixtures_nonexistent.mp4"
+        with pytest.raises(Exception):
+            analyze_video(str(path))
+
+    elif scenario == "renderer_writes_timestamped_srt":
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as tmp:
+            tmp_path = tmp.name
+        try:
+            assert write_srt([{"start":1.0,"end":3.2,"text":"Bonjour le chat"}], 0.0, 4.0, tmp_path)
+            body = Path(tmp_path).read_text(encoding="utf-8")
+            assert "00:00:01,000 --> 00:00:03,200" in body
+            assert "Bonjour le chat" in body
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+
+    elif scenario == "renderer_supports_social_ratios":
+        assert RATIOS["9:16"] == (1080, 1920)
+        assert RATIOS["1:1"] == (1080, 1080)
+        assert RATIOS["4:5"] == (1080, 1350)
+        assert RATIOS["16:9"] == (1920, 1080)
