@@ -89,9 +89,13 @@ def _transcribe_groq(video_path, key):
         audio.unlink(missing_ok=True)
 
 
-def _prompt(duration, candidates, transcript_data=None, memory=None, mode="ai_clips"):
+def _prompt(duration, candidates, transcript_data=None, memory=None, mode="ai_clips", preferences=None):
     transcript_data = transcript_data or {}
+    preferences = preferences or {}
     memory_text = creator_memory_for_prompt(memory or {})
+    style = preferences.get("ai_style", "auto")
+    scene_priority = preferences.get("scene_priority", "balanced")
+    pace = preferences.get("pace", "natural")
     mode_text = (
         "CLIPS IA: produire 3 à 5 clips sociaux autonomes, chacun avec hook immédiat et payoff clair."
         if mode == "ai_clips"
@@ -119,7 +123,7 @@ def _prompt(duration, candidates, transcript_data=None, memory=None, mode="ai_cl
     )
 
 
-def _text(provider, key, duration, candidates, transcript_data, memory, mode):
+def _text(provider, key, duration, candidates, transcript_data, memory, mode, preferences):
     base = "https://api.groq.com/openai/v1" if provider == "groq" else "https://openrouter.ai/api/v1"
     response_format = {"type": "json_object"}
     if provider == "groq":
@@ -192,7 +196,7 @@ def _text(provider, key, duration, candidates, transcript_data, memory, mode):
                     "role": "system",
                     "content": "Tu es un moteur de montage. Tu dois respecter strictement les timestamps et produire du JSON exploitable.",
                 },
-                {"role": "user", "content": _prompt(duration, candidates, transcript_data, memory, mode)},
+                {"role": "user", "content": _prompt(duration, candidates, transcript_data, memory, mode, preferences)},
             ],
             "temperature": 0.18,
             "response_format": response_format,
@@ -203,7 +207,7 @@ def _text(provider, key, duration, candidates, transcript_data, memory, mode):
     return _json(response.json()["choices"][0]["message"]["content"])
 
 
-def _gemini_video(video_path, duration, candidates, memory, mode, key):
+def _gemini_video(video_path, duration, candidates, memory, mode, preferences, key):
     path = Path(video_path)
     if path.stat().st_size >= 95 * 1024 * 1024:
         raise RuntimeError("inline_video_limit")
@@ -221,7 +225,7 @@ def _gemini_video(video_path, duration, candidates, memory, mode, key):
             "contents": [{
                 "parts": [
                     {"inline_data": {"mime_type": mime, "data": base64.b64encode(path.read_bytes()).decode("ascii")}},
-                    {"text": _prompt(duration, candidates, {}, memory, mode)},
+                    {"text": _prompt(duration, candidates, {}, memory, mode, preferences)},
                 ]
             }],
             "generationConfig": {"temperature": 0.18, "responseMimeType": "application/json"},
@@ -234,12 +238,12 @@ def _gemini_video(video_path, duration, candidates, memory, mode, key):
     return _json(text)
 
 
-def _route(video_path, duration, candidates, memory, mode):
+def _route(video_path, duration, candidates, memory, mode, preferences):
     attempts = []
     for number, key in enumerate(_keys("GEMINI_API_KEY"), start=1):
         try:
             return (
-                _gemini_video(video_path, duration, candidates, memory, mode, key),
+                _gemini_video(video_path, duration, candidates, memory, mode, preferences, key),
                 {"provider": "gemini", "key_slot": number, "attempts": attempts},
                 {"text": "", "segments": []},
             )
@@ -260,7 +264,7 @@ def _route(video_path, duration, candidates, memory, mode):
         for number, key in enumerate(groq_keys, start=1):
             try:
                 return (
-                    _text("groq", key, duration, candidates, transcript_data, memory, mode),
+                    _text("groq", key, duration, candidates, transcript_data, memory, mode, preferences),
                     {"provider": "groq", "key_slot": number, "attempts": attempts},
                     transcript_data,
                 )
@@ -269,7 +273,7 @@ def _route(video_path, duration, candidates, memory, mode):
         for number, key in enumerate(_keys("OPENROUTER_API_KEY"), start=1):
             try:
                 return (
-                    _text("openrouter", key, duration, candidates, transcript_data, memory, mode),
+                    _text("openrouter", key, duration, candidates, transcript_data, memory, mode, preferences),
                     {"provider": "openrouter", "key_slot": number, "attempts": attempts},
                     transcript_data,
                 )
@@ -350,7 +354,7 @@ def analyze_job(job_id):
         transcript_seed = []
         # When Gemini is selected, candidates still need deterministic coverage.
         candidates = generate_intelligent_candidates(analysis["duration"], transcript_seed)
-        result, router, transcript_data = _route(path, analysis["duration"], candidates, memory, mode)
+        result, router, transcript_data = _route(path, analysis["duration"], candidates, memory, mode, preferences)
 
         # Groq transcription gives timestamped speech clusters; regenerate candidates
         # with these richer anchors and make one final deterministic selection pass.
@@ -368,6 +372,7 @@ def analyze_job(job_id):
             "candidates": candidates,
             "transcript": transcript_data,
             "output_format": output_format,
+            "preferences": preferences,
         }
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             db.execute(
