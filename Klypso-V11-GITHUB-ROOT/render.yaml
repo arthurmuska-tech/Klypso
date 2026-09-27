@@ -58,6 +58,10 @@ services:
         sync: false
       - key: TIKTOK_SCOPES
         value: user.info.basic,video.publish
+      - key: EMAIL_FROM
+        value: onboarding@resend.dev
+      - key: RESEND_API_KEY
+        sync: false
       - key: EMAIL_SMTP_HOST
         value: smtp.gmail.com
       - key: EMAIL_SMTP_PORT
