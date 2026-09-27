@@ -5,7 +5,7 @@
   const root = document.documentElement;
   const body = document.body;
   const $ = (selector, parent = document) => parent.querySelector(selector);
-  const $ = (selector, parent = document) => Array.from(parent.querySelectorAll(selector));
+  const qsa = (selector, parent = document) => Array.from(parent.querySelectorAll(selector));
   const getStore = (key, fallback) => {
     try {
       const value = localStorage.getItem(key);
@@ -32,7 +32,7 @@
     const safe = woods.includes(value) ? value : 'oak';
     root.dataset.wood = safe;
     setStore('klypso.wood', safe);
-    $$('[data-wood]').forEach((el) => {
+    qsa('[data-wood]').forEach((el) => {
       const selected = el.dataset.wood === safe;
       el.classList.toggle('selected', selected);
       el.setAttribute('aria-pressed', String(selected));
@@ -42,7 +42,7 @@
   }
 
   applyWood(getStore('klypso.wood', 'oak'));
-  $$('[data-wood]').forEach((el) => {
+  qsa('[data-wood]').forEach((el) => {
     el.addEventListener('click', () => applyWood(el.dataset.wood));
   });
 
@@ -66,7 +66,7 @@
   }
 
   /* --- Generic reveal for app pages --- */
-  const reveal = $$('.home-feature,.home-intro,.home-capabilities,.capability-grid > div,.home-library,.dash-hero,.quick-card,.panel-v11,.settings-card-v11,.project-row,.landing-v15-intro,.landing-v15-feature-grid,.landing-v15-details,.landing-v15-free,.landing-v15-faq,.landing-v15-cta,.landing-product-showcase,.landing-proof > div,.landing-v15-hero-copy,.landing-v15-hero-art');
+  const reveal = qsa('.home-feature,.home-intro,.home-capabilities,.capability-grid > div,.home-library,.dash-hero,.quick-card,.panel-v11,.settings-card-v11,.project-row,.landing-v15-intro,.landing-v15-feature-grid,.landing-v15-details,.landing-v15-free,.landing-v15-faq,.landing-v15-cta,.landing-product-showcase,.landing-proof > div,.landing-v15-hero-copy,.landing-v15-hero-art');
   reveal.forEach((el, index) => {
     el.classList.add('v14-reveal');
     el.style.setProperty('--reveal-delay', Math.min(index * 35, 280) + 'ms');
@@ -87,8 +87,8 @@
   }
 
   /* --- V20 deterministic public scroll effects --- */
-  const publicObjects = $$('.v20-scroll-object');
-  const publicScenes = $$('.v20-scroll-reveal');
+  const publicObjects = qsa('.v20-scroll-object');
+  const publicScenes = qsa('.v20-scroll-reveal');
   const updatePublicMotion = () => {
     if (!motionEnabled) return;
     const viewport = window.innerHeight || 800;
@@ -128,10 +128,10 @@
   /* --- Landing page: smart scroll choreography --- */
   const story = document.querySelector('[data-landing-story]');
   const track = document.querySelector('[data-story-track]');
-  const slides = track ? $$('.landing-story-slide', track) : [];
+  const slides = track ? qsa('.landing-story-slide', track) : [];
   const storyCurrent = document.querySelector('[data-story-current]');
   const storyProgress = document.querySelector('[data-story-progress]');
-  const storyDots = $$('[data-story-jump]');
+  const storyDots = qsa('[data-story-jump]');
   let storyRaf = 0;
   let storyActive = false;
 
@@ -170,7 +170,7 @@
   }
 
   function updateStoryWords(slide, local) {
-    const words = $$('.story-word', slide);
+    const words = qsa('.story-word', slide);
     if (!words.length) return;
     const reveal = clamp01((local - 0.05) / 0.47);
     const wave = words.length > 1 ? reveal * (words.length + 1) : reveal * 2;
@@ -298,7 +298,7 @@
   updateLandingStory();
 
   /* --- Tactile controls --- */
-  $$('.button,.icon-button,.topbar-plan,.topbar-avatar,.v14-wood-option,.choice-card,.seg-btn,.sidebar-nav a,.landing-secondary').forEach((el) => {
+  qsa('.button,.icon-button,.topbar-plan,.topbar-avatar,.v14-wood-option,.choice-card,.seg-btn,.sidebar-nav a,.landing-secondary').forEach((el) => {
     el.addEventListener('pointerdown', (event) => {
       if (event.pointerType === 'mouse' && event.button !== 0) return;
       const rect = el.getBoundingClientRect();
@@ -350,25 +350,25 @@
   backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
   /* --- App choice controls --- */
-  $$('.choice-card').forEach((card) => {
+  qsa('.choice-card').forEach((card) => {
     card.addEventListener('click', () => {
       const parent = card.closest('.option-cards') || card.parentElement;
-      $$('.choice-card', parent).forEach((item) => item.classList.remove('selected'));
+      qsa('.choice-card', parent).forEach((item) => item.classList.remove('selected'));
       card.classList.add('selected');
     });
   });
 
   /* --- Reset / segmented controls from the existing account UI --- */
-  $$('.seg-row').forEach((group) => {
-    $$('label', group).forEach((button) => {
+  qsa('.seg-row').forEach((group) => {
+    qsa('label', group).forEach((button) => {
       button.addEventListener('click', () => {
-        $$('label', group).forEach((item) => item.classList.remove('active'));
+        qsa('label', group).forEach((item) => item.classList.remove('active'));
         button.classList.add('active');
       });
     });
   });
   /* --- Premium V20 interaction layer --- */
-  const interactiveCards = $$('.workspace-start-card,.workspace-metrics article,.landing-v15-feature-grid article,.landing-detail-grid article,.showcase-card,.publisher-card,.publisher-platform,.quick-card,.panel-v11,.choice-card,.studio-tool-card,.pricing-card-v11');
+  const interactiveCards = qsa('.workspace-start-card,.workspace-metrics article,.landing-v15-feature-grid article,.landing-detail-grid article,.showcase-card,.publisher-card,.publisher-platform,.quick-card,.panel-v11,.choice-card,.studio-tool-card,.pricing-card-v11');
   interactiveCards.forEach((card) => {
     card.classList.add('v20-surface');
     card.addEventListener('pointermove', (event) => {
@@ -391,7 +391,7 @@
     }, { passive: true });
   });
 
-  const ripples = $$('.button,.icon-button,.filter-btn,.tab-btn,.canvas-tab,.editor-tool,.small-icon,.zoom-chip,.landing-secondary,.workspace-link,.choice-card');
+  const ripples = qsa('.button,.icon-button,.filter-btn,.tab-btn,.canvas-tab,.editor-tool,.small-icon,.zoom-chip,.landing-secondary,.workspace-link,.choice-card');
   ripples.forEach((el) => {
     if (el.dataset.v20PressBound) return;
     el.dataset.v20PressBound = '1';
@@ -407,7 +407,7 @@
     }, { passive: true });
   });
 
-  const pressables = $$('.button,.icon-button,.filter-btn,.tab-btn,.canvas-tab,.editor-tool,.small-icon,.zoom-chip');
+  const pressables = qsa('.button,.icon-button,.filter-btn,.tab-btn,.canvas-tab,.editor-tool,.small-icon,.zoom-chip');
   pressables.forEach((el) => {
     el.addEventListener('pointerdown', () => el.classList.add('v20-pressed'), { passive: true });
     ['pointerup','pointercancel','pointerleave'].forEach((eventName) => {
@@ -416,7 +416,7 @@
   });
 
   /* Keep the public homepage feeling continuous instead of empty between blocks. */
-  const stagedSections = $$('.landing-v15-intro,.landing-v15-feature-grid,.landing-story,.landing-v15-details,.landing-v15-free,.landing-v15-faq,.landing-v15-cta,.workspace-start-grid,.workspace-flow,.workspace-projects');
+  const stagedSections = qsa('.landing-v15-intro,.landing-v15-feature-grid,.landing-story,.landing-v15-details,.landing-v15-free,.landing-v15-faq,.landing-v15-cta,.workspace-start-grid,.workspace-flow,.workspace-projects');
   stagedSections.forEach((section) => section.classList.add('v20-stage'));
 
   const updateStageFocus = () => {
@@ -464,7 +464,7 @@
 
   /* --- V20 interactive product spotlights --- */
   const spotlight = document.querySelector('[data-spotlight-dialog]');
-  const spotlightCards = $$('[data-spotlight]');
+  const spotlightCards = qsa('[data-spotlight]');
   if (spotlight && spotlightCards.length) {
     const data = {
       accueil: {
@@ -529,7 +529,7 @@
         if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(); }
       });
     });
-    $$('[data-spotlight-close]', spotlight).forEach((el) => el.addEventListener('click', closeSpotlight));
+    qsa('[data-spotlight-close]', spotlight).forEach((el) => el.addEventListener('click', closeSpotlight));
     addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && !spotlight.hidden) closeSpotlight();
     });
@@ -542,7 +542,7 @@
     '03': '/studio',
     '04': '/publisher'
   };
-  $$('.workspace-flow-steps > div').forEach((step) => {
+  qsa('.workspace-flow-steps > div').forEach((step) => {
     const number = step.querySelector('span');
     if (!number) return;
     const target = flowRoutes[number.textContent.trim()];
@@ -557,7 +557,7 @@
   });
 
   /* Scroll-linked active navigation on the public page. */
-  const publicAnchors = $$('a[href*="#fonctionnalites"]');
+  const publicAnchors = qsa('a[href*="#fonctionnalites"]');
   const featureSection = document.getElementById('fonctionnalites');
   if (featureSection && publicAnchors.length && 'IntersectionObserver' in window) {
     const featureObserver = new IntersectionObserver((entries) => {
