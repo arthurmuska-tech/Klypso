@@ -41,8 +41,8 @@ def register_security(app):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
         response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; "
-            "img-src 'self' data:; media-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+            "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' https://accounts.google.com; "
+            "img-src 'self' data: https://*.googleusercontent.com; media-src 'self' blob:; frame-src https://accounts.google.com; connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
         )
         if not app.debug:
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
