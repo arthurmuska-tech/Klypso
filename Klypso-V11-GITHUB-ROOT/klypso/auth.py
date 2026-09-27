@@ -11,7 +11,6 @@ from functools import wraps
 from pathlib import Path
 
 from authlib.integrations.flask_client import OAuth
-from authlib.jose import jwt
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -32,18 +31,6 @@ def init_oauth(app):
             client_secret=app.config["GOOGLE_CLIENT_SECRET"],
             server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
             client_kwargs={"scope": "openid email profile"},
-        )
-    if app.config["APPLE_CLIENT_ID"] and app.config["APPLE_TEAM_ID"] and app.config["APPLE_KEY_ID"] and app.config["APPLE_PRIVATE_KEY"]:
-        now = int(_now().timestamp())
-        header = {"alg":"ES256","kid":app.config["APPLE_KEY_ID"]}
-        claims = {"iss":app.config["APPLE_TEAM_ID"],"iat":now,"exp":now+86400*180,"aud":"https://appleid.apple.com","sub":app.config["APPLE_CLIENT_ID"]}
-        secret = jwt.encode(header, claims, app.config["APPLE_PRIVATE_KEY"]).decode()
-        oauth.register(
-            name="apple",
-            client_id=app.config["APPLE_CLIENT_ID"],
-            client_secret=secret,
-            server_metadata_url="https://appleid.apple.com/.well-known/openid-configuration",
-            client_kwargs={"scope":"openid email name"},
         )
 
 
@@ -436,32 +423,6 @@ def google_login():
         return redirect(url_for("auth.login"))
     redirect_uri = _public_callback("/oauth/google/callback", "auth.google_callback")
     return client.authorize_redirect(redirect_uri)
-
-
-@auth_bp.get("/oauth/apple")
-def apple_login():
-    client = oauth.create_client("apple")
-    if client is None:
-        flash("Apple OAuth n'est pas encore configuré sur KLYPSO.", "error")
-        return redirect(url_for("auth.login"))
-    return client.authorize_redirect(_public_callback("/oauth/apple/callback", "auth.apple_callback"))
-
-
-@auth_bp.get("/oauth/apple/callback")
-def apple_callback():
-    client = oauth.create_client("apple")
-    if client is None:
-        return redirect(url_for("auth.login"))
-    try:
-        token = client.authorize_access_token()
-        info = token.get("userinfo") or client.userinfo()
-        user = _oauth_user("apple", str(info.get("sub") or ""), info.get("email"), info)
-        _login(user)
-        return redirect(url_for("dashboard"))
-    except Exception:
-        current_app.logger.exception("Apple OAuth failed")
-        flash("Connexion Apple impossible.", "error")
-        return redirect(url_for("auth.login"))
 
 
 @auth_bp.get("/oauth/google/callback")
