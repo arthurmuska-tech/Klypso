@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS users (
     credit_last_granted_at TEXT,
     credit_month TEXT,
     monthly_clip_count INTEGER NOT NULL DEFAULT 0,
+    display_name TEXT NOT NULL DEFAULT '',
+    avatar_url TEXT,
+    last_login_at TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -163,6 +166,10 @@ def init_db(path):
         _add_column_if_missing(conn, "users", "credit_last_granted_at", "TEXT")
         _add_column_if_missing(conn, "users", "credit_month", "TEXT")
         _add_column_if_missing(conn, "users", "monthly_clip_count", "INTEGER NOT NULL DEFAULT 0")
+        _add_column_if_missing(conn, "users", "display_name", "TEXT NOT NULL DEFAULT ''")
+        _add_column_if_missing(conn, "users", "avatar_url", "TEXT")
+        _add_column_if_missing(conn, "users", "last_login_at", "TEXT")
+        conn.execute("UPDATE users SET display_name=substr(email,1,instr(email,'@')-1) WHERE display_name='' AND instr(email,'@')>1")
         conn.commit()
 
 
