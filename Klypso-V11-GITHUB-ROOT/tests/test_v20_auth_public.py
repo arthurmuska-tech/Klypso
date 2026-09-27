@@ -12,10 +12,6 @@ def make_app(tmp_path):
         "PUBLIC_BASE_URL": "https://klypso-test.example",
         "GOOGLE_CLIENT_ID": "google-client",
         "GOOGLE_CLIENT_SECRET": "google-secret",
-        "APPLE_CLIENT_ID": "",
-        "APPLE_TEAM_ID": "",
-        "APPLE_KEY_ID": "",
-        "APPLE_PRIVATE_KEY": "",
     })
 
 
@@ -33,6 +29,34 @@ def test_v20_google_oauth_uses_public_base_url(tmp_path, monkeypatch):
         response = auth_module.google_login()
     assert captured["redirect_uri"] == "https://klypso-test.example/oauth/google/callback"
     assert response == "REDIRECT"
+
+
+def test_v20_email_password_registration_and_login(tmp_path):
+    app = make_app(tmp_path)
+    client = app.test_client()
+    payload = {
+        "email": "creator@example.com",
+        "password": "secure-pass-123",
+        "cgu": "on",
+        "privacy": "on",
+    }
+    response = client.post("/register", data=payload)
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/dashboard")
+
+    client.post("/logout")
+    response = client.post("/login", data={
+        "email": "creator@example.com",
+        "password": "secure-pass-123",
+    })
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/dashboard")
+
+    wrong = client.post("/login", data={
+        "email": "creator@example.com",
+        "password": "bad-password",
+    })
+    assert wrong.status_code == 401
 
 
 def test_v20_public_home_has_product_sections(tmp_path):
