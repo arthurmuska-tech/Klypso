@@ -56,7 +56,14 @@ def handle_upload():
             user_id,
             plan_key,
             credit_cost,
-            {"goal": request.form.get("goal", "clips"), "format": request.form.get("output_format", "9:16")},
+            {
+                "goal": request.form.get("goal", "clips"),
+                "mode": mode,
+                "format": request.form.get("output_format", "9:16"),
+                "ai_style": request.form.get("ai_style", "auto"),
+                "scene_priority": request.form.get("scene_priority", "balanced"),
+                "pace": request.form.get("pace", "natural"),
+            },
         )
         charged = True
 
@@ -97,6 +104,9 @@ def handle_upload():
                         "subtitles": request.form.get("subtitles") == "on",
                         "brand_kit": request.form.get("brand_kit") == "on",
                         "clean_audio": request.form.get("clean_audio") == "on",
+                        "ai_style": request.form.get("ai_style", "auto"),
+                        "scene_priority": request.form.get("scene_priority", "balanced"),
+                        "pace": request.form.get("pace", "natural"),
                     },
                 }, ensure_ascii=False)),
             )
@@ -113,6 +123,15 @@ def handle_upload():
                 "mode": mode,
                 "output_format": request.form.get("output_format", "9:16"),
                 "goal": "clips" if mode in {"ai_clips", "clip_only"} else "studio",
+                "preferences": {
+                    "ai_style": request.form.get("ai_style", "auto"),
+                    "scene_priority": request.form.get("scene_priority", "balanced"),
+                    "pace": request.form.get("pace", "natural"),
+                    "spoken": request.form.get("spoken") == "on",
+                    "subtitles": request.form.get("subtitles") == "on",
+                    "brand_kit": request.form.get("brand_kit") == "on",
+                    "clean_audio": request.form.get("clean_audio") == "on",
+                },
             },
         )
         target = url_for("clips.clips")
