@@ -8,6 +8,25 @@ from threading import Lock
 _POSTGRES_POOLS = {}
 _POSTGRES_POOL_LOCK = Lock()
 
+def _pg_sql(sql):
+    """Convert SQLite qmark placeholders to psycopg placeholders outside strings."""
+    text = str(sql)
+    out = []
+    in_single = False
+    escaped = False
+    for char in text:
+        if char == "'" and not escaped:
+            in_single = not in_single
+        if char == "?" and not in_single:
+            out.append("%s")
+        else:
+            out.append(char)
+        escaped = (char == "\\") and not escaped
+        if char != "\\":
+            escaped = False
+    return "".join(out)
+
+
 POSTGRES_ID_TABLES = {
     "users", "oauth_identities", "email_codes", "credit_transactions",
     "promo_codes", "promo_redemptions", "user_consents", "media_files",
@@ -45,7 +64,7 @@ class CompatConnection:
 
     def execute(self, sql, params=()):
         sql = str(sql)
-        statement = sql.strip()
+        statement = _pg_sql(sql).strip()
         if statement.upper() == "BEGIN IMMEDIATE":
             statement = "BEGIN"
         params = tuple(params or ())
