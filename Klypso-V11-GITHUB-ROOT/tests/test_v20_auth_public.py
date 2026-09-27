@@ -71,6 +71,7 @@ def test_v20_email_password_registration_and_login(tmp_path):
     wrong = client.post("/login", data={
         "email": "creator@example.com",
         "password": "bad-password",
+        "csrf_token": "auth-csrf-2",
     })
     assert wrong.status_code == 401
 
