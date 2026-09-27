@@ -139,11 +139,10 @@
   {% if jobs %}
   <div class="clip-project-grid">
     {% for job in jobs %}
-    {% set payload = (job.payload_json|fromjson if job.payload_json else {}) %}
-    <article class="clip-project-card" data-status="{{ job.status|lower }}" data-created="{{ job.created_at }}" data-job-id="{{ job.id }}">
+        <article class="clip-project-card" data-status="{{ job.status|lower }}" data-created="{{ job.created_at }}" data-job-id="{{ job.id }}">
       <div class="clip-project-visual"><div class="video-shape"><span>{{ '✦' if loop.index % 2 else '◫' }}</span></div><div class="visual-badge">{{ job.status|upper }}</div><button class="visual-play" type="button">▶</button></div>
-      <div class="clip-project-body"><div><span class="project-type">{{ payload.get('mode','clip_only')|replace('_',' ')|title }}</span><h3>Projet #{{ job.id }}</h3></div><span class="status-pill"><i class="status-led {{ job.status|lower }}"></i>{{ job.status }}</span></div>
-      <div class="clip-project-meta"><span>Créé {{ job.created_at }}</span><div style="display:flex;gap:8px;align-items:center">{% if current_plan.key in ['pro','ultra'] and payload.get('mode','clip_only') in ['ai_clips','ai_montage'] %}<button class="filter-btn ai-run-job" type="button" data-job-id="{{ job.id }}">Analyser avec l'IA</button>{% elif payload.get('mode','clip_only') == 'clip_only' %}<span class="ai-standard-chip">STANDARD</span>{% else %}<a class="filter-btn" href="{{ url_for('studio.studio') }}">Ouvrir Studio</a>{% endif %}<a href="#feedback" data-feedback-open>Feedback →</a></div></div>
+      <div class="clip-project-body"><div><span class="project-type">{{ job.job_type|replace('_',' ')|title }}</span><h3>Projet #{{ job.id }}</h3></div><span class="status-pill"><i class="status-led {{ job.status|lower }}"></i>{{ job.status }}</span></div>
+      <div class="clip-project-meta"><span>Créé {{ job.created_at }}</span><div style="display:flex;gap:8px;align-items:center">{% if current_plan.key in ['pro','ultra'] and job.job_type in ['ai_clip_analysis','ai_montage_analysis'] %}<button class="filter-btn ai-run-job" type="button" data-job-id="{{ job.id }}">Analyser avec l'IA</button>{% elif job.job_type == 'clip_analysis' %}<span class="ai-standard-chip">STANDARD</span>{% else %}<a class="filter-btn" href="{{ url_for('studio.studio') }}">Ouvrir Studio</a>{% endif %}<a href="#feedback" data-feedback-open>Feedback →</a></div></div>
       <div class="clip-project-ai" data-ai-result="{{ job.id }}" hidden></div>
     </article>
     {% endfor %}
