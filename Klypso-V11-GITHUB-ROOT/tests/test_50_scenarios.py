@@ -729,3 +729,81 @@ def test_v17_extra_scenarios(client, app, scenario):
         assert trimmed["start"] == 16.2
         assert trimmed["end"] == 32.0
         assert trimmed["duration"] < 35
+
+
+V17_PERFORMANCE_SCENARIOS = [
+    "performance_memory_reads_real_results",
+    "performance_endpoint_accepts_valid_clip",
+    "performance_endpoint_rejects_unknown_clip",
+]
+
+@pytest.mark.parametrize("scenario", V17_PERFORMANCE_SCENARIOS, ids=V17_PERFORMANCE_SCENARIOS)
+def test_v17_performance_scenarios(client, app, scenario):
+    from klypso.clips.intelligence import build_creator_memory
+    from klypso.clips.pipeline import create_analysis_job
+
+    if scenario == "performance_memory_reads_real_results":
+        with app.app_context():
+            user = _create_email_user("metrics-memory@example.com")
+            with get_db(app.config["DATABASE_PATH"]) as db:
+                job = db.execute(
+                    "INSERT INTO jobs(user_id,job_type,status,payload_json,result_json) VALUES(?,?,?,?,?)",
+                    (user["id"], "ai_clip_analysis", "completed", '{"output_format":"9:16"}',
+                     '{"ai":{"clips":[{"id":"c1","start":1,"end":30,"title":"Gros clutch","hook":"NO WAY","archetype":"clutch","opportunity_score":88}]}}'),
+                )
+                job_id = job.lastrowid
+                db.execute(
+                    "INSERT INTO clip_metrics(user_id,job_id,candidate_id,platform,views,likes,comments,shares,completion_rate) VALUES(?,?,?,?,?,?,?,?,?)",
+                    (user["id"], job_id, "c1", "youtube", 100000, 9000, 600, 1100, 78.0),
+                )
+                db.commit()
+                memory = build_creator_memory(db, user["id"])
+        assert memory["performance_count"] == 1
+        assert "clutch" in memory["performance_by_archetype"]
+        assert memory["performance_winners"][0]["views"] == 100000
+
+    elif scenario == "performance_endpoint_accepts_valid_clip":
+        with app.app_context():
+            user = _create_email_user("metrics-endpoint@example.com")
+            with get_db(app.config["DATABASE_PATH"]) as db:
+                job = db.execute(
+                    "INSERT INTO jobs(user_id,job_type,status,payload_json,result_json) VALUES(?,?,?,?,?)",
+                    (user["id"], "ai_clip_analysis", "completed", '{"mode":"ai_clips"}',
+                     '{"ai":{"clips":[{"id":"c1","start":2,"end":25,"title":"Moment","hook":"Wow","archetype":"reaction"}]}}'),
+                )
+                job_id = job.lastrowid
+                db.commit()
+        with client.session_transaction() as sess:
+            sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
+        response = client.post(
+            "/clips/performance",
+            json={"job_id":job_id,"candidate_id":"c1","platform":"tiktok","views":12000,"likes":1400,"comments":80,"shares":120,"completion_rate":71.5},
+            headers={"X-CSRF-Token":"csrf-ok"},
+        )
+        assert response.status_code == 200
+        with app.app_context():
+            with get_db(app.config["DATABASE_PATH"]) as db:
+                row = db.execute("SELECT views,platform,completion_rate FROM clip_metrics WHERE job_id=?", (job_id,)).fetchone()
+        assert row["views"] == 12000
+        assert row["platform"] == "tiktok"
+        assert row["completion_rate"] == 71.5
+
+    elif scenario == "performance_endpoint_rejects_unknown_clip":
+        with app.app_context():
+            user = _create_email_user("metrics-invalid@example.com")
+            with get_db(app.config["DATABASE_PATH"]) as db:
+                job = db.execute(
+                    "INSERT INTO jobs(user_id,job_type,status,payload_json,result_json) VALUES(?,?,?,?,?)",
+                    (user["id"], "ai_clip_analysis", "completed", '{"mode":"ai_clips"}',
+                     '{"ai":{"clips":[{"id":"c1","start":2,"end":25,"title":"Moment","hook":"Wow","archetype":"reaction"}]}}'),
+                )
+                job_id = job.lastrowid
+                db.commit()
+        with client.session_transaction() as sess:
+            sess["user_id"] = user["id"]; sess["user_email"] = user["email"]; sess["csrf_token"] = "csrf-ok"
+        response = client.post(
+            "/clips/performance",
+            json={"job_id":job_id,"candidate_id":"nope","views":100},
+            headers={"X-CSRF-Token":"csrf-ok"},
+        )
+        assert response.status_code == 400
