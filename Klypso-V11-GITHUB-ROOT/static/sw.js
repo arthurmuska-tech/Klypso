@@ -1,4 +1,4 @@
-const CACHE='klypso-v20.9';
+const CACHE='klypso-v21.0';
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['/','/static/css/app.css','/static/css/v14.css?v=20.0','/static/js/app.js?v=20.0','/static/js/v11.js?v=20.0','/static/js/v14.js?v=20.0','/static/js/project-create.js?v=20.0','/static/js/ai-clips.js?v=20.0','/static/js/publisher.js?v=20.0','/static/manifest.json'])).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{event.respondWith(fetch(event.request).then(response=>{const copy=response.clone();if(event.request.method==='GET'&&new URL(event.request.url).origin===self.location.origin){caches.open(CACHE).then(cache=>cache.put(event.request,copy)).catch(()=>{});}return response;}).catch(()=>caches.match(event.request)));});
