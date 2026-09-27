@@ -312,7 +312,7 @@ def build_creator_memory(db, user_id, limit=8):
         ))[:4],
         "preferred_archetypes": list(dict.fromkeys(
             (persisted.get("preferred_archetypes") or []) + [item[0] for item in archetypes.most_common(5)]
-        ))[:6],
+        ))[:6] or ["reaction", "punchline", "surprise"],
         "winning_examples": examples,
         "feedback": feedback,
         "feedback_kept": kept,
@@ -455,7 +455,7 @@ def enrich_ai_result(result, candidates, memory, transcript_segments=None):
             break
 
     # If the model was conservative, fill from deterministic candidates.
-    if len(selected) < min(3, len(candidates)):
+    if not raw_clips and len(selected) < min(3, len(candidates)):
         for candidate in candidates:
             if any(abs(candidate["start"] - clip["start"]) < 9 for clip in selected):
                 continue
