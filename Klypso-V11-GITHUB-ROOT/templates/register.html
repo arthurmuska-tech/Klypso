@@ -4,14 +4,14 @@
 <section class="form-page auth-v12"><div class="auth-card">
 <span class="eyebrow-v11">CRÉATION DE COMPTE</span><h1>Crée ton espace KLYPSO.</h1>
 <p class="auth-lead">Google ou e-mail vérifié par code. Aucun mot de passe à retenir.</p>
-{% if config.GOOGLE_CLIENT_ID and config.GOOGLE_CLIENT_SECRET %}<a class="oauth-button" href="{{ url_for('auth.google_login') }}"><b>G</b> S'inscrire avec Google</a>{% endif %}
-{% if config.APPLE_CLIENT_ID and config.APPLE_TEAM_ID and config.APPLE_KEY_ID and config.APPLE_PRIVATE_KEY %}<a class="oauth-button" href="{{ url_for('auth.apple_login') }}"><b></b> S'inscrire avec Apple</a>{% endif %}
+{% if config.GOOGLE_CLIENT_ID and config.GOOGLE_CLIENT_SECRET %}<a class="oauth-button" href="{{ url_for('auth.google_login') }}"><b class="google-mark">G</b> S'inscrire avec Google</a>{% endif %}
+{% if config.APPLE_CLIENT_ID and config.APPLE_TEAM_ID and config.APPLE_KEY_ID and config.APPLE_PRIVATE_KEY %}<a class="oauth-button" href="{{ url_for('auth.apple_login') }}"><b class="apple-mark"></b> S'inscrire avec Apple</a>{% endif %}
 <div class="auth-divider"><span>OU PAR E-MAIL</span></div>
 <form method="post" class="auth-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <label>Adresse e-mail<input name="email" type="email" required autocomplete="email" placeholder="toi@exemple.com"></label>
 <label class="check"><input name="cgu" type="checkbox" required> J'accepte les <a href="{{ url_for('legal.cgu') }}">CGU</a>.</label>
 <label class="check"><input name="privacy" type="checkbox" required> J'ai pris connaissance de la <a href="{{ url_for('legal.confidentialite') }}">politique de confidentialité</a>.</label>
-<button class="button button-lg full" type="submit">Recevoir mon code →</button></form>
+<button class="button button-lg full" type="submit">Recevoir mon code →</button></form><div class="auth-trust-row"><span>✓ Connexion en quelques secondes</span><span>✓ Compte sécurisé</span><span>✓ Pas de mot de passe</span></div>
 <p class="auth-foot">Déjà un compte ? <a href="{{ url_for('auth.login') }}">Se connecter</a></p>
 </div></section>
 {% endblock %}
