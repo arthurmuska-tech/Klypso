@@ -68,7 +68,10 @@ def render_candidate(
 ):
     width, height = RATIOS.get(output_format, RATIOS["9:16"])
     start = max(0.0, float(candidate["start"]))
-    duration = max(1.0, float(candidate["end"]) - start)
+    if "end" in candidate:
+        duration = max(1.0, float(candidate["end"]) - start)
+    else:
+        duration = max(1.0, float(candidate.get("duration", 1)))
 
     subtitle_path = None
     try:
