@@ -44,20 +44,26 @@ def test_v20_auth_pages_expose_google_and_no_apple(tmp_path):
 def test_v20_email_password_registration_and_login(tmp_path):
     app = make_app(tmp_path)
     client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["csrf_token"] = "auth-csrf"
     payload = {
         "email": "creator@example.com",
         "password": "secure-pass-123",
         "cgu": "on",
         "privacy": "on",
+        "csrf_token": "auth-csrf",
     }
     response = client.post("/register", data=payload)
     assert response.status_code == 302
     assert response.headers["Location"].endswith("/dashboard")
 
-    client.post("/logout")
+    client.post("/logout", data={"csrf_token": "auth-csrf"})
+    with client.session_transaction() as sess:
+        sess["csrf_token"] = "auth-csrf-2"
     response = client.post("/login", data={
         "email": "creator@example.com",
         "password": "secure-pass-123",
+        "csrf_token": "auth-csrf-2",
     })
     assert response.status_code == 302
     assert response.headers["Location"].endswith("/dashboard")
