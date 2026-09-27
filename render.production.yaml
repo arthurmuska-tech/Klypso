@@ -32,6 +32,20 @@ services:
         value: "4096"
       - key: AI_WORKER_MODE
         value: external
+      - key: REQUIRE_POSTGRES
+        value: "true"
+      - key: REQUIRE_OBJECT_STORAGE
+        value: "true"
+      - key: JOB_STALE_SECONDS
+        value: "1800"
+      - key: JOB_MAX_ATTEMPTS
+        value: "3"
+      - key: WORKER_HEARTBEAT_SECONDS
+        value: "30"
+      - key: TRIAL_DAYS
+        value: "14"
+      - key: STRIPE_TRIAL_DAYS
+        value: "14"
       - key: POSTGRES_POOL_MAX_SIZE
         value: "12"
       - key: S3_BUCKET
