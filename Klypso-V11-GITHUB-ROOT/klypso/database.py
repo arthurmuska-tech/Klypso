@@ -213,6 +213,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     error_message TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    credit_cost INTEGER NOT NULL DEFAULT 0,
+    credit_refunded INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS clip_feedback (
@@ -407,6 +409,8 @@ def init_db(path):
         _add_column_if_missing(conn, "jobs", "attempts", "INTEGER NOT NULL DEFAULT 0")
         _add_column_if_missing(conn, "jobs", "locked_at", "TEXT")
         _add_column_if_missing(conn, "jobs", "heartbeat_at", "TEXT")
+        _add_column_if_missing(conn, "jobs", "credit_cost", "INTEGER NOT NULL DEFAULT 0")
+        _add_column_if_missing(conn, "jobs", "credit_refunded", "INTEGER NOT NULL DEFAULT 0")
         conn.execute("UPDATE users SET display_name=substr(email,1,instr(email,'@')-1) WHERE display_name='' AND instr(email,'@')>1")
         _seed_creator_promo_codes(conn)
         conn.commit()
