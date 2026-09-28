@@ -27,6 +27,8 @@ def create_app(test_config=None):
     if test_config:
         app.config.update(test_config)
     database_path = str(app.config["DATABASE_PATH"])
+    if app.config.get("REQUIRE_POSTGRES") and not database_path.startswith(("postgresql://", "postgres://")):
+        raise RuntimeError("Production KLYPSO requires PostgreSQL via DATABASE_URL.")
     if not database_path.startswith(("postgresql://", "postgres://")):
         Path(database_path).parent.mkdir(parents=True, exist_ok=True)
     Path(app.config["STORAGE_PATH"]).mkdir(parents=True, exist_ok=True)
