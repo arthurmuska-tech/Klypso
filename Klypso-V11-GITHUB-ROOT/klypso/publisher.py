@@ -719,11 +719,12 @@ def publish_now_api(queue_id):
 def run_due_api():
     secret = os.getenv("KLYPSO_CRON_SECRET", "").strip()
     header = request.headers.get("X-KLYPSO-CRON-KEY", "").strip()
-    if secret and header == secret:
-        return jsonify(run_due_posts(limit=50))
-    if session.get("user_id"):
-        return jsonify(run_due_posts(user_id=session["user_id"], limit=12))
-    return jsonify({"error": "Non autorisé."}), 401
+    if not secret:
+        current_app.logger.error("KLYPSO_CRON_SECRET is not configured; refusing cron execution.")
+        return jsonify({"error": "Service cron non configuré."}), 503
+    if not header or not secrets.compare_digest(header, secret):
+        return jsonify({"error": "Non autorisé."}), 401
+    return jsonify(run_due_posts(limit=50))
 
 
 @publisher_bp.post("/api/publisher/metrics/<int:queue_id>")
