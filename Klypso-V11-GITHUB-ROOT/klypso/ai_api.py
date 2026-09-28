@@ -10,7 +10,7 @@ import requests
 from flask import Blueprint, current_app, jsonify, request, session
 
 from .auth import login_required
-from .credits import CreditError, consume_processing_credits, refund_processing_credits, consume_monthly_clip_units, refund_monthly_clip_units
+from .credits import CreditError, consume_processing_credits, refund_processing_credits, consume_monthly_clip_units, refund_monthly_clip_units, refund_clip_credits
 from .database import get_db
 from .promo import effective_plan_key
 from .clips.intelligence import (
@@ -884,10 +884,33 @@ def _run_analysis_job(user_id, job_id):
         })
     except Exception:
         current_app.logger.exception("AI analysis failed")
+        refund_cost = 0
+        try:
+            with get_db(current_app.config["DATABASE_PATH"]) as db:
+                job_row = db.execute(
+                    "SELECT credit_cost,credit_refunded FROM jobs WHERE id=? AND user_id=?",
+                    (job_id, user_id),
+                ).fetchone()
+                if job_row:
+                    refund_cost = int(job_row["credit_cost"] or 0)
+            if refund_cost > 0:
+                refund_clip_credits(
+                    user_id,
+                    refund_cost,
+                    {"reason": "ai_analysis_failed", "job_id": job_id},
+                )
+                with get_db(current_app.config["DATABASE_PATH"]) as db:
+                    db.execute(
+                        "UPDATE jobs SET credit_refunded=1 WHERE id=? AND user_id=?",
+                        (job_id, user_id),
+                    )
+                    db.commit()
+        except Exception:
+            current_app.logger.exception("AI credit refund failed for job %s", job_id)
         with get_db(current_app.config["DATABASE_PATH"]) as db:
             db.execute(
-                "UPDATE jobs SET status=?,error_message=?,locked_at=NULL,heartbeat_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?",
-                ("failed", "AI analysis failed", job_id),
+                "UPDATE jobs SET status=?,error_message=?,locked_at=NULL,heartbeat_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?",
+                ("failed", "AI analysis failed", job_id, user_id),
             )
             db.commit()
         return jsonify({"error": "L'analyse IA a échoué. Vérifie les moteurs IA et FFmpeg configurés."}), 500
