@@ -197,6 +197,7 @@ def handle_upload():
             current_app.config["DATABASE_PATH"],
             metadata={
                 "project_id": project_id,
+                "credit_cost": credit_cost,
                 "mode": mode,
                 "output_format": request.form.get("output_format", "9:16"),
                 "goal": "clips" if mode in {"ai_clips", "clip_only"} else "studio",
