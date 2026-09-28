@@ -26,6 +26,11 @@ def create_app(test_config=None):
     app.config.from_object(Config)
     if test_config:
         app.config.update(test_config)
+    if (
+        app.config.get("REQUIRE_POSTGRES")
+        and app.config.get("SECRET_KEY") in {"", "dev-only-change-me"}
+    ):
+        raise RuntimeError("Production KLYPSO requires a non-default SECRET_KEY.")
     database_path = str(app.config["DATABASE_PATH"])
     if app.config.get("REQUIRE_POSTGRES") and not database_path.startswith(("postgresql://", "postgres://")):
         raise RuntimeError("Production KLYPSO requires PostgreSQL via DATABASE_URL.")
