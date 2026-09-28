@@ -13,7 +13,11 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: klypso-db
+          property: connectionString
+      - key: REQUIRE_POSTGRES
+        value: "true"
       - key: DATABASE_PATH
         value: /opt/render/project/src/data/klypso.sqlite3
       - key: STORAGE_PATH
