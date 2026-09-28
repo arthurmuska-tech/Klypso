@@ -136,16 +136,15 @@ def refund_clip_credits(user_id, cost, metadata=None):
                 db.commit()
                 return
         row = db.execute(
-            "SELECT credit_balance, monthly_clip_count FROM users WHERE id=?",
+            "SELECT credit_balance FROM users WHERE id=?",
             (user_id,),
         ).fetchone()
         if not row:
             return
-        new_balance = row["credit_balance"] + cost
-        new_count = max(0, row["monthly_clip_count"] - 1)
+        new_balance = int(row["credit_balance"] or 0) + cost
         db.execute(
-            "UPDATE users SET credit_balance=?, monthly_clip_count=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
-            (new_balance, new_count, user_id),
+            "UPDATE users SET credit_balance=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            (new_balance, user_id),
         )
         db.execute(
             "INSERT INTO credit_transactions(user_id,amount,balance_after,transaction_type,metadata_json) VALUES(?,?,?,?,?)",
