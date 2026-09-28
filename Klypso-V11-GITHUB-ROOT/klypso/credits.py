@@ -123,8 +123,18 @@ def consume_clip_credits(user_id, plan_key, cost, metadata=None):
 def refund_clip_credits(user_id, cost, metadata=None):
     if cost <= 0:
         return
+    metadata = metadata or {}
+    job_id = metadata.get("job_id")
     with get_db(__import__("flask").current_app.config["DATABASE_PATH"]) as db:
         db.execute("BEGIN IMMEDIATE")
+        if job_id is not None:
+            existing = db.execute(
+                "SELECT id FROM credit_transactions WHERE user_id=? AND transaction_type='refund' AND metadata_json LIKE ? LIMIT 1",
+                (user_id, "%\\\"job_id\\\":" + str(int(job_id)) + "%"),
+            ).fetchone()
+            if existing:
+                db.commit()
+                return
         row = db.execute(
             "SELECT credit_balance, monthly_clip_count FROM users WHERE id=?",
             (user_id,),
