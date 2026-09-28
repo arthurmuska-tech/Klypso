@@ -104,7 +104,12 @@ class Config:
     AI_WORKER_MODE = os.environ.get("AI_WORKER_MODE", "in_process").strip().lower()
     AI_BACKGROUND_WORKERS = int(os.environ.get("AI_BACKGROUND_WORKERS", "1"))
     AI_PROVIDER_ORDER = os.environ.get("AI_PROVIDER_ORDER", "gemini,groq,openrouter")
-    REQUIRE_POSTGRES = env_bool("REQUIRE_POSTGRES", False)
+    # Never silently fall back to ephemeral SQLite on Render/production.
+    # Local tests and development may still use SQLite explicitly.
+    REQUIRE_POSTGRES = env_bool(
+        "REQUIRE_POSTGRES",
+        env_bool("RENDER", False) or FLASK_ENV == "production",
+    )
     REQUIRE_OBJECT_STORAGE = env_bool("REQUIRE_OBJECT_STORAGE", False)
     REQUIRE_LEGAL_CONFIG = env_bool("REQUIRE_LEGAL_CONFIG", False)
     JOB_STALE_SECONDS = int(os.environ.get("JOB_STALE_SECONDS", "1800"))
