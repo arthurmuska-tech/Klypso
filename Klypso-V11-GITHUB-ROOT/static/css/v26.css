@@ -264,15 +264,15 @@ html[data-radius="round"] .v24-primary{border-radius:18px!important}
 }
 
 /* Wood picker: make the five materials visibly different. */
-[data-wood]{overflow:hidden}
-[data-wood="oak"]{background:linear-gradient(135deg,#ead0a2,#b9814d)!important}
-[data-wood="walnut"]{background:linear-gradient(135deg,#a27451,#55331f)!important}
-[data-wood="birch"]{background:linear-gradient(135deg,#f4e7c7,#cdb88e)!important}
-[data-wood="cherry"]{background:linear-gradient(135deg,#d48b72,#823f34)!important}
-[data-wood="ebony"]{background:linear-gradient(135deg,#62554d,#211d1a)!important}
-[data-wood]{border-radius:999px!important;border:2px solid transparent;box-shadow:0 8px 20px rgba(48,35,25,.12);transition:transform .35s var(--v26-ease),box-shadow .35s var(--v26-ease),border-color .25s ease}
-[data-wood]:hover{transform:translateY(-3px) scale(1.035);box-shadow:0 14px 28px rgba(48,35,25,.17)}
-[data-wood].selected,[data-wood].active{border-color:var(--k-accent,#9b7bff);box-shadow:0 0 0 4px color-mix(in srgb,var(--k-accent,#9b7bff) 16%,transparent),0 14px 28px rgba(48,35,25,.14)}
+.wood-picker [data-wood]{overflow:hidden}
+.wood-picker [data-wood="oak"]{background:linear-gradient(135deg,#ead0a2,#b9814d)!important}
+.wood-picker [data-wood="walnut"]{background:linear-gradient(135deg,#a27451,#55331f)!important}
+.wood-picker [data-wood="birch"]{background:linear-gradient(135deg,#f4e7c7,#cdb88e)!important}
+.wood-picker [data-wood="cherry"]{background:linear-gradient(135deg,#d48b72,#823f34)!important}
+.wood-picker [data-wood="ebony"]{background:linear-gradient(135deg,#62554d,#211d1a)!important}
+.wood-picker [data-wood]{border-radius:999px!important;border:2px solid transparent;box-shadow:0 8px 20px rgba(48,35,25,.12);transition:transform .35s var(--v26-ease),box-shadow .35s var(--v26-ease),border-color .25s ease}
+.wood-picker [data-wood]:hover{transform:translateY(-3px) scale(1.035);box-shadow:0 14px 28px rgba(48,35,25,.17)}
+.wood-picker [data-wood].selected,.wood-picker [data-wood].active{border-color:var(--k-accent,#9b7bff);box-shadow:0 0 0 4px color-mix(in srgb,var(--k-accent,#9b7bff) 16%,transparent),0 14px 28px rgba(48,35,25,.14)}
 
 /* Softer global controls. */
 html[data-radius="soft"] .card,html[data-radius="round"] .card,
@@ -315,7 +315,12 @@ body {
   .v24-window,
   .v24-feature-card,
   .v24-studio-card,
-  [data-wood] {
+  .wood-picker [data-wood] {
     transform: none !important;
   }
 }
+
+
+/* V29 — theme state is never an interactive surface. */
+html[data-wood], html[data-wood] body { transform:none!important; }
+html[data-wood] { overflow-x:hidden; }
