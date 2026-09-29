@@ -1,3 +1,9 @@
+envVarGroups:
+  - name: klypso-shared-secrets
+    envVars:
+      - key: KLYPSO_CRON_SECRET
+        generateValue: true
+
 services:
   - type: web
     name: klypso
@@ -112,8 +118,7 @@ services:
         sync: false
       - key: ELEVENLABS_MODEL
         value: eleven_multilingual_v2
-      - key: KLYPSO_CRON_SECRET
-        sync: false
+      - fromGroup: klypso-shared-secrets
       - key: AI_PROVIDER_ORDER
         value: gemini,groq,openrouter
       - key: GEMINI_MODEL
@@ -138,5 +143,9 @@ services:
         value: 3.12.14
       - key: PUBLIC_BASE_URL
         value: https://klypso-2pjf.onrender.com
-      - key: KLYPSO_CRON_SECRET
-        sync: false
+      - fromGroup: klypso-shared-secrets
+
+
+databases:
+  - name: klypso-db
+    plan: free
