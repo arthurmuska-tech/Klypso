@@ -24,7 +24,7 @@
   function applyWood(value) {
     const wood = woods.includes(value) ? value : 'oak';
     root.dataset.wood = wood;
-    set('klypso.wood', wood);
+    set('klypso.appearance.wood', wood);
     $$('[data-wood]').forEach((el) => {
       const selected = el.dataset.wood === wood;
       el.classList.toggle('selected', selected);
@@ -40,7 +40,7 @@
   function applyPalette(value) {
     const palette = palettes.includes(value) ? value : 'paper';
     root.dataset.palette = palette;
-    set('klypso.palette', palette);
+    set('klypso.appearance.palette', palette);
     const themeMeta = document.querySelector('meta[name="theme-color"]');
     if (themeMeta) themeMeta.content = getComputedStyle(root).getPropertyValue('--k-bg').trim() || '#f7f4ef';
     $$('[data-setting-group="palette"] [data-palette]').forEach((el) => {
@@ -75,7 +75,7 @@
     root.style.setProperty('--k-accent', accent);
     root.style.setProperty('--k-accent-2', accent2[accent] || accent);
     root.style.setProperty('--k-accent-soft', 'color-mix(in srgb, ' + accent + ' 14%, transparent)');
-    set('klypso.accent', accent);
+    set('klypso.appearance.accent', accent);
     $$('[data-accent]').forEach((el) => {
       el.classList.toggle('selected', el.dataset.accent?.toLowerCase() === accent);
     });
@@ -86,7 +86,7 @@
   function applyDensity(value) {
     const density = value === 'airy' ? 'spacious' : (['compact', 'comfortable', 'spacious'].includes(value) ? value : 'comfortable');
     root.dataset.density = density;
-    set('klypso.density', density);
+    set('klypso.appearance.density', density);
     $$('[data-setting-group="density"] button, [data-setting-group="density"] .segmented-v11 button').forEach((el) => {
       el.classList.toggle('selected', el.dataset.value === density);
       el.classList.toggle('active', el.dataset.value === density);
@@ -98,7 +98,7 @@
   function applyRadius(value) {
     const radius = ['sharp', 'round', 'soft'].includes(value) ? value : 'round';
     root.dataset.radius = radius;
-    set('klypso.radius', radius);
+    set('klypso.appearance.radius', radius);
     $$('[data-setting-group="radius"] button, [data-setting-group="radius"] .segmented-v11 button').forEach((el) => {
       el.classList.toggle('selected', el.dataset.value === radius);
       el.classList.toggle('active', el.dataset.value === radius);
@@ -107,18 +107,18 @@
 
   function applyCaption(value) {
     const caption = ['dynamic', 'classic', 'minimal'].includes(value) ? value : 'dynamic';
-    set('klypso.caption', caption);
+    set('klypso.appearance.caption', caption);
     $$('[data-caption]').forEach((el) => el.classList.toggle('selected', el.dataset.caption === caption));
     const live = $('[data-live-caption]');
     if (live) live.textContent = caption.charAt(0).toUpperCase() + caption.slice(1);
   }
 
-  applyWood(get('klypso.wood', 'oak'));
-  applyAccent(get('klypso.accent', '#9b7bff'));
-  applyDensity(get('klypso.density', 'comfortable'));
-  applyPalette(get('klypso.palette', 'paper'));
-  applyRadius(get('klypso.radius', 'round'));
-  applyCaption(get('klypso.caption', 'dynamic'));
+  applyWood(get('klypso.appearance.wood', 'oak'));
+  applyAccent(get('klypso.appearance.accent', '#9b7bff'));
+  applyDensity(get('klypso.appearance.density', 'comfortable'));
+  applyPalette(get('klypso.appearance.palette', 'paper'));
+  applyRadius(get('klypso.appearance.radius', 'round'));
+  applyCaption(get('klypso.appearance.caption', 'dynamic'));
 
   $$('[data-wood]').forEach((button) => button.addEventListener('click', () => applyWood(button.dataset.wood)));
   $$('[data-accent]').forEach((button) => button.addEventListener('click', () => applyAccent(button.dataset.accent)));
@@ -129,12 +129,12 @@
 
 
   window.addEventListener('storage', (event) => {
-    if (event.key === 'klypso.wood') applyWood(event.newValue || 'oak');
-    if (event.key === 'klypso.accent') applyAccent(event.newValue || '#9b7bff');
-    if (event.key === 'klypso.palette') applyPalette(event.newValue || 'paper');
-    if (event.key === 'klypso.density') applyDensity(event.newValue || 'comfortable');
-    if (event.key === 'klypso.radius') applyRadius(event.newValue || 'round');
-    if (event.key === 'klypso.caption') applyCaption(event.newValue || 'dynamic');
+    if (event.key === 'klypso.appearance.wood') applyWood(event.newValue || 'oak');
+    if (event.key === 'klypso.appearance.accent') applyAccent(event.newValue || '#9b7bff');
+    if (event.key === 'klypso.appearance.palette') applyPalette(event.newValue || 'paper');
+    if (event.key === 'klypso.appearance.density') applyDensity(event.newValue || 'comfortable');
+    if (event.key === 'klypso.appearance.radius') applyRadius(event.newValue || 'round');
+    if (event.key === 'klypso.appearance.caption') applyCaption(event.newValue || 'dynamic');
   });
 
   /* V16 Command Center */
@@ -257,7 +257,7 @@
   });
 
   const resetAppearance = () => {
-    ['klypso.accent','klypso.density','klypso.radius','klypso.caption','klypso.displayName','klypso.watermark','klypso.motion','klypso.wood','klypso.palette']
+    ['klypso.appearance.accent','klypso.appearance.density','klypso.appearance.radius','klypso.appearance.caption','klypso.displayName','klypso.watermark','klypso.appearance.motion','klypso.appearance.wood','klypso.appearance.palette']
       .forEach((key) => { try { localStorage.removeItem(key); } catch (_) {} });
     location.reload();
   };
@@ -418,7 +418,7 @@
   }));
 
   /* Motion preference fallback for old V11 pages */
-  root.dataset.motion = get('klypso.motion', '1') === '0' ? 'off' : 'on';
+  root.dataset.motion = get('klypso.appearance.motion', '1') === '0' ? 'off' : 'on';
   syncClipLibrary();
 
   if ('serviceWorker' in navigator) {
