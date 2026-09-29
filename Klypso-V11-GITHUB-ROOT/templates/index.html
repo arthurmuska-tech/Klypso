@@ -2,6 +2,22 @@
 {% block title %}KLYPSO — Transforme tes streams en contenu{% endblock %}
 {% block meta_description %}KLYPSO aide les créateurs à transformer leurs streams et VOD en clips, montages et contenus prêts à publier.{% endblock %}
 {% block head_extra %}
+<meta name="author" content="KLYPSO">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="KLYPSO — Transforme tes streams en contenu">
+<meta name="twitter:description" content="Clips IA, montage, sous-titres et préparation sociale pour créateurs.">
+<script type="application/ld+json">
+{{ {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "KLYPSO",
+  "url": public_base_url,
+  "applicationCategory": "MultimediaApplication",
+  "operatingSystem": "Web",
+  "description": "Workspace vidéo pour transformer des streams et VOD en clips, montages et contenus prêts à publier."
+}|tojson }}
+</script>
 <meta name="keywords" content="KLYPSO, clips IA, streamer, montage vidéo, Twitch, YouTube Shorts, TikTok, créateur">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta property="og:title" content="KLYPSO — De la VOD au contenu prêt à publier">
