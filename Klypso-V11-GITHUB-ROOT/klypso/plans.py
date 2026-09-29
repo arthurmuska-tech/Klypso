@@ -17,9 +17,9 @@ class Plan:
     batch: bool
 
 PLANS = {
-    "free": Plan("free", "Free", 0, 15, int(os.environ.get("FREE_DAILY_CREDITS", "3")), 12, 2, 512, False, False, False),
-    "pro": Plan("pro", "Pro", 12, 100, int(os.environ.get("PRO_DAILY_CREDITS", "12")), 48, 20, 2048, True, False, True),
-    "ultra": Plan("ultra", "Ultra", 30, 500, int(os.environ.get("ULTRA_DAILY_CREDITS", "24")), 96, 100, 4096, True, True, True),
+    "free": Plan("free", "Gratuit", 0, 15, int(os.environ.get("FREE_DAILY_CREDITS", "3")), 12, 2, 512, False, False, False),
+    "pro": Plan("pro", "Créateur", 19.99, 100, int(os.environ.get("PRO_DAILY_CREDITS", "12")), 48, 20, 2048, True, False, True),
+    "ultra": Plan("ultra", "Studio", 39.99, 500, int(os.environ.get("ULTRA_DAILY_CREDITS", "24")), 96, 100, 4096, True, True, True),
 }
 
 TRIAL_DAYS = max(
