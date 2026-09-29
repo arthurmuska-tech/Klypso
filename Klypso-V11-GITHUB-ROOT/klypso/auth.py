@@ -63,6 +63,14 @@ def login_required(view):
         if not session.get("user_id"):
             target = request.full_path.rstrip("?")
             return redirect(url_for("auth.login", next=target))
+        # A Render restart can invalidate an old SQLite-backed session. Never
+        # let a stale session reach protected views with a missing user row.
+        with get_db(current_app.config["DATABASE_PATH"]) as db:
+            existing_user = db.execute("SELECT id FROM users WHERE id=?", (session["user_id"],)).fetchone()
+        if not existing_user:
+            target = request.full_path.rstrip("?")
+            session.clear()
+            return redirect(url_for("auth.login", next=target))
         # Keep authenticated sessions persistent and refresh their expiration
         # while the creator is actively using the application.
         session.permanent = True
