@@ -1,4 +1,4 @@
-name: KLYPSO — V23 production tests
+name: KLYPSO — 1000 regression tests + production suite
 concurrency:
   group: klypso-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -43,5 +43,8 @@ jobs:
       - name: CSS structure check
         run: python -c "from pathlib import Path; css=Path('static/css/v14.css').read_text(encoding='utf-8'); assert css.count('{')==css.count('}'), 'Unbalanced CSS braces'; assert css.count('(')==css.count(')'), 'Unbalanced CSS parentheses'; print('CSS structure OK')"
 
-      - name: Run full V23 test suite
+      - name: Run exactly 1000 application regression cases
+        run: pytest -q tests/test_1000_regression.py
+
+      - name: Run full regression suite
         run: pytest -q tests
