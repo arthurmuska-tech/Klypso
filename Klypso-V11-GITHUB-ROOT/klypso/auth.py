@@ -4,6 +4,7 @@ import secrets
 import smtplib
 import json
 from urllib.request import Request, urlopen
+from urllib.parse import urlparse
 import shutil
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
@@ -40,11 +41,28 @@ def init_oauth(app):
         )
 
 
+def _safe_next_target(value):
+    """Accept only local paths; never turn the login redirect into an open redirect."""
+    value = str(value or "").strip()
+    if not value.startswith("/") or value.startswith("//"):
+        return None
+    parsed = urlparse(value)
+    if parsed.scheme or parsed.netloc:
+        return None
+    return value
+
+
+def _after_login_redirect():
+    target = _safe_next_target(session.pop("auth_next", None))
+    return redirect(target or url_for("dashboard"))
+
+
 def login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
         if not session.get("user_id"):
-            return redirect(url_for("auth.login", next=request.path))
+            target = request.full_path.rstrip("?")
+            return redirect(url_for("auth.login", next=target))
         # Keep authenticated sessions persistent and refresh their expiration
         # while the creator is actively using the application.
         session.permanent = True
@@ -320,7 +338,7 @@ def register():
     if len(password) >= 8:
         user = _create_email_user(email, password)
         _login(user)
-        return redirect(url_for("dashboard"))
+        return _after_login_redirect()
 
     try:
         _issue_code(email, "register")
@@ -355,12 +373,15 @@ def verify_email():
     session.pop("pending_email", None)
     session.pop("pending_purpose", None)
     _login(user)
-    return redirect(url_for("dashboard"))
+    return _after_login_redirect()
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
+        target = _safe_next_target(request.args.get("next"))
+        if target:
+            session["auth_next"] = target
         return render_template("login.html")
     email = _normalize_email(request.form.get("email", ""))
     password = request.form.get("password", "")
@@ -376,7 +397,7 @@ def login():
             flash("Mot de passe incorrect.", "error")
             return render_template("login.html"), 401
         _login(user)
-        return redirect(url_for("dashboard"))
+        return _after_login_redirect()
 
     try:
         _issue_code(email, "login")
@@ -446,7 +467,8 @@ def google_credential():
             },
         )
         _login(user)
-        return jsonify({"ok": True, "redirect": url_for("dashboard")})
+        target = _safe_next_target(session.pop("auth_next", None))
+        return jsonify({"ok": True, "redirect": target or url_for("dashboard")})
     except Exception as exc:
         current_app.logger.exception("Google credential sign-in failed: %s", exc)
         return jsonify({"ok": False, "error": "Connexion Google impossible."}), 401
