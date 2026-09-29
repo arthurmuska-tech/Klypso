@@ -213,6 +213,7 @@
       (n === 'clips' && path === '/clips') ||
       (n === 'new' && path === '/clips/create') ||
       (n === 'studio' && path === '/studio') ||
+      (n === 'publisher' && path.startsWith('/publisher')) ||
       (n === 'brand' && path === '/brand-kit') ||
       (n === 'billing' && (path === '/pricing' || path === '/subscription')) ||
       (n === 'payments' && path === '/payments') ||
@@ -223,6 +224,13 @@
   const sidebar = $('#app-sidebar');
   $('[data-sidebar-open]')?.addEventListener('click', () => sidebar?.classList.add('open'));
   $('[data-sidebar-close]')?.addEventListener('click', () => sidebar?.classList.remove('open'));
+  $('.sidebar-nav a').forEach((link) => link.addEventListener('click', () => sidebar?.classList.remove('open')));
+  document.addEventListener('click', (event) => {
+    if (!sidebar?.classList.contains('open')) return;
+    if (window.matchMedia('(min-width: 821px)').matches) return;
+    if (sidebar.contains(event.target) || event.target.closest('[data-sidebar-open]')) return;
+    sidebar.classList.remove('open');
+  });
 
   /* Brand preferences */
   const displayName = $('[data-setting="displayName"]');
