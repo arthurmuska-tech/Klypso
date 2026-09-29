@@ -10,6 +10,10 @@
 
   document.documentElement.classList.add('v26-ready');
 
+  // Do not hijack native touch scrolling or pointer gestures on touch devices.
+  const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+  if (coarsePointer) document.documentElement.classList.add('v26-touch');
+
   // Reading progress: tiny and useful, never blocks clicks.
   const progress = document.createElement('div');
   progress.className = 'v26-progress';
@@ -106,7 +110,7 @@
   }
 
   // Tactile magnetic buttons on desktop only.
-  if (!reduced && window.matchMedia('(hover:hover)').matches) {
+  if (!reduced && !coarsePointer && window.matchMedia('(hover:hover)').matches) {
     $$('.v24-primary, .v24-text-button, .v24-inline-link, .public-nav .button').forEach(button => {
       button.classList.add('v26-magnetic');
       button.addEventListener('pointermove', event => {
