@@ -44,6 +44,16 @@ def create_app(test_config=None):
         ensure_owner_promo_code()
     register_security(app)
     init_oauth(app)
+
+    @app.before_request
+    def keep_login_session_persistent():
+        # Re-issue the long-lived session expiration on every request.
+        # This prevents normal page refreshes/navigation from turning an
+        # authenticated creator into a guest.
+        from flask import session
+        if session.get("user_id"):
+            session.permanent = True
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(legal_bp)
     app.register_blueprint(promo_bp)
