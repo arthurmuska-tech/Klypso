@@ -1,28 +1,76 @@
 {% extends 'base.html' %}
 {% block title %}Tarifs — KLYPSO{% endblock %}
+{% block meta_description %}Compare les forfaits KLYPSO pour créer des clips, sous-titres, montages et contenus sociaux à partir de tes streams.{% endblock %}
+{% block og_title %}Tarifs KLYPSO — Créateur, Studio et Équipe{% endblock %}
+{% block og_description %}Les forfaits KLYPSO pour les créateurs et équipes qui transforment leurs streams en contenus sociaux.{% endblock %}
 {% block crumb %}Tarifs{% endblock %}
 {% block content %}
 <section class="dash-page pricing-v11-page">
-  <div class="page-title-row"><div><span class="eyebrow-v11">KLYPSO PLANS</span><h1>Choisis les capacités dont tu as besoin.</h1><p>Free pour découvrir, Pro pour produire régulièrement, Ultra pour débloquer l'espace Studio complet. Les prix affichés suivent la configuration de ton serveur.</p></div></div>
+  <div class="page-title-row"><div>
+    <span class="eyebrow-v11">KLYPSO · FORFAITS</span>
+    <h1>Choisis le niveau de création qui correspond à ton workflow.</h1>
+    <p>Commence gratuitement, puis passe à un forfait supérieur quand tu as besoin de plus de capacité, de personnalisation ou de collaboration.</p>
+  </div></div>
   <div class="v16-plan-grid">
-    <article class="v16-plan-card"><div class="v16-plan-top"><span class="card-kicker">FREE</span><span class="v16-plan-badge">POUR TESTER</span></div><h2>Découvrir</h2><div class="v16-price"><strong>0 €</strong><span>/ mois</span></div><p>Le cœur de KLYPSO pour commencer à produire.</p><div class="v16-feature-list"><span>✓ 15 clips / mois</span><span>✓ 3 crédits / jour</span><span>✓ 2 projets</span><span>✓ Upload jusqu'à 512 MB</span></div><a class="button ghost full" href="{{ url_for('auth.register') if not current_user else url_for('clips.create_clips') }}">{{ 'Commencer' if not current_user else 'Créer un projet' }} →</a></article>
-    <article class="v16-plan-card featured"><div class="v16-plan-top"><span class="card-kicker">PRO</span><span class="v16-plan-badge accent">{{ config.STRIPE_TRIAL_DAYS }} JOURS</span></div><h2>Produire plus</h2><div class="v16-price"><strong>{{ config.PRO_MONTHLY_PRICE_EUR }} €</strong><span>/ mois</span></div><p>Sélection IA avancée, batch, Brand Kit et davantage de capacité.</p><div class="v16-feature-list"><span>✓ 100 clips / mois</span><span>✓ 12 crédits / jour</span><span>✓ 20 projets · 2 GB</span><span>✓ IA avancée + batch</span></div>{% if current_user %}<form method="post" action="{{ url_for('billing.checkout') }}" class="v16-checkout-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="plan" value="pro"><input type="hidden" name="billing_interval" value="monthly"><label><input type="checkbox" name="accept_cgv" required> J'accepte les CGV</label><button class="button full" type="submit">Choisir Pro →</button></form>{% else %}<a class="button full" href="{{ url_for('auth.register') }}">Créer mon compte →</a>{% endif %}</article>
-    <article class="v16-plan-card"><div class="v16-plan-top"><span class="card-kicker">ULTRA</span><span class="v16-plan-badge">STUDIO</span></div><h2>Créer à grande échelle</h2><div class="v16-price"><strong>{{ config.ULTRA_MONTHLY_PRICE_EUR }} €</strong><span>/ mois</span></div><p>Clips avancés et Studio complet pour les workflows lourds.</p><div class="v16-feature-list"><span>✓ 500 clips / mois</span><span>✓ 24 crédits / jour</span><span>✓ 100 projets · 4 GB</span><span>✓ Studio + timeline multi-pistes</span></div>{% if current_user %}<form method="post" action="{{ url_for('billing.checkout') }}" class="v16-checkout-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="plan" value="ultra"><input type="hidden" name="billing_interval" value="monthly"><label><input type="checkbox" name="accept_cgv" required> J'accepte les CGV</label><button class="button full" type="submit">Choisir Ultra →</button></form>{% else %}<a class="button ghost full" href="{{ url_for('auth.register') }}">Créer mon compte →</a>{% endif %}</article>
+    <article class="v16-plan-card">
+      <div class="v16-plan-top"><span class="card-kicker">GRATUIT</span><span class="v16-plan-badge">0 €</span></div>
+      <h2>Gratuit</h2><div class="v16-price"><strong>0 €</strong><span>/ mois</span></div>
+      <p>Pour découvrir KLYPSO et tester le workflow de création.</p>
+      <div class="v16-feature-list">
+        <span>✓ 4 crédits Clip Finder / mois</span><span>✓ 10 générations de légendes / mois</span>
+        <span>✓ 10 messages de chat IA / mois</span><span>✓ Filigrane KLYPSO sur les exports</span>
+        <span>✓ Exports automatiques 9:16</span><span>✓ Modèles de légendes de base</span><span>✓ Kit de marque de base</span>
+      </div>
+      <a class="button ghost full" href="{{ url_for('auth.register') if not current_user else url_for('clips.create_clips') }}">{{ 'Commencer gratuitement' if not current_user else 'Créer un projet' }} →</a>
+    </article>
+    <article class="v16-plan-card featured">
+      <div class="v16-plan-top"><span class="card-kicker">CRÉATEUR</span><span class="v16-plan-badge accent">{{ config.STRIPE_TRIAL_DAYS }} JOURS</span></div>
+      <h2>Créateur</h2><div class="v16-price"><strong>19,99 €</strong><span>/ mois</span></div>
+      <p>Pour les créateurs qui publient chaque semaine.</p>
+      <div class="v16-feature-list">
+        <span>✓ 20 crédits Clip Finder / mois</span><span>✓ File d'analyse prioritaire</span><span>✓ 40 générations de légendes / mois</span><span>✓ 50 messages de chat IA / mois</span>
+        <span>✓ Exports sans filigrane</span><span>✓ Sous-titres automatiques</span><span>✓ Partage d'extraits sur les réseaux sociaux</span><span>✓ Styles de sous-titres personnalisés</span>
+        <span>✓ Tous les modèles de légendes et sous-titres</span><span>✓ Kit de marque complet</span><span>✓ Calendrier de contenu basique</span>
+      </div>
+      {% if current_user %}<form method="post" action="{{ url_for('billing.checkout') }}" class="v16-checkout-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="plan" value="pro"><input type="hidden" name="billing_interval" value="monthly"><label><input type="checkbox" name="accept_cgv" required> J'accepte les CGV</label><button class="button full" type="submit">Passer au plan Créateur →</button></form>{% else %}<a class="button full" href="{{ url_for('auth.register') }}">Passer au plan Créateur →</a>{% endif %}
+    </article>
+    <article class="v16-plan-card">
+      <div class="v16-plan-top"><span class="card-kicker">STUDIO</span><span class="v16-plan-badge">AVANCÉ</span></div>
+      <h2>Studio</h2><div class="v16-price"><strong>39,99 €</strong><span>/ mois</span></div>
+      <p>Pour les créateurs avancés qui publient quotidiennement.</p>
+      <div class="v16-feature-list">
+        <span>✓ 60 crédits Clip Finder / mois</span><span>✓ File d'analyse prioritaire</span><span>✓ Générations de sous-titres illimitées</span><span>✓ 100 messages de chat IA / mois</span>
+        <span>✓ Exports sans filigrane</span><span>✓ Sous-titres automatiques</span><span>✓ Partage sur les réseaux sociaux</span><span>✓ Styles de sous-titres personnalisés</span>
+        <span>✓ Bibliothèque Trend</span><span>✓ Exportation en masse / clips par lots</span><span>✓ Kit de marque avancé</span><span>✓ Calendrier de contenu avancé</span><span>✓ Dossiers de projet</span>
+      </div>
+      {% if current_user %}<form method="post" action="{{ url_for('billing.checkout') }}" class="v16-checkout-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="plan" value="ultra"><input type="hidden" name="billing_interval" value="monthly"><label><input type="checkbox" name="accept_cgv" required> J'accepte les CGV</label><button class="button full" type="submit">Passer au plan Studio →</button></form>{% else %}<a class="button ghost full" href="{{ url_for('auth.register') }}">Passer au plan Studio →</a>{% endif %}
+    </article>
+    <article class="v16-plan-card">
+      <div class="v16-plan-top"><span class="card-kicker">ÉQUIPE</span><span class="v16-plan-badge">JUSQU'À 5 PLACES</span></div>
+      <h2>Équipe</h2><div class="v16-price"><strong>59,99 €</strong><span>/ mois</span></div>
+      <p>Pour développer un workflow complet de création à plusieurs.</p>
+      <div class="v16-feature-list">
+        <span>✓ 120 crédits Clip Finder / mois</span><span>✓ File d'analyse prioritaire</span><span>✓ Sous-titres illimités</span><span>✓ 200 messages de chat IA / mois</span>
+        <span>✓ Exports sans filigrane</span><span>✓ Sous-titres automatiques</span><span>✓ Partage sur les réseaux sociaux</span><span>✓ Styles de sous-titres personnalisés</span>
+        <span>✓ Jusqu'à 5 places</span><span>✓ Bibliothèque Trend</span><span>✓ Dossiers de projet avancés</span><span>✓ Analyse par lots</span><span>✓ API — bientôt disponible</span>
+      </div>
+      <a class="button ghost full" href="{{ url_for('legal.contact') }}">Contacter KLYPSO pour l'accès Équipe →</a>
+    </article>
   </div>
-  <section class="v16-billing-note"><span>FACTURATION</span><div><strong>Le paiement et la gestion d'abonnement passent par Stripe.</strong><small>L'essai et le moyen de paiement sont appliqués par Checkout lorsque les Price IDs Stripe réels sont configurés côté serveur.</small></div></section>
-  <div class="quick-create-grid">
-    <article class="quick-card"><div class="quick-icon">○</div><div><span class="card-kicker">FREE</span><h2>Découvrir KLYPSO</h2><p>0 € · 15 clips / mois · crédits quotidiens</p></div></article>
-    <article class="quick-card featured"><div class="quick-icon">✦</div><div><span class="card-kicker">PRO</span><h2>Produire régulièrement</h2><p>{{ config.PRO_MONTHLY_PRICE_EUR }} € / mois · sélection avancée, batch et Brand Kit.</p></div></article>
-    <article class="quick-card"><div class="quick-icon studio-icon">◫</div><div><span class="card-kicker">ULTRA</span><h2>Clips + Studio</h2><p>{{ config.ULTRA_MONTHLY_PRICE_EUR }} € / mois · workspace complet.</p></div></article>
-  </div>
+  <section class="v16-billing-note"><span>À SAVOIR</span><div><strong>Tous les forfaits incluent AI Clip Finder, Caption Studio, l'export 9:16 et AI Idea Chat.</strong><small>Change de forfait ou annule-le à tout moment. Les Price IDs Stripe réels doivent être configurés avant toute vente publique.</small></div></section>
   <section class="panel-v11" style="padding:20px;margin-top:12px">
-    <div class="panel-head-v11"><div><span class="eyebrow-v11">COMPARAISON</span><h2>Les fonctions visibles en un regard.</h2><small style="color:#687284">Facturation mensuelle affichée tant que les offres annuelles réelles ne sont pas configurées.</small></div></div>
+    <div class="panel-head-v11"><div><span class="eyebrow-v11">COMPARAISON</span><h2>Les fonctionnalités côte à côte.</h2><small style="color:#687284">Les montants affichés correspondent aux forfaits présentés sur cette page.</small></div></div>
     <div class="project-list" style="margin-top:18px">
-      {% for label, free, pro, ultra in [('Clips / mois','15','100','500'),('Crédits / jour','3','12','24'),('Projets','2','20','100'),('Upload maximum','512 MB','2 GB','4 GB'),('Sélection IA avancée','—','✓','✓'),('Sous-titres dynamiques','—','✓','✓'),('Auto-reframing','—','✓','✓'),('Brand Kit','—','✓','✓'),('Studio','Base','Avancé','Complet'),('Montage assisté','—','Assisté','Avancé'),('Timeline multi-pistes','—','—','✓')] %}
-      <div class="project-row" style="grid-template-columns:1.6fr 1fr 1fr 1fr"><div class="project-main"><strong>{{ label }}</strong></div><div style="font-size:9px;color:#7b8495">Free · {{ free }}</div><div style="font-size:9px;color:#b5bdca">Pro · {{ pro }}</div><div style="font-size:9px;color:#e6e8ed">Ultra · {{ ultra }}</div></div>
+      {% for label, free, creator, studio, team in [
+        ('Clip Finder / mois','4','20','60','120'),('Légendes / mois','10','40','Illimitées','Illimitées'),('Messages de chat IA / mois','10','50','100','200'),
+        ('Filigrane','Oui','Non','Non','Non'),('Sous-titres automatiques','—','✓','✓','✓'),('Kit de marque','Base','Complet','Avancé','Avancé'),
+        ('Calendrier de contenu','—','Basique','Avancé','Avancé'),('Batch rendering','—','—','✓','✓'),('Bibliothèque Trend','—','—','✓','✓'),('Places équipe','1','1','1','5'),('API','—','—','—','Bientôt')
+      ] %}
+      <div class="project-row" style="grid-template-columns:1.6fr repeat(4,1fr)">
+        <div class="project-main"><strong>{{ label }}</strong></div><div style="font-size:9px;color:#7b8495">Gratuit · {{ free }}</div><div style="font-size:9px;color:#b5bdca">Créateur · {{ creator }}</div><div style="font-size:9px;color:#b5bdca">Studio · {{ studio }}</div><div style="font-size:9px;color:#e6e8ed">Équipe · {{ team }}</div>
+      </div>
       {% endfor %}
     </div>
   </section>
-  <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><a class="button" href="{{ url_for('auth.register') if not current_user else url_for('billing.subscription') }}">{% if current_user %}Gérer mon abonnement{% else %}Créer mon compte{% endif %} →</a><span style="font-size:8px;color:#687284;align-self:center">Les Price IDs Stripe et les informations légales réelles doivent être configurés avant une vente publique.</span></div>
 </section>
 {% endblock %}
