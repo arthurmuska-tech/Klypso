@@ -279,3 +279,43 @@ html[data-radius="soft"] .card,html[data-radius="round"] .card,
 html[data-radius="soft"] .panel,html[data-radius="round"] .panel,
 html[data-radius="soft"] .modal,html[data-radius="round"] .modal{border-radius:var(--k-cloud-radius)!important}
 @media(max-width:820px){html[data-wood] .v24-feature-card,html[data-wood] .v24-studio-card{border-radius:26px!important}}
+
+
+/* V28 — emergency scroll/input safety.
+   Never let decorative interaction layers capture page scrolling or touch gestures. */
+html, body {
+  min-height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+}
+body {
+  overflow-y: auto !important;
+  overscroll-behavior-y: auto;
+  touch-action: pan-y;
+}
+.v26-progress,
+.v26-scroll-cue,
+.v24-hero::before,
+.v24-hero::after,
+.v24-product-frame::before,
+.v24-product-frame::after {
+  pointer-events: none !important;
+}
+.v24-product-frame,
+.v24-window,
+.v24-feature-card,
+.v24-studio-card {
+  touch-action: pan-y;
+}
+.v26-reveal {
+  max-height: none !important;
+}
+@media (hover: none), (pointer: coarse) {
+  .v24-product-frame,
+  .v24-window,
+  .v24-feature-card,
+  .v24-studio-card,
+  [data-wood] {
+    transform: none !important;
+  }
+}
