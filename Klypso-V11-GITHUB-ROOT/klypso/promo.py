@@ -96,6 +96,22 @@ def redeem():
     return redirect(url_for("account"))
 
 
+def ensure_owner_promo_code():
+    """Optionally seed one private owner promo from Render environment."""
+    code = normalize_code(current_app.config.get("OWNER_ULTRA_PROMO_CODE", ""))
+    if not code:
+        return
+    with get_db(current_app.config["DATABASE_PATH"]) as db:
+        existing = db.execute("SELECT id FROM promo_codes WHERE code=?", (code,)).fetchone()
+        if existing:
+            return
+        db.execute(
+            "INSERT INTO promo_codes(code,plan,duration_weeks,max_redemptions,expires_at) VALUES(?,?,?,?,NULL)",
+            (code, "ultra", 52, 1),
+        )
+        db.commit()
+
+
 def _is_admin():
     email = session.get("user_email", "").lower()
     admins = {x.strip().lower() for x in current_app.config["ADMIN_EMAILS"].split(",") if x.strip()}
