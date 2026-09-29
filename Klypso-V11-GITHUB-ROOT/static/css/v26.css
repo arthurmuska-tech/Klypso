@@ -168,3 +168,30 @@ body.v26-scrolled .public-nav{
     animation:none!important;
   }
 }
+
+
+/* V26 appearance tokens */
+html[data-density="compact"]{--ui-gap:12px;--ui-gutter:clamp(14px,3vw,40px)}
+html[data-density="comfortable"]{--ui-gap:18px;--ui-gutter:clamp(18px,4vw,64px)}
+html[data-density="spacious"]{--ui-gap:26px;--ui-gutter:clamp(22px,5vw,78px)}
+html[data-radius="sharp"]{--ui-radius:10px}
+html[data-radius="round"]{--ui-radius:18px}
+html[data-radius="soft"]{--ui-radius:28px}
+html[data-accent="9b7bff"]{--k-accent:#9b7bff;--k-accent-2:#b59aff;--k-accent-soft:rgba(155,123,255,.15)}
+html[data-accent="63a4ff"]{--k-accent:#63a4ff;--k-accent-2:#86b7ff;--k-accent-soft:rgba(99,164,255,.15)}
+html[data-accent="59e6df"]{--k-accent:#59e6df;--k-accent-2:#8af0eb;--k-accent-soft:rgba(89,230,223,.15)}
+html[data-accent="ff76c8"]{--k-accent:#ff76c8;--k-accent-2:#ff9bdd;--k-accent-soft:rgba(255,118,200,.15)}
+html[data-accent="d59a62"]{--k-accent:#d59a62;--k-accent-2:#efbd85;--k-accent-soft:rgba(213,154,98,.15)}
+html[data-palette="linen"]{--k-bg:#f0ebe2;--k-bg-soft:#e7dfd2}
+html[data-palette="clay"]{--k-bg:#f1e4dc;--k-bg-soft:#e8d3c5}
+html[data-palette="ocean"]{--k-bg:#e8f0f2;--k-bg-soft:#d8e5e9}
+html[data-palette="forest"]{--k-bg:#e8eee8;--k-bg-soft:#d8e3d8}
+html[data-palette="plum"]{--k-bg:#eee8ef;--k-bg-soft:#e2d6e4}
+html[data-palette="graphite"]{--k-bg:#202124;--k-bg-soft:#17181a;--k-ink:#f4f1ec;--k-muted:#b7b2aa;--k-line:rgba(255,255,255,.12)}
+html[data-palette="midnight"]{--k-bg:#121722;--k-bg-soft:#0d111a;--k-ink:#eef2f7;--k-muted:#aeb7c5;--k-line:rgba(255,255,255,.11)}
+html[data-palette="sage"]{--k-bg:#e9eee7;--k-bg-soft:#dce5d9}
+html[data-palette="sand"]{--k-bg:#f2eadb;--k-bg-soft:#e8dcc7}
+html[data-palette="lavender"]{--k-bg:#eeeafa;--k-bg-soft:#e3ddf2}
+html[data-palette="slate"]{--k-bg:#e8edf1;--k-bg-soft:#d9e1e8}
+html[data-motion="off"] *,html[data-motion="off"] *::before,html[data-motion="off"] *::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important}
+.settings-card-v11{border-radius:var(--ui-radius,18px)!important}
