@@ -38,7 +38,10 @@ def create_app(test_config=None):
         Path(database_path).parent.mkdir(parents=True, exist_ok=True)
     Path(app.config["STORAGE_PATH"]).mkdir(parents=True, exist_ok=True)
     init_db(database_path)
-    ensure_owner_promo_code()
+    # Seed the owner promo only inside a Flask application context.
+    # ensure_owner_promo_code() reads current_app configuration.
+    with app.app_context():
+        ensure_owner_promo_code()
     register_security(app)
     init_oauth(app)
     app.register_blueprint(auth_bp)
