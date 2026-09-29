@@ -13,7 +13,7 @@ from .studio import studio_bp
 from .ai_api import ai_bp
 from .publisher import publisher_bp
 from .security import register_security, csrf_token
-from .promo import effective_plan_key
+from .promo import effective_plan_key, ensure_owner_promo_code
 from .plans import get_plan
 from .credits import get_credit_state
 from .media.object_storage import enabled as object_storage_enabled
@@ -38,6 +38,7 @@ def create_app(test_config=None):
         Path(database_path).parent.mkdir(parents=True, exist_ok=True)
     Path(app.config["STORAGE_PATH"]).mkdir(parents=True, exist_ok=True)
     init_db(database_path)
+    ensure_owner_promo_code()
     register_security(app)
     init_oauth(app)
     app.register_blueprint(auth_bp)
