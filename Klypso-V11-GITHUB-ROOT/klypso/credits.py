@@ -128,13 +128,20 @@ def refund_clip_credits(user_id, cost, metadata=None):
     with get_db(__import__("flask").current_app.config["DATABASE_PATH"]) as db:
         db.execute("BEGIN IMMEDIATE")
         if job_id is not None:
-            existing = db.execute(
-                "SELECT id FROM credit_transactions WHERE user_id=? AND transaction_type='refund' AND metadata_json LIKE ? LIMIT 1",
-                (user_id, '%"job_id":' + str(int(job_id)) + "%"),
-            ).fetchone()
-            if existing:
-                db.commit()
-                return
+            # Do not depend on JSON whitespace or a database-specific JSON
+            # function: metadata is stored as text for SQLite/PostgreSQL parity.
+            existing_rows = db.execute(
+                "SELECT metadata_json FROM credit_transactions WHERE user_id=? AND transaction_type='refund'",
+                (user_id,),
+            ).fetchall()
+            for existing_row in existing_rows:
+                try:
+                    existing_metadata = json.loads(existing_row["metadata_json"] or "{}")
+                except (TypeError, ValueError):
+                    existing_metadata = {}
+                if str(existing_metadata.get("job_id")) == str(job_id):
+                    db.commit()
+                    return
         row = db.execute(
             "SELECT credit_balance FROM users WHERE id=?",
             (user_id,),
