@@ -127,3 +127,19 @@ img,video,svg{max-width:100%}
   .quick-card:hover,.panel-v11:hover,.settings-card-v11:hover,.clip-project-card:hover,
   .v24-feature-card:hover,.v24-flow-list>div:hover{transform:none!important}
 }
+
+/* Public navigation on narrow screens */
+@media(max-width:700px){
+  .public-nav{padding:14px 16px!important;gap:10px!important;align-items:center!important}
+  .public-nav .public-brand{font-size:16px!important;gap:8px!important}
+  .public-nav .public-brand::before{width:34px;height:34px;border-radius:10px}
+  .public-nav nav{gap:3px!important;overflow-x:auto;scrollbar-width:none}
+  .public-nav nav::-webkit-scrollbar{display:none}
+  .public-nav nav a:not(.button){padding:8px 7px!important;font-size:11px!important}
+  .public-nav .button.small{min-height:36px!important;padding:8px 11px!important;font-size:11px!important}
+}
+@media(max-width:460px){
+  .public-nav .public-brand{letter-spacing:.06em!important}
+  .public-nav nav a:not(.button):nth-child(1){display:none}
+  .public-nav nav a:not(.button){font-size:10px!important}
+}
