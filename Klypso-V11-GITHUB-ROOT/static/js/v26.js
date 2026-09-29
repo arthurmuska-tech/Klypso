@@ -93,7 +93,7 @@
   // Desktop pointer depth on the hero product window.
   const frame = $('.v24-product-frame');
   const windowCard = $('.v24-window', frame || document);
-  if (frame && windowCard && !reduced && window.matchMedia('(hover:hover)').matches) {
+  if (frame && windowCard && !reduced && !coarsePointer && window.matchMedia('(hover:hover)').matches) {
     frame.addEventListener('pointermove', event => {
       const rect = frame.getBoundingClientRect();
       const x = (event.clientX - rect.left) / rect.width - .5;
