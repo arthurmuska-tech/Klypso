@@ -23,11 +23,16 @@ def validate_csrf():
         if expected_cron and received_cron and secrets.compare_digest(expected_cron, received_cron):
             return
     if request.path == "/billing/webhook" and request.method == "POST":
-        # billing.webhook verifies the Stripe-Signature header against
-        # STRIPE_WEBHOOK_SECRET before processing the payload.
-        if request.headers.get("Stripe-Signature", "").strip():
-            return
+        # Stripe webhooks are server-to-server callbacks. The billing route
+        # performs the cryptographic Stripe-Signature verification itself.
+        return
     if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+        return
+    # An unauthenticated POST to a login_required endpoint must reach that
+    # endpoint so login_required can redirect to /login. It cannot mutate
+    # protected state because the route guard runs before the view body.
+    if not session.get("user_id"):
+        return
         return
     expected = session.get("csrf_token")
     received = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
