@@ -12,14 +12,14 @@
 <link rel="canonical" href="{{ public_base_url }}{{ request.path }}">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
 <link rel="icon" href="{{ url_for('static', filename='img/klypso-mark.svg') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=27.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v10.css') }}?v=27.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v11.css') }}?v=27.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v14.css') }}?v=27.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v23.css') }}?v=27.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v24.css') }}?v=27.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v25.css') }}?v=27.0">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/v26.css') }}?v=27.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=29.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v10.css') }}?v=29.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v11.css') }}?v=29.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v14.css') }}?v=29.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v23.css') }}?v=29.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v24.css') }}?v=29.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v25.css') }}?v=29.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/v26.css') }}?v=29.0">
 <title>{% block title %}KLYPSO{% endblock %}</title>
 {% block head_extra %}{% endblock %}
 </head>
@@ -106,13 +106,13 @@
 {% else %}
 <footer class="public-footer"><div><span class="klypso-logo-word">KLYPSO</span><span>Clips et montage vidéo pour créateurs.</span></div><nav><a href="{{ url_for('legal.mentions_legales') }}">Mentions légales</a><a href="{{ url_for('legal.confidentialite') }}">Confidentialité</a><a href="{{ url_for('legal.cgu') }}">CGU</a><a href="{{ url_for('legal.cgv') }}">CGV</a><a href="{{ url_for('legal.contact') }}">Contact</a></nav></footer>
 {% endif %}
-<script src="{{ url_for('static', filename='js/app.js') }}?v=27.0" defer></script>
-<script src="{{ url_for('static', filename='js/v11.js') }}?v=27.0" defer></script>
-<script src="{{ url_for('static', filename='js/v14.js') }}?v=27.0" defer></script>
-<script src="{{ url_for('static', filename='js/v24.js') }}?v=27.0" defer></script>
-<script src="{{ url_for('static', filename='js/v25.js') }}?v=27.0" defer></script>
-<script src="{{ url_for('static', filename='js/v26.js') }}?v=27.0" defer></script>
-<script src="{{ url_for('static', filename='js/v26-appearance.js') }}?v=27.0" defer></script>
+<script src="{{ url_for('static', filename='js/app.js') }}?v=29.0" defer></script>
+<script src="{{ url_for('static', filename='js/v11.js') }}?v=29.0" defer></script>
+<script src="{{ url_for('static', filename='js/v14.js') }}?v=29.0" defer></script>
+<script src="{{ url_for('static', filename='js/v24.js') }}?v=29.0" defer></script>
+<script src="{{ url_for('static', filename='js/v25.js') }}?v=29.0" defer></script>
+<script src="{{ url_for('static', filename='js/v26.js') }}?v=29.0" defer></script>
+<script src="{{ url_for('static', filename='js/v26-appearance.js') }}?v=29.0" defer></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>
