@@ -92,7 +92,7 @@ def create_app(test_config=None):
         from flask import Response
         sitemap_url = f"{app.config['PUBLIC_BASE_URL']}/sitemap.xml"
         return Response(
-            f"User-agent: *\\nAllow: /\\nDisallow: /dashboard\\nDisallow: /account\\nDisallow: /api/\\nSitemap: {sitemap_url}\\n",
+            f"User-agent: *\nAllow: /\nDisallow: /dashboard\nDisallow: /account\nDisallow: /api/\nSitemap: {sitemap_url}\n",
             mimetype="text/plain",
         )
 
