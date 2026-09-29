@@ -72,8 +72,8 @@ class Config:
     PRIVACY_VERSION = os.environ.get("PRIVACY_VERSION", "2026-09-26")
     COOKIE_POLICY_VERSION = os.environ.get("COOKIE_POLICY_VERSION", "2026-09-26")
 
-    PRO_MONTHLY_PRICE_EUR = os.environ.get("PRO_MONTHLY_PRICE_EUR", "12,99")
-    ULTRA_MONTHLY_PRICE_EUR = os.environ.get("ULTRA_MONTHLY_PRICE_EUR", "29,99")
+    PRO_MONTHLY_PRICE_EUR = os.environ.get("PRO_MONTHLY_PRICE_EUR", "19,99")
+    ULTRA_MONTHLY_PRICE_EUR = os.environ.get("ULTRA_MONTHLY_PRICE_EUR", "39,99")
     PRO_ANNUAL_PRICE_EUR = os.environ.get("PRO_ANNUAL_PRICE_EUR", "")
     ULTRA_ANNUAL_PRICE_EUR = os.environ.get("ULTRA_ANNUAL_PRICE_EUR", "")
     PRICES_ARE_TTC = env_bool("PRICES_ARE_TTC", True)
