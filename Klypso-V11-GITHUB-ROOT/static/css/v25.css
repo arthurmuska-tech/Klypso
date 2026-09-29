@@ -1,0 +1,129 @@
+/* KLYPSO V25 — final UI polish, accessibility and responsive stability */
+:root{
+  --v25-ease:cubic-bezier(.19,1,.22,1);
+  --v25-focus:0 0 0 3px color-mix(in srgb,var(--k-accent,#986239) 22%,transparent);
+}
+html{scrollbar-gutter:stable}
+body{min-width:320px}
+*,*::before,*::after{transition-timing-function:var(--v25-ease)}
+
+:focus-visible{outline:2px solid var(--k-accent,#986239)!important;outline-offset:3px!important}
+button:disabled,.button:disabled{cursor:not-allowed!important;opacity:.58!important;transform:none!important}
+button,.button,a,.choice-card,.seg-btn{ -webkit-tap-highlight-color:transparent }
+
+.button,.icon-button,.topbar-plan,.topbar-avatar,.sidebar-nav a,.workspace-start-card,.quick-card,
+.clip-project-card,.feature-tile,.v24-feature-card,.v24-flow-list>div{
+  will-change:transform;
+}
+
+.button:active,.icon-button:active,.topbar-plan:active,.topbar-avatar:active{
+  transform:translateY(1px) scale(.985)!important;
+}
+.button:focus-visible,.icon-button:focus-visible,.topbar-plan:focus-visible,.topbar-avatar:focus-visible{
+  box-shadow:var(--v25-focus)!important;
+}
+
+/* Application shell */
+.app-main-shell{min-width:0}
+.app-content-wrap{min-width:0}
+.app-content-wrap main{min-width:0}
+.sidebar-nav a{border:1px solid transparent}
+.sidebar-nav a.active{font-weight:750}
+.sidebar-nav a .nav-beta{white-space:nowrap}
+
+.mobile-menu{display:none;background:var(--k-surface,#fff);border:1px solid var(--k-line);border-radius:12px;color:var(--k-ink);cursor:pointer}
+.mobile-close{cursor:pointer}
+.sidebar-nav a:focus-visible{transform:translateX(3px);box-shadow:var(--v25-focus)}
+
+.workspace-project-row,.project-row,.clip-project-card{min-width:0}
+.workspace-project-main,.project-main{min-width:0}
+.workspace-project-main span,.project-main span,.workspace-project-date{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Inputs: consistent, readable and safe on mobile */
+input,select,textarea{max-width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--k-accent,#986239)!important;box-shadow:var(--v25-focus)!important}
+input[type="file"]{max-width:100%}
+
+/* Empty / loading states */
+[hidden]{display:none!important}
+.is-loading{pointer-events:none!important}
+.is-loading::after{content:"";display:inline-block;width:12px;height:12px;margin-left:8px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-2px;animation:v25spin .7s linear infinite}
+@keyframes v25spin{to{transform:rotate(360deg)}}
+
+/* Public pages */
+.public-nav .public-brand{flex-shrink:0}
+.public-nav nav{min-width:0}
+.public-nav nav a{white-space:nowrap}
+.public-footer{gap:28px}
+.public-footer nav{display:flex;gap:16px;flex-wrap:wrap}
+
+/* Landing cards */
+.v24-feature-card,.v24-studio-card,.v24-cta,.v24-faq details{backdrop-filter:blur(14px)}
+.v24-feature-card h3{overflow-wrap:anywhere}
+.v24-cta .button{flex-shrink:0}
+
+/* Scroll reveal: never leave content invisible when JS is late */
+.v24-motion-ready .v24-reveal{opacity:0;transform:translate3d(0,22px,0)}
+.v24-motion-ready .v24-reveal.v24-visible{opacity:1;transform:none}
+.v24-reveal{transition:opacity .7s var(--v25-ease),transform .85s var(--v25-ease)}
+.v24-window{box-shadow:0 34px 90px rgba(54,39,26,.15)}
+@media (prefers-reduced-motion:reduce){
+  .v24-motion-ready .v24-reveal,.v24-motion-ready .v24-reveal.v24-visible{opacity:1;transform:none}
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;transition-duration:.001ms!important}
+}
+
+/* Better tables and long content */
+table{max-width:100%;border-collapse:collapse}
+pre,code{max-width:100%;overflow:auto}
+img,video,svg{max-width:100%}
+
+/* Mobile */
+@media(max-width:820px){
+  .mobile-menu{display:inline-grid!important;place-items:center}
+  .app-sidebar{z-index:1000!important}
+  body.sidebar-open::after{
+    content:"";position:fixed;inset:0;z-index:999;background:rgba(20,16,12,.34);
+    backdrop-filter:blur(3px);
+  }
+  .app-topbar{position:sticky!important;top:0;z-index:900}
+  .app-content-wrap{overflow:hidden}
+  .workspace-hero,.workspace-flow,.creator-dna-card,.workspace-note{min-width:0}
+  .workspace-hero{grid-template-columns:1fr!important}
+  .workspace-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .workspace-start-grid{grid-template-columns:1fr!important}
+  .workspace-project-row{grid-template-columns:28px 34px minmax(0,1fr) auto!important;gap:9px!important}
+  .workspace-project-date{display:none}
+  .workspace-project-state{font-size:10px}
+  .workspace-flow-steps{grid-template-columns:1fr 1fr!important}
+  .creator-dna-grid{grid-template-columns:1fr 1fr!important}
+  .creator-dna-head{display:grid!important;gap:16px}
+  .mode-upgrade-note{overflow-wrap:anywhere}
+  .v24-window{width:100%}
+}
+@media(max-width:520px){
+  .app-content-wrap{padding-inline:12px!important}
+  .workspace-metrics{grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .workspace-metrics article{padding:14px!important}
+  .workspace-metrics article strong{font-size:25px!important}
+  .workspace-start-card{padding:18px!important}
+  .workspace-project-row{grid-template-columns:24px 30px minmax(0,1fr) auto!important}
+  .workspace-project-icon{width:30px!important;height:30px!important}
+  .workspace-project-state{max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .creator-dna-grid{grid-template-columns:1fr!important}
+  .v24-proof{grid-template-columns:1fr!important}
+  .v24-proof>div{border-left:0!important;border-top:1px solid var(--v24-line);padding:13px 0!important}
+  .v24-proof>div:first-child{border-top:0}
+  .v24-editor-metrics{grid-template-columns:1fr!important}
+  .v24-float{display:none}
+  .v24-window-body{grid-template-columns:44px minmax(0,1fr)}
+  .v24-editor{padding:13px}
+  .v24-video-preview{height:190px}
+  .v24-section,.v24-workflow{padding-top:72px;padding-bottom:72px}
+  .v24-section-heading h2,.v24-workflow h2,.v24-showcase h2,.v24-cta h2{font-size:38px!important}
+}
+
+/* Prevent hover-only affordances from breaking touch layouts */
+@media(hover:none){
+  .quick-card:hover,.panel-v11:hover,.settings-card-v11:hover,.clip-project-card:hover,
+  .v24-feature-card:hover,.v24-flow-list>div:hover{transform:none!important}
+}
