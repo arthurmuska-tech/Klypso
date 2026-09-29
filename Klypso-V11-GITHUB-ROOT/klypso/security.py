@@ -33,7 +33,6 @@ def validate_csrf():
     # protected state because the route guard runs before the view body.
     if not session.get("user_id"):
         return
-        return
     expected = session.get("csrf_token")
     received = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
     if not expected or not received or not secrets.compare_digest(expected, received):
