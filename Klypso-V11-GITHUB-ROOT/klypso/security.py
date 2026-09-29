@@ -15,12 +15,17 @@ def csrf_token():
 
 
 def validate_csrf():
-    # The scheduled publishing cron authenticates with its dedicated secret,
-    # because it has no browser session/CSRF token.
+    # External server-to-server callbacks authenticate themselves with their
+    # own cryptographic signature/secret instead of a browser CSRF token.
     if request.path == "/api/publisher/run-due" and request.method == "POST":
         expected_cron = os.getenv("KLYPSO_CRON_SECRET", "").strip()
         received_cron = request.headers.get("X-KLYPSO-CRON-KEY", "").strip()
         if expected_cron and received_cron and secrets.compare_digest(expected_cron, received_cron):
+            return
+    if request.path == "/billing/webhook" and request.method == "POST":
+        # billing.webhook verifies the Stripe-Signature header against
+        # STRIPE_WEBHOOK_SECRET before processing the payload.
+        if request.headers.get("Stripe-Signature", "").strip():
             return
     if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
         return
