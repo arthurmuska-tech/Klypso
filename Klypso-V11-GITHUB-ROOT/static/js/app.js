@@ -20,11 +20,14 @@
 
   const palettes = ['paper','linen','clay','ocean','forest','plum','graphite','midnight','sage','sand','lavender','slate'];
   const woods = ['oak','walnut','birch','cherry','ebony'];
+  // Legacy storage key kept as a compatibility bridge for older V25 clients.
+  const LEGACY_WOOD_KEY = 'klypso.wood';
 
   function applyWood(value) {
     const wood = woods.includes(value) ? value : 'oak';
     root.dataset.wood = wood;
     set('klypso.appearance.wood', wood);
+    set(LEGACY_WOOD_KEY, wood);
     $$('[data-wood]').forEach((el) => {
       const selected = el.dataset.wood === wood;
       el.classList.toggle('selected', selected);
@@ -113,7 +116,7 @@
     if (live) live.textContent = caption.charAt(0).toUpperCase() + caption.slice(1);
   }
 
-  applyWood(get('klypso.appearance.wood', 'oak'));
+  applyWood(get('klypso.appearance.wood', get(LEGACY_WOOD_KEY, 'oak')));
   applyAccent(get('klypso.appearance.accent', '#9b7bff'));
   applyDensity(get('klypso.appearance.density', 'comfortable'));
   applyPalette(get('klypso.appearance.palette', 'paper'));
@@ -129,7 +132,7 @@
 
 
   window.addEventListener('storage', (event) => {
-    if (event.key === 'klypso.appearance.wood') applyWood(event.newValue || 'oak');
+    if (event.key === 'klypso.appearance.wood' || event.key === LEGACY_WOOD_KEY) applyWood(event.newValue || 'oak');
     if (event.key === 'klypso.appearance.accent') applyAccent(event.newValue || '#9b7bff');
     if (event.key === 'klypso.appearance.palette') applyPalette(event.newValue || 'paper');
     if (event.key === 'klypso.appearance.density') applyDensity(event.newValue || 'comfortable');
@@ -257,7 +260,7 @@
   });
 
   const resetAppearance = () => {
-    ['klypso.appearance.accent','klypso.appearance.density','klypso.appearance.radius','klypso.appearance.caption','klypso.displayName','klypso.watermark','klypso.appearance.motion','klypso.appearance.wood','klypso.appearance.palette']
+    ['klypso.appearance.accent','klypso.appearance.density','klypso.appearance.radius','klypso.appearance.caption','klypso.displayName','klypso.watermark','klypso.appearance.motion','klypso.appearance.wood',LEGACY_WOOD_KEY,'klypso.appearance.palette']
       .forEach((key) => { try { localStorage.removeItem(key); } catch (_) {} });
     location.reload();
   };
